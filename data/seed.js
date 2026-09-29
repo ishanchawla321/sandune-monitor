@@ -7,7 +7,7 @@
 // Public equity prices: Yahoo Finance regular-market close, 2026-09-28.
 
 window.SEED = {
-  version: 2,
+  version: 3,
   as_of: "2026-09-28",
   sample_data: true,
 
@@ -76,9 +76,9 @@ window.SEED = {
       commitment: null, unfunded: 0, call_schedule: null, liquidity_bucket: "liquid_now", liquidity_date: "2026-09-28",
       mark_source: "Sample price", mark_date: "2026-09-28" },
 
-    // ---- Private funds (~$10M NAV, $4.5M unfunded). call_schedule = share of current unfunded called in years 1..3; null = straight-line. ----
+    // ---- Private funds (~$10M NAV, $4.5M unfunded). cost = paid-in = commitment - unfunded. call_schedule = share of current unfunded called in years 1..3; null = straight-line. ----
     { id: "h-fund-a", asset_class: "private_fund", name: "Buyout Fund A (2021 vintage)", ticker_or_id: "PF-A", security_type: "lp_interest",
-      sector: "Multi-sector (ETF/funds)", price_or_mark: 2450000, quantity: null, market_value: null, cost: 2100000,
+      sector: "Multi-sector (ETF/funds)", price_or_mark: 2450000, quantity: null, market_value: null, cost: 2250000,
       commitment: 3000000, unfunded: 750000, call_schedule: [0.5, 0.5, 0], liquidity_bucket: "3y_plus", liquidity_date: "2030-06-30",
       mark_source: "GP statement Q2 2026", mark_date: "2026-06-30" },
     { id: "h-fund-b", asset_class: "private_fund", name: "Growth Equity Fund B (2023 vintage)", ticker_or_id: "PF-B", security_type: "lp_interest",

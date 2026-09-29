@@ -15,14 +15,17 @@
     { key: "asset_class", label: "Asset class", edit: "select", options: CLASS_ORDER, show: h => L.asset_class[h.asset_class] || h.asset_class },
     { key: "name", label: "Name", edit: "text", cls: "col-name" },
     { key: "ticker_or_id", label: "Ticker/ID", edit: "text" },
-    { key: "security_type", label: "Security type", edit: "text" },
+    { key: "security_type", label: "Security type", edit: "select", options: Object.keys(L.security_type),
+      show: h => L.security_type[h.security_type] || h.security_type },
     { key: "sector", label: "Sector", edit: "text" },
-    { key: "price_or_mark", label: "Price / Mark", num: true, edit: "number",
-      scale: h => (Metrics.isPriced(h) ? 1 : 1000),
-      show: h => (Metrics.isPriced(h) ? Fmt.number(h.price_or_mark, 2) : Fmt.thousands(h.price_or_mark)) },
+    // Unit price for priced securities only; funds, directs, real estate and cash carry their mark in Market value.
+    { key: "price_or_mark", label: "Price", num: true, edit: "number", editable: h => Metrics.isPriced(h),
+      show: h => (Metrics.isPriced(h) ? Fmt.number(h.price_or_mark, 2) : "") },
     { key: "quantity", label: "Quantity", num: true, edit: "number", editable: h => Metrics.isPriced(h),
       show: h => (Metrics.isPriced(h) ? Fmt.number(h.quantity, 0) : "") },
-    { key: "market_value", label: "Market value", num: true, k: true },
+    // Computed for priced securities; for everything else it is the mark (or balance) and edits write price_or_mark.
+    { key: "market_value", label: "Market value", num: true, k: true, edit: "number", field: "price_or_mark",
+      scale: () => 1000, editable: h => !Metrics.isPriced(h) },
     { key: "cost", label: "Cost", num: true, k: true, edit: "number", scale: () => 1000, nullable: true },
     { key: "pnl", label: "Unrealized P&L", num: true, k: true },
     { key: "commitment", label: "Commitment", num: true, k: true, edit: "number", scale: () => 1000, nullable: true },
@@ -190,14 +193,15 @@
     const totalRow = (label, list, cls) => {
       const mv = sumK(list, "market_value");
       const withCost = list.filter(h => h.pnl !== null);
+      const hasCommitments = list.some(h => (h.commitment !== null && h.commitment !== undefined) || Number(h.unfunded) > 0);
       return `<tr class="${cls}">` + COLS.map(c => {
         let v = "";
         if (c.key === "name") v = Fmt.esc(label);
         else if (c.key === "market_value") v = Fmt.thousands(mv);
         else if (c.key === "cost") v = Fmt.thousands(sumK(list, "cost"));
         else if (c.key === "pnl") v = withCost.length ? Fmt.thousands(sumK(withCost, "pnl")) : "";
-        else if (c.key === "commitment") v = Fmt.thousands(sumK(list, "commitment"));
-        else if (c.key === "unfunded") v = Fmt.thousands(sumK(list, "unfunded"));
+        else if (c.key === "commitment" && hasCommitments) v = Fmt.thousands(sumK(list, "commitment"));
+        else if (c.key === "unfunded" && hasCommitments) v = Fmt.thousands(sumK(list, "unfunded"));
         else if (c.key === "pct_nav") v = Fmt.pct(m.nav ? mv / m.nav : null);
         return `<td class="${c.num ? "num " : ""}${c.cls || ""}">${v}</td>`;
       }).join("") + `<td class="col-act"></td></tr>`;
@@ -247,15 +251,17 @@
     const h = ctx.state.holdings.find(x => x.id === id);
     const col = COLS.find(c => c.key === key);
     if (!h || !col) return;
+    const field = col.field || col.key;
 
     let input;
     if (col.edit === "select") {
       input = document.createElement("select");
-      col.options.forEach(o => {
+      const options = col.options.includes(h[field]) || !h[field] ? col.options : col.options.concat(h[field]);
+      options.forEach(o => {
         const opt = document.createElement("option");
         opt.value = o;
         opt.textContent = (L[key] && L[key][o]) || o;
-        if (h[key] === o) opt.selected = true;
+        if (h[field] === o) opt.selected = true;
         input.appendChild(opt);
       });
     } else {
@@ -263,10 +269,10 @@
       input.type = col.edit === "date" ? "date" : "text";
       if (col.edit === "number") {
         input.inputMode = "decimal";
-        const v = h[key];
+        const v = h[field];
         input.value = v === null || v === undefined ? "" : String(+(v / scaleOf(col, h)).toFixed(6));
       } else {
-        input.value = h[key] === null || h[key] === undefined ? "" : h[key];
+        input.value = h[field] === null || h[field] === undefined ? "" : h[field];
       }
     }
     input.className = "cell-input";
@@ -302,9 +308,10 @@
     } else if (col.edit === "text" || col.edit === "date") {
       value = String(raw).trim() || (col.key === "name" ? h.name : null);
     }
-    if (h[col.key] === value) return ctx.onChange(false);
-    h[col.key] = value;
-    if (col.key === "price_or_mark") { h.mark_source = "Manual edit"; h.mark_date = today(); }
+    const field = col.field || col.key;
+    if (h[field] === value) return ctx.onChange(false);
+    h[field] = value;
+    if (field === "price_or_mark") { h.mark_source = "Manual edit"; h.mark_date = today(); }
     ctx.onChange(true);
   }
 
@@ -312,7 +319,8 @@
     const liquid = LIQUID_CLASSES.includes(cls);
     ctx.state.holdings.push({
       id: "h-" + Date.now().toString(36), asset_class: cls, name: "New holding", ticker_or_id: "",
-      security_type: cls === "public_equity" ? "common_stock" : cls === "credit" ? "bond" : cls === "cash" ? "cash" : "",
+      security_type: { public_equity: "common_stock", credit: "bond", private_fund: "lp_interest", direct: "common_equity",
+                       real_estate: "jv_equity", cash: "cash" }[cls] || "",
       sector: cls === "cash" ? "Cash" : "", price_or_mark: 0, quantity: 0, market_value: null, cost: null,
       commitment: null, unfunded: 0, call_schedule: null,
       liquidity_bucket: liquid ? "liquid_now" : "3y_plus", liquidity_date: liquid ? today() : null,

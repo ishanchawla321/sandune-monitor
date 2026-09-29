@@ -25,6 +25,9 @@
     asset_class: { public_equity: "Public equity", credit: "Liquid credit", private_fund: "Private funds",
                    direct: "Directs / co-invests", real_estate: "Real estate", cash: "Cash and T-bills" },
     liquidity_bucket: { liquid_now: "Liquid now", "1_3y": "1-3 years", "3y_plus": "3+ years" },
+    security_type: { common_stock: "Common stock", etf: "ETF", bond: "Bond", t_bill: "T-bill", lp_interest: "LP interest",
+                     common_equity: "Common equity", preferred_equity: "Preferred equity", jv_equity: "JV equity",
+                     first_lien_loan: "First-lien loan", cash: "Cash" },
     haircut_group: { public_equity: "Public equity", credit: "Liquid credit", t_bill: "T-bills" }
   };
 
