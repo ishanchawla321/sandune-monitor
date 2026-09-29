@@ -7,7 +7,7 @@
 // Public equity prices: Yahoo Finance regular-market close, 2026-09-28.
 
 window.SEED = {
-  version: 3,
+  version: 5,
   as_of: "2026-09-28",
   sample_data: true,
 
@@ -129,30 +129,40 @@ window.SEED = {
       mark_source: "Sample price", mark_date: "2026-09-28" }
   ],
 
-  // Ideas carry every Holding field plus pipeline fields. Amounts in dollars.
+  // Ideas carry every Holding field plus pipeline fields. Amounts in dollars; funded_pct is a fraction.
+  // assumptions[]: { id, text, status: intact | at_risk | broken, changed }
+  // signals[]: price signals { id, kind: "price", date, ticker, price, source } and notes { id, kind: "note", date, text, assumption_id }
+  // decision_log[]: { date, from, to, reason }
   ideas: [
     { id: "i-tms", asset_class: "public_equity", name: "TMS / interventional psychiatry", ticker_or_id: "BWAY, STIM",
       security_type: "common_stock", sector: "Health Care", price_or_mark: null, quantity: null, market_value: null, cost: null,
       commitment: null, unfunded: 0, call_schedule: null, liquidity_bucket: "liquid_now", liquidity_date: null,
       mark_source: "Yahoo Finance close", mark_date: "2026-09-28",
       status: "researching", type: "theme",
-      thesis: "Reimbursement for transcranial magnetic stimulation is broadening and accelerated protocols shorten treatment courses, which should lift device utilization.",
+      thesis: "Accelerated TMS protocols could expand clinic capacity and adoption. Reimbursement and clinic economics decide who captures the value: device makers, clinic operators or payers.",
       assumptions: [
-        { text: "Payer coverage for TMS keeps expanding", status: "intact" },
-        { text: "Accelerated protocols gain clinical adoption", status: "intact" },
-        { text: "Small-cap balance sheets can fund growth without heavy dilution", status: "at_risk" }
+        { id: "i-tms-a1", text: "Payers cover accelerated protocols", status: "intact", changed: "2026-09-28" },
+        { id: "i-tms-a2", text: "CMS utilization of CPT 90867/90868 keeps rising", status: "intact", changed: "2026-09-28" },
+        { id: "i-tms-a3", text: "New device clearances expand the market, including a subscription-model device cleared for depression in Feb 2025", status: "intact", changed: "2026-09-28" },
+        { id: "i-tms-a4", text: "PE capital keeps entering clinic chains", status: "at_risk", changed: "2026-09-28" }
       ],
-      triggers: ["New CMS or major payer coverage decision", "Quarterly device placements"],
-      contacts: ["Sell-side analyst (medtech)", "Clinic operator (industry contact)"],
+      triggers: [
+        "A major payer denies accelerated-protocol coverage",
+        "90867/90868 volume flattens",
+        "A device maker raises equity at a discount"
+      ],
+      contacts: ["Medtech sell-side analyst", "TMS clinic operator"],
       check_size: 500000, funded_pct: 1.0, hold_months: null, months_to_50pct_back: null, interim_cash: false,
       target_return: "Theme basket, no fixed target",
-      next_step: "Size split between BWAY and STIM", next_step_date: "2026-10-09",
+      entry_costs: "Not applicable (public market purchase)",
+      terms_notes: "",
+      next_step: "Split sizing between BWAY and STIM", next_step_date: "2026-10-09",
       tickers: ["BWAY", "STIM"],
       signals: [
-        { ticker: "BWAY", price: 13.25, date: "2026-09-28", source: "Yahoo Finance close" },
-        { ticker: "STIM", price: 2.555, date: "2026-09-28", source: "Yahoo Finance close" }
+        { id: "i-tms-s1", kind: "price", date: "2026-09-28", ticker: "BWAY", price: 13.25, source: "Yahoo Finance close" },
+        { id: "i-tms-s2", kind: "price", date: "2026-09-28", ticker: "STIM", price: 2.555, source: "Yahoo Finance close" }
       ],
-      decision_log: [{ date: "2026-09-15", note: "Added to pipeline" }],
+      decision_log: [{ date: "2026-09-15", from: null, to: "researching", reason: "Added to pipeline" }],
       doc_flags: [] },
 
     { id: "i-carwash", asset_class: "direct", name: "Car wash SPV (Anchorage)", ticker_or_id: "SPV-CW",
@@ -160,56 +170,89 @@ window.SEED = {
       commitment: 1000000, unfunded: 0, call_schedule: null, liquidity_bucket: "3y_plus", liquidity_date: null,
       mark_source: null, mark_date: null,
       status: "IC", type: "private_equity",
-      thesis: "Preferred equity in a car wash roll-up SPV: 1.0x liquidation preference plus an 8% cumulative dividend, with upside participation.",
+      thesis: "Preferred equity in a three-site express car wash platform in Anchorage. The flagship is open and ramping; two more sites are planned. Returns depend on the membership ramp and on the next two sites opening on time.",
       assumptions: [
-        { text: "Membership revenue holds through a consumer slowdown", status: "intact" },
-        { text: "Exit within 36 months", status: "at_risk" }
+        { id: "i-carwash-a1", text: "Flagship membership ramps from ~4,500 (April run-rate) toward the ~8,400 base case", status: "at_risk", changed: "2026-09-28" },
+        { id: "i-carwash-a2", text: "Sites 2 and 3 break ground and open on schedule", status: "intact", changed: "2026-09-28" },
+        { id: "i-carwash-a3", text: "An exit at 3.0x+ EBITDA is achievable, which is what the conservative case needs just to return capital plus the pref", status: "intact", changed: "2026-09-28" }
       ],
-      triggers: ["Sponsor refinancing", "Same-store membership trends"],
+      triggers: [
+        "Monthly members below ramp for two quarters",
+        "Site 2 construction slips past its start window",
+        "Sale-leaseback not executed"
+      ],
       contacts: ["Sponsor deal lead"],
       check_size: 1000000, funded_pct: 1.0, hold_months: 36, months_to_50pct_back: 36, interim_cash: false,
-      target_return: "3.0x gross; 1.0x pref + 8% cumulative dividend",
+      target_return: "3x+ gross MOIC over ~3 years",
+      entry_costs: "Upfront management fee plus an 8%/yr catch-up from Dec 5, 2025 (fee % not yet confirmed)",
+      terms_notes: "1.0x liquidation preference plus 8% cumulative dividend, paid at exit.",
       next_step: "IC vote", next_step_date: "2026-10-06",
       tickers: [], signals: [],
-      decision_log: [{ date: "2026-09-10", note: "Moved to IC" }],
-      doc_flags: [] },
+      decision_log: [{ date: "2026-09-10", from: "researching", to: "IC", reason: "Moved to IC" }],
+      doc_flags: [
+        "Conservative-case exit multiples: text says 2.8x/3.7x, table says 3.0x/4.0x. Math supports the table ($20.0M / $6.7M = 3.0x; $27.1M / $6.7M = 4.0x).",
+        "Hold: headline is 3 years, capital-recovery footnote refers to a 5-year period.",
+        "Flagship EBITDA must go from $0.68M April run-rate to $5.3M base case, a ~7.8x ramp.",
+        "Entry fee % not in the deck; confirm in offering documents."
+      ] },
 
-    { id: "i-rpa", asset_class: "credit", name: "RPA services first-lien loan", ticker_or_id: "LN-RPA",
+    { id: "i-rpa", asset_class: "private_credit", name: "RPA services first-lien loan", ticker_or_id: "LN-RPA",
       security_type: "first_lien_loan", sector: "Technology", price_or_mark: null, quantity: null, market_value: null, cost: null,
       commitment: 1000000, unfunded: 350000, call_schedule: null, liquidity_bucket: "3y_plus", liquidity_date: null,
       mark_source: null, mark_date: null,
       status: "researching", type: "private_credit",
-      thesis: "First-lien term loan to a robotic process automation services company. SOFR + 825 bps with a 4.00% SOFR floor; 65% funded at close, remainder delayed-draw.",
+      thesis: "First-lien amortizing term loan to an RPA implementation services firm, with warrants. Cash yield covers most of the return; warrants add upside with a floor and a cap.",
       assumptions: [
-        { text: "Recurring revenue covers debt service with room to spare", status: "intact" },
-        { text: "Amortization returns about half of principal by month 24", status: "intact" }
+        { id: "i-rpa-a1", text: "The primary software partner relationship renews on the same terms (agreement expires in ~2 years)", status: "intact", changed: "2026-09-28" },
+        { id: "i-rpa-a2", text: "Recurring revenue stays at or above $20M, the ARR covenant floor", status: "intact", changed: "2026-09-28" },
+        { id: "i-rpa-a3", text: "Adjusted EBITDA quality holds: $4.3M adjusted vs $3.6M book", status: "at_risk", changed: "2026-09-28" }
       ],
-      triggers: ["Covenant compliance certificate", "Customer concentration change"],
-      contacts: ["Lender syndicate lead"],
+      triggers: [
+        "Partner renewal delayed or on worse terms",
+        "ARR below $22M",
+        "Add-backs above 20% of adjusted EBITDA"
+      ],
+      contacts: ["Lender deal lead"],
       check_size: 1000000, funded_pct: 0.65, hold_months: 48, months_to_50pct_back: 24, interim_cash: true,
-      target_return: "SOFR + 825, 4.00% floor",
+      target_return: "Sponsor base case ~17% net IRR, 1.43x",
+      entry_costs: "Sponsor fees: 100 bps of the 2.5% origination fee, 125 bps of interest, 15% promote over an 8% hurdle (no catch-up). Base-case drag ~3.1% IRR / 0.09x (lender memo p.6).",
+      terms_notes: "SOFR + 825 bps, 4% SOFR floor (~12.25% cash). 2.5% origination fee. 20% warrant coverage. 48-month maturity: 16 months interest-only, then straight-line amortization.",
       next_step: "Review credit agreement", next_step_date: "2026-10-14",
       tickers: [], signals: [],
-      decision_log: [{ date: "2026-09-20", note: "Term sheet received" }],
-      doc_flags: [] },
+      decision_log: [{ date: "2026-09-20", from: null, to: "researching", reason: "Term sheet received" }],
+      doc_flags: [
+        "50% of capital back in 24 months is tranche 1 only; a full draw returns 45%.",
+        "Warrant valuation uses $5.0M EBITDA; the rest of the memo uses $4.3M.",
+        "Service-line revenue doesn't tie between the company overview and the P&L.",
+        "Upside net MOIC shown as both 1.75x and 1.74x.",
+        "Downside case (29% IRR, 2.5x) is higher than the base case because it assumes a cash sweep and taking control of the company; treat it as an enforcement scenario, not downside protection."
+      ] },
 
     { id: "i-legalai", asset_class: "direct", name: "Legal AI late-stage equity", ticker_or_id: "PE-LAI",
       security_type: "preferred_equity", sector: "Technology", price_or_mark: 37.00, quantity: 27027, market_value: null, cost: null,
       commitment: 1000000, unfunded: 0, call_schedule: null, liquidity_bucket: "3y_plus", liquidity_date: null,
       mark_source: "Round price", mark_date: null,
-      status: "watching", type: "private_equity",
-      thesis: "Late-stage round in a legal AI software company at $37 per share.",
+      status: "watching", type: "venture",
+      thesis: "Late-stage equity in a legal AI software company at $37/share. The last round valued it at ~$15.5B (Sept 2026) with reported ARR above $400M. No IPO announced.",
       assumptions: [
-        { text: "Enterprise law firm adoption keeps compounding", status: "intact" },
-        { text: "IPO or strategic exit window within 36 months", status: "at_risk" }
+        { id: "i-legalai-a1", text: "ARR growth continues at a pace that justifies the entry multiple", status: "intact", changed: "2026-09-28" },
+        { id: "i-legalai-a2", text: "AI application-software multiples hold through exit", status: "at_risk", changed: "2026-09-28" }
       ],
-      triggers: ["Next priced round", "IPO filing"],
+      triggers: [
+        "Growth decelerates below 50%",
+        "A down round at a peer",
+        "Secondary prices below $37"
+      ],
       contacts: ["Placement agent"],
       check_size: 1000000, funded_pct: 1.0, hold_months: 36, months_to_50pct_back: 36, interim_cash: false,
       target_return: "Not yet set",
+      entry_costs: "Not yet known",
+      terms_notes: "$37.00 per share; 27,027 shares for $1.0M.",
       next_step: "Request data room access", next_step_date: "2026-10-16",
       tickers: [], signals: [],
-      decision_log: [{ date: "2026-09-22", note: "Allocation offered" }],
-      doc_flags: [] }
+      decision_log: [{ date: "2026-09-22", from: null, to: "watching", reason: "Allocation offered" }],
+      doc_flags: [
+        "Round size, valuation and ARR come from public reports, not company documents. Unverified."
+      ] }
   ]
 };

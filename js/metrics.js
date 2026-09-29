@@ -4,6 +4,9 @@
   "use strict";
 
   const ILLIQUID_BUCKETS = ["1_3y", "3y_plus"];
+  // Always illiquid and never in dry powder, whatever liquidity bucket a holding is given.
+  const ALWAYS_ILLIQUID = ["private_credit"];
+  const isIlliquid = h => ALWAYS_ILLIQUID.includes(h.asset_class) || ILLIQUID_BUCKETS.includes(h.liquidity_bucket);
 
   // Priced holdings carry a unit price and a quantity; everything else carries a mark (or balance) in dollars.
   function isPriced(h) {
@@ -56,7 +59,7 @@
   // "cash" is the cash balance itself; T-bills sit in the liquid sum at their haircut (100% by default).
   function dryPowder(hs, settings) {
     const cash = cashBalance(hs);
-    const liquid = hs.filter(h => h.liquidity_bucket === "liquid_now" && h.security_type !== "cash");
+    const liquid = hs.filter(h => h.liquidity_bucket === "liquid_now" && h.security_type !== "cash" && !isIlliquid(h));
     const groups = {};
     liquid.forEach(h => {
       const key = h.security_type in settings.haircuts ? h.security_type : h.asset_class;
@@ -73,7 +76,7 @@
 
   function illiquid(hs) {
     const n = nav(hs);
-    const value = sum(hs.filter(h => ILLIQUID_BUCKETS.includes(h.liquidity_bucket)), h => h.market_value);
+    const value = sum(hs.filter(isIlliquid), h => h.market_value);
     const unfunded = unfundedTotal(hs);
     return { value, unfunded, pct: ratio(value, n), pct_incl_unfunded: ratio(value + unfunded, n) };
   }
@@ -133,12 +136,16 @@
   }
 
   // Liquidity score = 40 x (1 - min(m50,60)/60) + 40 x (1 - min(hold,60)/60) + 20 if interim cash. Public = 100.
-  function liquidityScore(idea) {
-    if (idea.asset_class === "public_equity" || idea.type === "public") return 100;
-    const m50 = Math.min(idea.months_to_50pct_back, 60);
-    const hold = Math.min(idea.hold_months, 60);
-    return 40 * (1 - m50 / 60) + 40 * (1 - hold / 60) + (idea.interim_cash ? 20 : 0);
+  // A missing month count scores as 60 (no credit), so an incomplete idea never looks more liquid than it is.
+  function liquidityScoreParts(idea) {
+    if (idea.asset_class === "public_equity" || idea.type === "public") return { isPublic: true, parts: [], total: 100 };
+    const months = v => (v === null || v === undefined || v === "" || !isFinite(v) ? 60 : Math.max(0, Math.min(Number(v), 60)));
+    const parts = [40 * (1 - months(idea.months_to_50pct_back) / 60), 40 * (1 - months(idea.hold_months) / 60),
+                   idea.interim_cash ? 20 : 0];
+    return { isPublic: false, parts, total: parts[0] + parts[1] + parts[2] };
   }
+
+  function liquidityScore(idea) { return liquidityScoreParts(idea).total; }
 
   function summary(holdings, settings, asOf) {
     const hs = withValues(holdings);
@@ -160,7 +167,7 @@
 
   const Metrics = { isPriced, marketValue, withValues, nav, cashBalance, cashAndBills, unfundedTotal,
                     byAssetClass, bySector, haircutFor, dryPowder, illiquid, largestPosition, largestSector,
-                    capitalCalls, ladder, liquidityScore, summary };
+                    capitalCalls, ladder, liquidityScoreParts, liquidityScore, summary };
   if (typeof module !== "undefined" && module.exports) module.exports = Metrics;
   else root.Metrics = Metrics;
 })(typeof window !== "undefined" ? window : this);

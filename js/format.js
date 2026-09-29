@@ -15,6 +15,11 @@
     dollars(v) { return blank(v) ? "" : signed(v, "$" + grouped(Math.round(v), 0)); },
     number(v, dp) { return blank(v) ? "" : signed(v, grouped(v, dp || 0)); },
     pct(v, dp) { return blank(v) ? "n/a" : signed(v, grouped(v * 100, dp === undefined ? 1 : dp) + "%"); },
+    // Today's date in the viewer's time zone, as YYYY-MM-DD.
+    today() {
+      const d = new Date();
+      return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    },
     esc(t) {
       return String(t === null || t === undefined ? "" : t)
         .replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -22,12 +27,18 @@
   };
 
   Fmt.LABELS = {
-    asset_class: { public_equity: "Public equity", credit: "Liquid credit", private_fund: "Private funds",
-                   direct: "Directs / co-invests", real_estate: "Real estate", cash: "Cash and T-bills" },
+    // Key order is the display order in charts, the holdings table and asset-class dropdowns.
+    asset_class: { public_equity: "Public equity", credit: "Liquid credit", private_credit: "Private credit",
+                   private_fund: "Private funds", direct: "Directs / co-invests", real_estate: "Real estate",
+                   cash: "Cash and T-bills" },
     liquidity_bucket: { liquid_now: "Liquid now", "1_3y": "1-3 years", "3y_plus": "3+ years" },
     security_type: { common_stock: "Common stock", etf: "ETF", bond: "Bond", t_bill: "T-bill", lp_interest: "LP interest",
                      common_equity: "Common equity", preferred_equity: "Preferred equity", jv_equity: "JV equity",
                      first_lien_loan: "First-lien loan", cash: "Cash" },
+    status: { watching: "Watching", researching: "Researching", IC: "IC", invested: "Invested", passed: "Passed" },
+    type: { public: "Public", private_equity: "Private equity", private_credit: "Private credit",
+            venture: "Venture (late-stage)", theme: "Theme" },
+    assumption: { intact: "Intact", at_risk: "At risk", broken: "Broken" },
     haircut_group: { public_equity: "Public equity", credit: "Liquid credit", t_bill: "T-bills" }
   };
 

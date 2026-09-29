@@ -4,7 +4,7 @@
 
   const Fmt = root.Fmt, Metrics = root.Metrics;
   const L = Fmt.LABELS;
-  const CLASS_ORDER = ["public_equity", "credit", "private_fund", "direct", "real_estate", "cash"];
+  const CLASS_ORDER = Object.keys(L.asset_class);
   const BUCKETS = ["liquid_now", "1_3y", "3y_plus"];
   const LIQUID_CLASSES = ["public_equity", "credit", "cash"];
 
@@ -40,7 +40,7 @@
   const ui = { sort: { key: null, dir: 1 }, dpOpen: false, charts: {}, bound: false, addClass: "public_equity" };
   let ctx = null; // { state, onChange }
 
-  function today() { return new Date().toISOString().slice(0, 10); }
+  const today = () => Fmt.today();
   const scaleOf = (col, h) => (col.scale ? col.scale(h) : 1);
 
   function rowsWithDerived(m) {
@@ -130,8 +130,8 @@
 
   function renderCharts(m) {
     if (!root.Chart) return; // chart library missing: tiles and table still work
-    const classes = CLASS_ORDER.filter(k => m.by_asset_class[k]);
-    hbar("pf-chart-class", classes.map(k => L.asset_class[k]), classes.map(k => m.nav ? m.by_asset_class[k] / m.nav : 0), m);
+    const classes = CLASS_ORDER; // every class gets a row, including ones with no holdings yet
+    hbar("pf-chart-class", classes.map(k => L.asset_class[k]), classes.map(k => (m.nav ? (m.by_asset_class[k] || 0) / m.nav : 0)), m);
 
     const sectors = Object.entries(m.by_sector).sort((a, b) => b[1] - a[1]);
     hbar("pf-chart-sector", sectors.map(s => s[0]), sectors.map(s => m.nav ? s[1] / m.nav : 0), m);
@@ -319,8 +319,8 @@
     const liquid = LIQUID_CLASSES.includes(cls);
     ctx.state.holdings.push({
       id: "h-" + Date.now().toString(36), asset_class: cls, name: "New holding", ticker_or_id: "",
-      security_type: { public_equity: "common_stock", credit: "bond", private_fund: "lp_interest", direct: "common_equity",
-                       real_estate: "jv_equity", cash: "cash" }[cls] || "",
+      security_type: { public_equity: "common_stock", credit: "bond", private_credit: "first_lien_loan", private_fund: "lp_interest",
+                       direct: "common_equity", real_estate: "jv_equity", cash: "cash" }[cls] || "",
       sector: cls === "cash" ? "Cash" : "", price_or_mark: 0, quantity: 0, market_value: null, cost: null,
       commitment: null, unfunded: 0, call_schedule: null,
       liquidity_bucket: liquid ? "liquid_now" : "3y_plus", liquidity_date: liquid ? today() : null,

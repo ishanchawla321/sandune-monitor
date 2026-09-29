@@ -5,8 +5,12 @@
   let state = root.Store.load();
   const TABS = ["portfolio", "ideas", "proforma"];
 
+  let active = "portfolio";
+
+  // Only the visible tab renders; switching tabs re-renders from the shared state.
   function render() {
-    root.Portfolio.render(state, onChange);
+    if (active === "portfolio") root.Portfolio.render(state, onChange);
+    if (active === "ideas") root.Ideas.render(state, onChange);
   }
 
   // persist = true for data edits; false for view-only changes (sort, expand, cancelled edit).
@@ -25,7 +29,8 @@
       panel.hidden = !on;
     });
     try { root.localStorage.setItem("sandune-monitor.tab", name); } catch (e) { /* ignore */ }
-    if (name === "portfolio") render();
+    active = name;
+    render();
   }
 
   document.querySelector(".tabs").addEventListener("click", e => {
