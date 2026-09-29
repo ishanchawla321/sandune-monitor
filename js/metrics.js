@@ -147,16 +147,16 @@
   }
 
   // Liquidity score = 40 x (1 - min(m50,60)/60) + 40 x (1 - min(hold,60)/60) + 20 if interim cash. Public = 100.
-  // A missing month count scores as 60 (no credit), so an incomplete idea never looks more liquid than it is.
-  function liquidityScoreParts(idea) {
-    if (idea.asset_class === "public_equity" || idea.type === "public") return { isPublic: true, parts: [], total: 100 };
+  // A missing month count scores as 60 (no credit), so an incomplete investment never looks more liquid than it is.
+  function liquidityScoreParts(inv) {
+    if (inv.asset_class === "public_equity" || inv.type === "public") return { isPublic: true, parts: [], total: 100 };
     const months = v => (v === null || v === undefined || v === "" || !isFinite(v) ? 60 : Math.max(0, Math.min(Number(v), 60)));
-    const parts = [40 * (1 - months(idea.months_to_50pct_back) / 60), 40 * (1 - months(idea.hold_months) / 60),
-                   idea.interim_cash ? 20 : 0];
+    const parts = [40 * (1 - months(inv.months_to_50pct_back) / 60), 40 * (1 - months(inv.hold_months) / 60),
+                   inv.interim_cash ? 20 : 0];
     return { isPublic: false, parts, total: parts[0] + parts[1] + parts[2] };
   }
 
-  function liquidityScore(idea) { return liquidityScoreParts(idea).total; }
+  function liquidityScore(inv) { return liquidityScoreParts(inv).total; }
 
   function summary(holdings, settings, asOf) {
     const hs = withValues(holdings);

@@ -7,7 +7,7 @@
 // Public equity prices: Yahoo Finance regular-market close, 2026-09-28.
 
 window.SEED = {
-  version: 5,
+  version: 7,
   as_of: "2026-09-28",
   sample_data: true,
 
@@ -129,47 +129,55 @@ window.SEED = {
       mark_source: "Sample price", mark_date: "2026-09-28" }
   ],
 
-  // Ideas carry every Holding field plus pipeline fields. Amounts in dollars; funded_pct is a fraction.
+  // Investments carry every Holding field plus pipeline fields. Amounts in dollars; funded_pct is a fraction.
+  // theme_id links an investment to at most one theme; it mirrors themes[].linked_investment_ids.
   // assumptions[]: { id, text, status: intact | at_risk | broken, changed }
   // signals[]: price signals { id, kind: "price", date, ticker, price, source } and notes { id, kind: "note", date, text, assumption_id }
   // decision_log[]: { date, from, to, reason }
-  ideas: [
-    { id: "i-tms", asset_class: "public_equity", name: "TMS / interventional psychiatry", ticker_or_id: "BWAY, STIM",
-      security_type: "common_stock", sector: "Health Care", price_or_mark: null, quantity: null, market_value: null, cost: null,
+  investments: [
+    { id: "i-bway", asset_class: "public_equity", name: "BrainsWay (BWAY)", ticker_or_id: "BWAY",
+      security_type: "common_stock", sector: "Health Care", price_or_mark: 13.25, quantity: 250000 / 13.25, market_value: null, cost: null,
       commitment: null, unfunded: 0, call_schedule: null, liquidity_bucket: "liquid_now", liquidity_date: null,
       mark_source: "Yahoo Finance close", mark_date: "2026-09-28",
-      status: "researching", type: "theme",
-      thesis: "Accelerated TMS protocols could expand clinic capacity and adoption. Reimbursement and clinic economics decide who captures the value: device makers, clinic operators or payers.",
+      status: "researching", type: "public", theme_id: "t-tms",
+      thesis: "TMS device maker positioned to benefit if accelerated protocols lift clinic demand for systems.",
       assumptions: [
-        { id: "i-tms-a1", text: "Payers cover accelerated protocols", status: "intact", changed: "2026-09-28" },
-        { id: "i-tms-a2", text: "CMS utilization of CPT 90867/90868 keeps rising", status: "intact", changed: "2026-09-28" },
-        { id: "i-tms-a3", text: "New device clearances expand the market, including a subscription-model device cleared for depression in Feb 2025", status: "intact", changed: "2026-09-28" },
-        { id: "i-tms-a4", text: "PE capital keeps entering clinic chains", status: "at_risk", changed: "2026-09-28" }
+        { id: "i-bway-a1", text: "Accelerated-protocol demand lifts system placements", status: "intact", changed: "2026-09-28" },
+        { id: "i-bway-a2", text: "Growth is funded without a heavily dilutive equity raise", status: "at_risk", changed: "2026-09-28" }
       ],
-      triggers: [
-        "A major payer denies accelerated-protocol coverage",
-        "90867/90868 volume flattens",
-        "A device maker raises equity at a discount"
+      triggers: ["Quarterly system placements fall year over year"],
+      contacts: [],
+      check_size: 250000, funded_pct: 1.0, hold_months: null, months_to_50pct_back: null, interim_cash: false,
+      target_return: "", entry_costs: "Not applicable (public market purchase)", terms_notes: "",
+      next_step: "Review latest quarterly placements and cash runway", next_step_date: "2026-10-09",
+      tickers: ["BWAY"], signals: [],
+      decision_log: [{ date: "2026-09-28", from: null, to: "researching", reason: "Split out of the TMS theme" }],
+      doc_flags: [] },
+
+    { id: "i-stim", asset_class: "public_equity", name: "Neuronetics (STIM)", ticker_or_id: "STIM",
+      security_type: "common_stock", sector: "Health Care", price_or_mark: 2.555, quantity: 250000 / 2.555, market_value: null, cost: null,
+      commitment: null, unfunded: 0, call_schedule: null, liquidity_bucket: "liquid_now", liquidity_date: null,
+      mark_source: "Yahoo Finance close", mark_date: "2026-09-28",
+      status: "researching", type: "public", theme_id: "t-tms",
+      thesis: "TMS device maker with a clinic-facing model; upside if accelerated protocols expand treatment volume and its cash lasts.",
+      assumptions: [
+        { id: "i-stim-a1", text: "Clinic customers keep adding treatment capacity", status: "intact", changed: "2026-09-28" },
+        { id: "i-stim-a2", text: "Cash runway lasts to breakeven without a discounted raise", status: "at_risk", changed: "2026-09-28" }
       ],
-      contacts: ["Medtech sell-side analyst", "TMS clinic operator"],
-      check_size: 500000, funded_pct: 1.0, hold_months: null, months_to_50pct_back: null, interim_cash: false,
-      target_return: "Theme basket, no fixed target",
-      entry_costs: "Not applicable (public market purchase)",
-      terms_notes: "",
-      next_step: "Split sizing between BWAY and STIM", next_step_date: "2026-10-09",
-      tickers: ["BWAY", "STIM"],
-      signals: [
-        { id: "i-tms-s1", kind: "price", date: "2026-09-28", ticker: "BWAY", price: 13.25, source: "Yahoo Finance close" },
-        { id: "i-tms-s2", kind: "price", date: "2026-09-28", ticker: "STIM", price: 2.555, source: "Yahoo Finance close" }
-      ],
-      decision_log: [{ date: "2026-09-15", from: null, to: "researching", reason: "Added to pipeline" }],
+      triggers: ["An equity raise priced at a discount to market"],
+      contacts: [],
+      check_size: 250000, funded_pct: 1.0, hold_months: null, months_to_50pct_back: null, interim_cash: false,
+      target_return: "", entry_costs: "Not applicable (public market purchase)", terms_notes: "",
+      next_step: "Check cash runway and debt covenants", next_step_date: "2026-10-09",
+      tickers: ["STIM"], signals: [],
+      decision_log: [{ date: "2026-09-28", from: null, to: "researching", reason: "Split out of the TMS theme" }],
       doc_flags: [] },
 
     { id: "i-carwash", asset_class: "direct", name: "Car wash SPV (Anchorage)", ticker_or_id: "SPV-CW",
       security_type: "preferred_equity", sector: "Consumer Discretionary", price_or_mark: null, quantity: null, market_value: null, cost: null,
       commitment: 1000000, unfunded: 0, call_schedule: null, liquidity_bucket: "3y_plus", liquidity_date: null,
       mark_source: null, mark_date: null,
-      status: "IC", type: "private_equity",
+      status: "IC", type: "private_equity", theme_id: null,
       thesis: "Preferred equity in a three-site express car wash platform in Anchorage. The flagship is open and ramping; two more sites are planned. Returns depend on the membership ramp and on the next two sites opening on time.",
       assumptions: [
         { id: "i-carwash-a1", text: "Flagship membership ramps from ~4,500 (April run-rate) toward the ~8,400 base case", status: "at_risk", changed: "2026-09-28" },
@@ -200,7 +208,7 @@ window.SEED = {
       security_type: "first_lien_loan", sector: "Technology", price_or_mark: null, quantity: null, market_value: null, cost: null,
       commitment: 1000000, unfunded: 350000, call_schedule: null, liquidity_bucket: "3y_plus", liquidity_date: null,
       mark_source: null, mark_date: null,
-      status: "researching", type: "private_credit",
+      status: "researching", type: "private_credit", theme_id: "t-ai",
       thesis: "First-lien amortizing term loan to an RPA implementation services firm, with warrants. Cash yield covers most of the return; warrants add upside with a floor and a cap.",
       assumptions: [
         { id: "i-rpa-a1", text: "The primary software partner relationship renews on the same terms (agreement expires in ~2 years)", status: "intact", changed: "2026-09-28" },
@@ -232,7 +240,7 @@ window.SEED = {
       security_type: "preferred_equity", sector: "Technology", price_or_mark: 37.00, quantity: 27027, market_value: null, cost: null,
       commitment: 1000000, unfunded: 0, call_schedule: null, liquidity_bucket: "3y_plus", liquidity_date: null,
       mark_source: "Round price", mark_date: null,
-      status: "watching", type: "venture",
+      status: "watching", type: "venture", theme_id: "t-ai",
       thesis: "Late-stage equity in a legal AI software company at $37/share. The last round valued it at ~$15.5B (Sept 2026) with reported ARR above $400M. No IPO announced.",
       assumptions: [
         { id: "i-legalai-a1", text: "ARR growth continues at a pace that justifies the entry multiple", status: "intact", changed: "2026-09-28" },
@@ -254,5 +262,62 @@ window.SEED = {
       doc_flags: [
         "Round size, valuation and ARR come from public reports, not company documents. Unverified."
       ] }
+  ],
+
+  // Themes group investments under a shared thesis. No check size or target return on a theme.
+  // value_chain[]: { segment, who_captures_value }. linked_investment_ids mirrors investments[].theme_id.
+  themes: [
+    { id: "t-tms", name: "TMS / interventional psychiatry", status: "exploring",
+      thesis: "Accelerated TMS protocols could expand clinic capacity and adoption. Reimbursement and clinic economics decide who captures the value: device makers, clinic operators or payers.",
+      why_now: "Accelerated protocols compress a 6-week course into days, which changes clinic capacity math.",
+      value_chain: [
+        { segment: "Device makers (BWAY, STIM)", who_captures_value: "Sell or subscribe systems" },
+        { segment: "Clinic operators", who_captures_value: "Capture volume if reimbursement holds" },
+        { segment: "Payers", who_captures_value: "Decide whether accelerated protocols get paid" }
+      ],
+      assumptions: [
+        { id: "t-tms-a1", text: "Payers cover accelerated protocols", status: "intact", changed: "2026-09-28" },
+        { id: "t-tms-a2", text: "CMS utilization of CPT 90867/90868 keeps rising", status: "intact", changed: "2026-09-28" },
+        { id: "t-tms-a3", text: "New device clearances expand the market, including a subscription-model device cleared for depression in Feb 2025", status: "intact", changed: "2026-09-28" },
+        { id: "t-tms-a4", text: "PE capital keeps entering clinic chains", status: "at_risk", changed: "2026-09-28" }
+      ],
+      triggers: [
+        "A major payer denies accelerated-protocol coverage",
+        "90867/90868 volume flattens",
+        "A device maker raises equity at a discount"
+      ],
+      contacts: ["Medtech sell-side analyst", "TMS clinic operator"],
+      watch_public: ["BWAY", "STIM"],
+      watch_private: ["Ampa (device, subscription model; clearance date per README, unverified)", "Radial (clinics)"],
+      signals: [
+        { id: "t-tms-s1", kind: "price", date: "2026-09-28", ticker: "BWAY", price: 13.25, source: "Yahoo Finance close" },
+        { id: "t-tms-s2", kind: "price", date: "2026-09-28", ticker: "STIM", price: 2.555, source: "Yahoo Finance close" }
+      ],
+      linked_investment_ids: ["i-bway", "i-stim"],
+      decision_log: [{ date: "2026-09-15", from: null, to: "exploring", reason: "Added to pipeline" }] },
+
+    { id: "t-ai", name: "AI and automation", status: "active",
+      thesis: "Enterprise spend on AI and automation keeps compounding. We hold it two ways: late-stage equity in a legal AI company for upside, and a first-lien loan to an RPA implementer that pays cash while we wait.",
+      why_now: "Agentic AI is moving from pilots to budgets, and the question is who keeps the margin.",
+      value_chain: [
+        { segment: "Model providers", who_captures_value: "Pricing power is concentrating with the largest labs and cloud platforms." },
+        { segment: "Application software (Legal AI)", who_captures_value: "Captures value if it owns the workflow and the client data; at risk if models commoditize the feature." },
+        { segment: "Implementation services (RPA loan)", who_captures_value: "Earns services margin during adoption; at risk of being automated away as agentic tools mature." }
+      ],
+      assumptions: [
+        { id: "t-ai-a1", text: "Enterprise AI budgets keep growing", status: "intact", changed: "2026-09-28" },
+        { id: "t-ai-a2", text: "Agentic AI complements rather than replaces RPA workflows", status: "at_risk", changed: "2026-09-28" },
+        { id: "t-ai-a3", text: "AI application multiples hold", status: "at_risk", changed: "2026-09-28" }
+      ],
+      triggers: [
+        "Large-customer churn at the RPA borrower",
+        "Peer down rounds in AI applications"
+      ],
+      contacts: [],
+      watch_public: [],
+      watch_private: [],
+      signals: [],
+      linked_investment_ids: ["i-legalai", "i-rpa"],
+      decision_log: [{ date: "2026-09-28", from: null, to: "active", reason: "Theme created to group Legal AI and the RPA loan" }] }
   ]
 };

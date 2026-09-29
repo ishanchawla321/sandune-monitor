@@ -303,3 +303,20 @@ table.review tr.rv-accepted td, table.review tr.rv-accepted th, table.review tr.
   table.review td.rv-actions { grid-column: 1 / -1; white-space: normal; }
   .table-wrap:has(> table.review) { overflow-x: visible; }
 }
+
+/* Ideas: themes section (Stage 6a; structure only, restyle comes later) */
+.sec-h { margin: 14px 0 6px; }
+.theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; }
+.theme-tile { display: flex; flex-direction: column; gap: 6px; text-align: left; border: 1px solid var(--line); border-radius: 3px;
+  background: #fff; padding: 10px 12px; cursor: pointer; min-width: 0; }
+.theme-tile:hover, .theme-tile.selected { border-color: var(--accent); }
+.theme-tile.selected { box-shadow: inset 3px 0 0 var(--accent); }
+.tt-head { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.tt-thesis { color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tt-stats { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.tt-flag b { color: #8a5a00; }
+.vc-row .list-input { flex: 1 1 200px; }
+.picks { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.pick { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+table.mini { margin-bottom: 8px; }
+.theme-pick select { border: 1px solid var(--line-2); border-radius: 2px; padding: 3px 6px; margin-bottom: 6px; max-width: 100%; }

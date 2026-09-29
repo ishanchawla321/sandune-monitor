@@ -66,7 +66,12 @@
   </section>
 
   <section id="tab-ideas" role="tabpanel" aria-labelledby="tabbtn-ideas" hidden>
-    <p class="asof">Pipeline ideas. Figures are sample data. Click a row to open its card; edits save in this browser.</p>
+    <p class="asof">Themes and the investments that express them. Figures are sample data; edits save in this browser.</p>
+    <h2 class="sec-h">Themes</h2>
+    <div id="th-grid" class="theme-grid"></div>
+    <div id="th-card" class="card-slot"></div>
+    <h2 class="sec-h">Investments</h2>
+    <p class="note">Click a row to open its card.</p>
     <div id="id-intake"></div>
     <div class="filters" id="id-filters"></div>
     <div class="table-wrap">
@@ -76,9 +81,10 @@
   </section>
 
   <section id="tab-proforma" role="tabpanel" aria-labelledby="tabbtn-proforma" hidden>
-    <p class="asof">Tick ideas to add them to the book. Figures are sample data; selections save in this browser.</p>
+    <p class="asof">Tick investments to add them to the book, or add a whole theme. Figures are sample data; selections save in this browser.</p>
 
-    <h2>Ideas to add</h2>
+    <h2>Investments to add</h2>
+    <label class="theme-pick"><span class="sr-only">Add theme</span><select id="pf2-theme-pick" aria-label="Add all investments in a theme"></select></label>
     <div class="table-wrap">
       <table class="grid" id="pf2-selector"></table>
     </div>
@@ -107,7 +113,7 @@
     </figure>
 
     <div class="table-head"><h2>Pro forma holdings</h2></div>
-    <p class="note">New idea rows are marked PF. Holdings sold to fund a trade show their reduced value. Dollar columns are in $ thousands.</p>
+    <p class="note">New investment rows are marked PF. Holdings sold to fund a trade show their reduced value. Dollar columns are in $ thousands.</p>
     <div class="table-wrap">
       <table class="grid" id="pf2-holdings"></table>
     </div>
@@ -123,6 +129,7 @@
 <script src="js/prices.js"></script>
 <script src="js/portfolio.js"></script>
 <script src="samples/sample-om-extracted.js"></script>
+<script src="js/themes-model.js"></script>
 <script src="js/intake.js"></script>
 <script src="js/ideas.js"></script>
 <script src="js/proforma-model.js"></script>

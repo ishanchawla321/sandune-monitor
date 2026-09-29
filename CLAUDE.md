@@ -16,7 +16,8 @@ A family office portfolio and pipeline monitor. Three tabs: Portfolio, Ideas, Pr
 ## Data model
 Holding: id, asset_class (public_equity, credit, private_fund, direct, real_estate, cash), name, ticker_or_id, security_type, sector, price_or_mark, quantity, market_value, cost, commitment, unfunded, call_schedule, liquidity_bucket (liquid_now, 1_3y, 3y_plus), liquidity_date, mark_source, mark_date.
 Market value: public equity = price x shares; bonds = price x face / 100; funds and privates = mark; cash = balance.
-Idea: all Holding fields plus status (watching, researching, IC, invested, passed), type (public, private_equity, private_credit, theme), thesis, assumptions[] (text, status intact/at_risk/broken), triggers[], contacts[], check_size, funded_pct, hold_months, months_to_50pct_back, interim_cash (bool), target_return, next_step, next_step_date, tickers[], signals[], decision_log[], doc_flags[].
+Investment (formerly "Idea"; the array is investments[]): all Holding fields plus status (watching, researching, IC, invested, passed), type (public, private_equity, private_credit, venture), theme_id (optional), thesis, assumptions[] (text, status intact/at_risk/broken), triggers[], contacts[], check_size, funded_pct, hold_months, months_to_50pct_back, interim_cash (bool), target_return, next_step, next_step_date, tickers[], signals[], decision_log[], doc_flags[].
+Theme (themes[]): id, name, status (exploring, active, retired), thesis, why_now, value_chain[] ({segment, who_captures_value}), assumptions[], triggers[], contacts[], watch_public[] (tickers), watch_private[] (names), signals[], linked_investment_ids[], decision_log[]. No check size or target return. An investment belongs to at most one theme; investment.theme_id and theme.linked_investment_ids are kept in sync both ways (js/themes-model.js).
 
 ## Formulas ($M; limits, reserve and haircuts are user-set)
 - NAV = sum of market value including cash
@@ -37,4 +38,5 @@ Reserve $2.0M. Illiquid incl. unfunded 50%. Single position 5%. Largest sector 2
 ## Decisions
 Settled choices. Do not change these without the owner's say-so.
 - Model: keep `claude-sonnet-5` (set in api/_lib.js). Do not switch to `claude-sonnet-5-5` or any other model. To be revisited when the Anthropic key is added.
+- Never edit files through PowerShell. Use the file edit tools and save as UTF-8 without BOM. (A PowerShell edit corrupted js/prices.js: it added a BOM and mangled "·" into "Â·".)
 - /api/extract timeout: keep `maxDuration: 60` in vercel.json. This is our choice, not a plan limit: Vercel Hobby functions can run up to 300 seconds. vercel.json is strict JSON and can't hold comments, so the reasoning lives here.

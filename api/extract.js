@@ -24,7 +24,7 @@ const strList = { type: "array", items: { type: "string" } };
 
 const FIELDS = {
   name: field(str),
-  type: field({ type: "string", enum: ["public", "private_equity", "private_credit", "venture", "theme"] }),
+  type: field({ type: "string", enum: ["public", "private_equity", "private_credit", "venture"] }),
   asset_class: field({ type: "string", enum: ["public_equity", "credit", "private_credit", "private_fund", "direct", "real_estate"] }),
   security_type: field({ type: "string", enum: ["common_stock", "etf", "bond", "lp_interest", "common_equity", "preferred_equity",
                                                  "jv_equity", "first_lien_loan", "basket"] }),

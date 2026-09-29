@@ -37,7 +37,8 @@
                      first_lien_loan: "First-lien loan", basket: "Basket", cash: "Cash" },
     status: { watching: "Watching", researching: "Researching", IC: "IC", invested: "Invested", passed: "Passed" },
     type: { public: "Public", private_equity: "Private equity", private_credit: "Private credit",
-            venture: "Venture (late-stage)", theme: "Theme" },
+            venture: "Venture (late-stage)" },
+    theme_status: { exploring: "Exploring", active: "Active", retired: "Retired" },
     assumption: { intact: "Intact", at_risk: "At risk", broken: "Broken" },
     haircut_group: { public_equity: "Public equity", credit: "Liquid credit", t_bill: "T-bills" }
   };

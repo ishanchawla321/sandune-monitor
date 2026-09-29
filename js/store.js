@@ -15,7 +15,7 @@
       const raw = root.localStorage.getItem(KEY);
       if (raw) {
         const state = JSON.parse(raw);
-        if (state && state.version === root.SEED.version && Array.isArray(state.holdings)) return state;
+        if (state && state.version === root.SEED.version && Array.isArray(state.holdings) && Array.isArray(state.investments)) return state;
       }
     } catch (e) { /* storage blocked or corrupt: fall through to the seed */ }
     return fromSeed();

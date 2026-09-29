@@ -1,5 +1,5 @@
-// "New idea from document": upload a PDF or paste text, extract fields with /api/extract,
-// review every field, then save as a new idea. Files are read in the browser and sent once; never stored.
+// "New investment from document": upload a PDF or paste text, extract fields with /api/extract,
+// review every field, then save as a new investment. Files are read in the browser and sent once; never stored.
 (function (root) {
   "use strict";
 
@@ -132,7 +132,7 @@
         <div><b>Review extracted fields</b>${r.source === "cached" ? ` <span class="tag tag-cached">Cached example</span>` : ""}
           <div class="note">${ui.fileName ? esc(ui.fileName) + ". " : ""}Accept or edit every field that has a value. Highlighted rows are low confidence or not found.</div></div>
         <div class="rv-save"><span class="muted">${total - left.length} of ${total} reviewed</span>
-          <button type="button" class="btn btn-primary" data-rv-commit${left.length || ui.editing ? " disabled" : ""}>Save as idea</button>
+          <button type="button" class="btn btn-primary" data-rv-commit${left.length || ui.editing ? " disabled" : ""}>Save as investment</button>
           <button type="button" class="btn" data-rv-discard>Discard</button></div>
       </div>
       <div class="table-wrap"><table class="grid review"><thead><tr><th class="col-name">Field</th><th>Value</th><th class="num">Page</th><th>Confidence</th><th>Review</th></tr></thead>
@@ -169,7 +169,7 @@
         ${localNote}`;
     }
     box.innerHTML = `<details class="intake"${ui.phase !== "idle" || ui.open ? " open" : ""}>
-        <summary>New idea from document</summary><div class="intake-body">${body}</div></details>`;
+        <summary>New investment from document</summary><div class="intake-body">${body}</div></details>`;
   }
 
   // ---------------- Actions ----------------
@@ -250,7 +250,7 @@
     fail("The sample couldn't be loaded.");
   }
 
-  function saveIdea() {
+  function saveInvestment() {
     const v = k => ui.result.fields[k].value;
     const today = Fmt.today();
     const id = "i-doc-" + Date.now().toString(36);
@@ -259,14 +259,14 @@
     const isPublic = assetClass === "public_equity" || type === "public";
     const check = v("check_size");
     const funded = v("funded_pct") === null ? 1 : v("funded_pct");
-    const idea = {
-      id, asset_class: assetClass, name: v("name") || "Untitled idea", ticker_or_id: "",
+    const inv = {
+      id, asset_class: assetClass, name: v("name") || "Untitled investment", ticker_or_id: "",
       security_type: v("security_type") || "", sector: v("sector") || "",
       price_or_mark: null, quantity: null, market_value: null, cost: null,
       commitment: isPublic || check === null ? null : check,
       unfunded: check === null ? 0 : check * (1 - funded), call_schedule: null,
       liquidity_bucket: isPublic ? "liquid_now" : "3y_plus", liquidity_date: null, mark_source: null, mark_date: null,
-      status: "watching", type,
+      status: "watching", type, theme_id: null,
       thesis: v("thesis") || "",
       assumptions: (v("assumptions") || []).map((text, n) => ({ id: `${id}-a${n + 1}`, text, status: "intact", changed: today })),
       triggers: v("triggers") || [], contacts: v("contacts") || [],
@@ -282,7 +282,7 @@
     ui.open = false;
     ui.result = null;
     ui.message = "";
-    ctx.onSaved(idea);
+    ctx.onSaved(inv);
   }
 
   function bind() {
@@ -319,7 +319,7 @@
       if (t.closest("[data-rv-cancel]")) { ui.editing = null; return render(); }
       const undo = t.closest("[data-rv-undo]");
       if (undo) { delete ui.review[undo.dataset.rvUndo]; return render(); }
-      if (t.closest("[data-rv-commit]")) { if (!pending().length && !ui.editing) saveIdea(); return; }
+      if (t.closest("[data-rv-commit]")) { if (!pending().length && !ui.editing) saveInvestment(); return; }
       if (t.closest("[data-rv-discard]")) { ui.phase = "idle"; ui.result = null; ui.open = true; return render(); }
     });
     panel.addEventListener("change", e => {

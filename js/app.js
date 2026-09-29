@@ -9,6 +9,7 @@
 
   // Only the visible tab renders; switching tabs re-renders from the shared state.
   function render() {
+    root.ThemesModel.sync(state);
     if (active === "portfolio") root.Portfolio.render(state, onChange);
     if (active === "ideas") root.Ideas.render(state, onChange);
     if (active === "proforma") root.ProForma.render(state, onChange);

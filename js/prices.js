@@ -28,7 +28,8 @@
 
   function tickers(state) {
     const t = state.holdings.filter(isQuoted).map(h => String(h.ticker_or_id || "").toUpperCase());
-    state.ideas.forEach(i => (i.tickers || []).forEach(x => t.push(String(x).toUpperCase())));
+    state.investments.forEach(i => (i.tickers || []).forEach(x => t.push(String(x).toUpperCase())));
+    (state.themes || []).forEach(th => (th.watch_public || []).forEach(x => t.push(String(x).toUpperCase())));
     return Array.from(new Set(t.filter(Boolean)));
   }
 
@@ -61,7 +62,7 @@
     if (ui.mode === "live") refresh(state);
   }
 
-  // Quote for an idea ticker (signals), or null.
+  // Quote for a signal ticker (investments and theme watch lists), or null.
   function quote(ticker) {
     if (ui.mode !== "live") return null;
     const q = ui.quotes[String(ticker || "").toUpperCase()];

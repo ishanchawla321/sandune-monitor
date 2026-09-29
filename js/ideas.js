@@ -1,17 +1,23 @@
-// Ideas tab: filterable pipeline table and an editable idea card.
+// Ideas tab: Themes (grid + card) and Investments (filterable table + card).
+// One card component serves both kinds: assumptions, lists, signals, status-with-reason and the
+// decision log work the same way; each kind adds its own sections.
 (function (root) {
   "use strict";
 
-  const Fmt = root.Fmt, Metrics = root.Metrics;
+  const Fmt = root.Fmt, Metrics = root.Metrics, TM = root.ThemesModel;
   const L = Fmt.LABELS;
   const esc = Fmt.esc;
   const STATUSES = Object.keys(L.status);
+  const THEME_STATUSES = Object.keys(L.theme_status);
   const TYPES = Object.keys(L.type);
   const CYCLE = { intact: "at_risk", at_risk: "broken", broken: "intact" };
   const CLASSES = Object.keys(L.asset_class);
 
+  const themeName = id => { const t = (ctx.state.themes || []).find(x => x.id === id); return t ? t.name : ""; };
+
   const COLS = [
     { key: "name", label: "Name", cls: "col-name" },
+    { key: "theme", label: "Theme", value: i => themeName(i.theme_id) },
     { key: "type", label: "Type", show: i => L.type[i.type] || i.type },
     { key: "status", label: "Status", show: i => L.status[i.status] || i.status },
     { key: "score", label: "Liquidity score", num: true, value: i => Metrics.liquidityScore(i), show: i => Metrics.liquidityScore(i).toFixed(0) },
@@ -29,17 +35,21 @@
     { key: "quantity", label: "Quantity", num: true, show: i => Fmt.number(i.quantity, 0) }
   ];
 
-  const ui = { sort: { key: null, dir: 1 }, status: new Set(), type: new Set(), selected: null,
-               pending: null, bound: false };
+  // sel: { kind: "theme" | "investment", id }
+  const ui = { sort: { key: null, dir: 1 }, status: new Set(), type: new Set(), sel: null,
+               pending: null, bound: false, assessing: null };
   let ctx = null; // { state, onChange }
 
   const today = () => Fmt.today();
   const newId = p => p + "-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const idea = () => ctx.state.ideas.find(i => i.id === ui.selected) || null;
+  const listFor = kind => (kind === "theme" ? ctx.state.themes || [] : ctx.state.investments);
+  const current = () => (ui.sel ? listFor(ui.sel.kind).find(x => x.id === ui.sel.id) || null : null);
+  const isTheme = () => !!ui.sel && ui.sel.kind === "theme";
   const blank = v => v === null || v === undefined || v === "";
   const colValue = (c, i) => (c.value ? c.value(i) : i[c.key]);
   const colText = (c, i) => (c.show ? c.show(i) : blank(colValue(c, i)) ? "" : String(colValue(c, i)));
   const r1 = n => String(Math.round(n * 10) / 10);
+  const statusLabel = s => L.status[s] || L.theme_status[s] || s;
 
   function scoreBuild(i) {
     const s = Metrics.liquidityScoreParts(i);
@@ -48,10 +58,28 @@
 
   function save() { root.Store.save(ctx.state); }
 
-  // ---------------- Filters and table ----------------
+  // ---------------- Themes grid ----------------
+  function renderThemeGrid() {
+    const themes = ctx.state.themes || [];
+    document.getElementById("th-grid").innerHTML = themes.length ? themes.map(t => {
+      const s = TM.stats(ctx.state, t);
+      const on = ui.sel && ui.sel.kind === "theme" && ui.sel.id === t.id;
+      return `<button type="button" class="theme-tile${on ? " selected" : ""}" data-theme="${esc(t.id)}" aria-pressed="${on}">
+        <span class="tt-head"><b>${esc(t.name)}</b> <span class="tag">${esc(L.theme_status[t.status] || t.status)}</span></span>
+        <span class="tt-thesis">${esc(t.thesis || "")}</span>
+        <span class="tt-stats">
+          <span><b>${s.count}</b> investments</span>
+          <span><b>$${esc(Fmt.thousands(s.check))}K</b> total check</span>
+          <span>Blended liquidity <b>${s.blended === null ? "n/a" : esc(s.blended.toFixed(0))}</b></span>
+          <span${s.flagged + s.invFlagged ? ' class="tt-flag"' : ""}>At risk / broken: theme <b>${s.flagged}</b> · investments <b>${s.invFlagged}</b></span>
+        </span></button>`;
+    }).join("") : `<p class="muted">No themes yet.</p>`;
+  }
+
+  // ---------------- Investment filters and table ----------------
   function renderFilters() {
     const chips = (group, keys, set, labels) => keys.map(k => {
-      const n = ctx.state.ideas.filter(i => i[group] === k).length;
+      const n = ctx.state.investments.filter(i => i[group] === k).length;
       return `<button type="button" class="chip" data-chip="${group}" data-value="${esc(k)}" aria-pressed="${set.has(k)}">${esc(labels[k])} <span class="chip-n">${n}</span></button>`;
     }).join("");
     const any = ui.status.size || ui.type.size;
@@ -62,7 +90,7 @@
   }
 
   function renderTable() {
-    let rows = ctx.state.ideas.filter(i => (!ui.status.size || ui.status.has(i.status)) && (!ui.type.size || ui.type.has(i.type)));
+    let rows = ctx.state.investments.filter(i => (!ui.status.size || ui.status.has(i.status)) && (!ui.type.size || ui.type.has(i.type)));
     const sc = COLS.find(c => c.key === ui.sort.key);
     if (sc) {
       const v = i => {
@@ -72,19 +100,20 @@
       };
       rows = rows.slice().sort((a, b) => (v(a) > v(b) ? 1 : v(a) < v(b) ? -1 : 0) * ui.sort.dir);
     }
+    const selId = ui.sel && ui.sel.kind === "investment" ? ui.sel.id : null;
     const head = COLS.map(c => {
       const active = ui.sort.key === c.key;
       const aria = active ? (ui.sort.dir > 0 ? "ascending" : "descending") : "none";
       return `<th class="${c.num ? "num " : ""}${c.cls || ""}" aria-sort="${aria}"><button type="button" class="sort" data-sort="${c.key}">${esc(c.label)}${active ? (ui.sort.dir > 0 ? " ▲" : " ▼") : ""}</button></th>`;
     }).join("");
-    const body = rows.map(i => `<tr class="idea-row${i.id === ui.selected ? " selected" : ""}" data-idea="${esc(i.id)}" tabindex="0" aria-selected="${i.id === ui.selected}">` +
+    const body = rows.map(i => `<tr class="idea-row${i.id === selId ? " selected" : ""}" data-inv="${esc(i.id)}" tabindex="0" aria-selected="${i.id === selId}">` +
       COLS.map(c => `<td class="${c.num ? "num " : ""}${c.cls || ""}">${esc(colText(c, i))}</td>`).join("") + "</tr>").join("");
-    const empty = rows.length ? "" : `<tr><td class="col-name" colspan="${COLS.length}">No ideas match these filters.</td></tr>`;
+    const empty = rows.length ? "" : `<tr><td class="col-name" colspan="${COLS.length}">No investments match these filters.</td></tr>`;
     document.getElementById("id-table").innerHTML = `<thead><tr>${head}</tr></thead><tbody>${body}${empty}</tbody>`;
   }
 
-  // ---------------- Card ----------------
-  const opt = (value, label, current) => `<option value="${esc(value)}"${value === current ? " selected" : ""}>${esc(label)}</option>`;
+  // ---------------- Card pieces (shared) ----------------
+  const opt = (value, label, cur) => `<option value="${esc(value)}"${value === cur ? " selected" : ""}>${esc(label)}</option>`;
   const field = (i, key, kind, label, extra) => {
     let v = i[key];
     if (kind === "k") v = blank(v) ? "" : +(v / 1000).toFixed(3);
@@ -106,25 +135,35 @@
       <button type="button" class="btn" data-list-add="${key}">Add</button></div>`;
   }
 
-  function renderCard() {
-    const box = document.getElementById("id-card");
-    const i = idea();
-    if (!i) {
-      box.innerHTML = `<p class="placeholder">Select an idea in the table to open its card.</p>`;
-      return;
-    }
+  function statusHeader(i, statuses, labels) {
     const p = ui.pending && ui.pending.id === i.id ? ui.pending : null;
-    const shownStatus = p ? p.to : i.status;
-    const funded = (Number(i.check_size) || 0) * (Number(i.funded_pct) || 0);
-    const assumeName = id => { const a = (i.assumptions || []).find(x => x.id === id); return a ? a.text : null; };
+    const shown = p ? p.to : i.status;
+    const select = `<label class="fld"><span>Status</span><select data-status-select>${statuses.map(s => opt(s, labels[s], shown)).join("")}</select></label>`;
+    const reason = p ? `<div class="reason" role="group" aria-label="Reason for status change">
+        <label for="id-reason">Reason for moving from ${esc(statusLabel(p.from))} to ${esc(statusLabel(p.to))} (required)</label>
+        <div class="add-line"><input type="text" id="id-reason" value="${esc(p.reason || "")}" placeholder="One line">
+        <button type="button" class="btn btn-primary" data-status-save>Save status</button>
+        <button type="button" class="btn" data-status-cancel>Cancel</button></div>
+        ${p.error ? `<p class="breach" role="alert">${esc(p.error)}</p>` : ""}</div>` : "";
+    return { select, reason };
+  }
 
-    const assumptions = (i.assumptions || []).map(a => `<li class="assume">
+  function assumptionsSection(i) {
+    const rows = (i.assumptions || []).map(a => `<li class="assume">
         <button type="button" class="pill pill-${a.status}" data-assume-cycle="${esc(a.id)}" title="Click to change: intact, at risk, broken">${esc(L.assumption[a.status])}</button>
         <input type="text" class="list-input" data-assume-text="${esc(a.id)}" value="${esc(a.text)}" aria-label="Assumption text">
         <span class="muted nowrap">Changed ${esc(a.changed || "")}</span>
         <button type="button" class="link danger" data-assume-del="${esc(a.id)}">Delete</button></li>`).join("");
+    return `<section class="card-sec"><h3>Assumptions</h3>
+        <p class="note">Click a status to cycle intact, at risk, broken.</p>
+        <ul class="edit-list">${rows || `<li class="muted">None yet.</li>`}</ul>
+        <div class="add-line"><input type="text" id="id-new-assume" placeholder="New assumption" aria-label="New assumption">
+          <button type="button" class="btn" data-assume-add>Add</button></div></section>`;
+  }
 
-    const signals = (i.signals || []).map((s, n) => ({ s, n }))
+  function signalsSection(i) {
+    const assumeName = id => { const a = (i.assumptions || []).find(x => x.id === id); return a ? a.text : null; };
+    const items = (i.signals || []).map((s, n) => ({ s, n }))
       .sort((a, b) => (a.s.date < b.s.date ? 1 : a.s.date > b.s.date ? -1 : b.n - a.n))
       .map(({ s }) => {
         if (s.kind === "price") {
@@ -142,45 +181,112 @@
             ${s.ai ? `<span class="ai-read"><span class="tag tag-ai">AI read</span> ${esc(s.ai.line)} <span class="muted">(${esc(s.ai.date)})</span></span>` : ""}</span>
             <span class="sig-actions">${check} <button type="button" class="link danger" data-note-del="${esc(s.id)}">Delete</button></span></li>`;
       }).join("");
+    return `<section class="card-sec"><h3>Signals</h3>
+        <ul class="signals">${items || `<li class="muted">No signals yet.</li>`}</ul>
+        <div class="note-form" role="group" aria-label="Add note">
+          <label class="fld"><span>Date</span><input type="date" id="id-note-date" value="${esc(today())}"></label>
+          <label class="fld grow"><span>Note</span><input type="text" id="id-note-text" placeholder="What happened"></label>
+          <label class="fld"><span>Assumption</span><select id="id-note-assume"><option value="">None</option>
+            ${(i.assumptions || []).map(a => `<option value="${esc(a.id)}">${esc(a.text.length > 50 ? a.text.slice(0, 50) + "…" : a.text)}</option>`).join("")}</select></label>
+          <button type="button" class="btn" data-note-add>Add note</button>
+        </div></section>`;
+  }
 
+  function logSection(i) {
     const log = (i.decision_log || []).map((d, n) => ({ d, n }))
       .sort((a, b) => (a.d.date < b.d.date ? 1 : a.d.date > b.d.date ? -1 : b.n - a.n))
-      .map(({ d }) => `<tr><td>${esc(d.date)}</td><td>${esc(d.from ? L.status[d.from] || d.from : "(new)")}</td>
-        <td>${esc(L.status[d.to] || d.to)}</td><td class="wrap">${esc(d.reason)}</td></tr>`).join("");
+      .map(({ d }) => `<tr><td>${esc(d.date)}</td><td>${esc(d.from ? statusLabel(d.from) : "(new)")}</td>
+        <td>${esc(statusLabel(d.to))}</td><td class="wrap">${esc(d.reason)}</td></tr>`).join("");
+    return `<section class="card-sec"><h3>Decision log</h3>
+        <div class="table-wrap"><table class="grid log"><thead><tr><th>Date</th><th>From</th><th>To</th><th>Reason</th></tr></thead>
+        <tbody>${log || `<tr><td colspan="4" class="muted">No entries yet.</td></tr>`}</tbody></table></div></section>`;
+  }
 
-    box.innerHTML = `
+  // ---------------- Theme card ----------------
+  function themeCard(t) {
+    const s = TM.stats(ctx.state, t);
+    const { select, reason } = statusHeader(t, THEME_STATUSES, L.theme_status);
+    const vc = (t.value_chain || []).map((v, n) => `<li class="vc-row">
+        <input type="text" class="list-input" data-vc="${n}" data-vc-key="segment" value="${esc(v.segment)}" aria-label="Value chain segment ${n + 1}">
+        <input type="text" class="list-input" data-vc="${n}" data-vc-key="who_captures_value" value="${esc(v.who_captures_value)}" placeholder="Who captures value" aria-label="Who captures value, segment ${n + 1}">
+        <button type="button" class="link danger" data-vc-del="${n}">Delete</button></li>`).join("");
+    const linked = TM.linked(ctx.state, t);
+    const mini = linked.map(i => `<tr class="idea-row" data-open-inv="${esc(i.id)}" tabindex="0">
+        <td class="col-name">${esc(i.name)}</td><td class="num">${esc(Fmt.thousands(i.check_size))}</td>
+        <td>${esc(L.status[i.status] || i.status)}</td><td class="num">${esc(Metrics.liquidityScore(i).toFixed(0))}</td></tr>`).join("");
+    const picks = ctx.state.investments.map(i => {
+      const other = i.theme_id && i.theme_id !== t.id ? themeName(i.theme_id) : "";
+      return `<label class="pick"><input type="checkbox" data-link-inv="${esc(i.id)}"${i.theme_id === t.id ? " checked" : ""}> ${esc(i.name)}${other ? ` <span class="muted">(now in ${esc(other)})</span>` : ""}</label>`;
+    }).join("");
+
+    return `
     <article class="idea-card" aria-labelledby="id-card-name">
-      <header class="card-head">
-        <div class="card-title">
-          <label class="sr-only" for="id-card-name">Idea name</label>
-          <input type="text" id="id-card-name" class="title-input" data-field="name" data-kind="text" value="${esc(i.name)}">
-          <div class="head-fields">
-            <label class="fld"><span>Type</span><select data-field="type" data-kind="text">${TYPES.map(t => opt(t, L.type[t], i.type)).join("")}</select></label>
-            <label class="fld"><span>Status</span><select data-status-select>${STATUSES.map(s => opt(s, L.status[s], shownStatus)).join("")}</select></label>
-            <div class="fld score"><span>Liquidity score</span><b id="id-score">${esc(Metrics.liquidityScore(i).toFixed(0))}</b> <span class="muted" id="id-score-build">${esc(scoreBuild(i))}</span></div>
-          </div>
-          ${p ? `<div class="reason" role="group" aria-label="Reason for status change">
-            <label for="id-reason">Reason for moving from ${esc(L.status[p.from])} to ${esc(L.status[p.to])} (required)</label>
-            <div class="add-line"><input type="text" id="id-reason" value="${esc(p.reason || "")}" placeholder="One line">
-            <button type="button" class="btn btn-primary" data-status-save>Save status</button>
-            <button type="button" class="btn" data-status-cancel>Cancel</button></div>
-            ${p.error ? `<p class="breach" role="alert">${esc(p.error)}</p>` : ""}</div>` : ""}
-          <div class="head-fields">
-            ${field(i, "next_step", "text", "Next step", ' class="wide"')}
-            ${field(i, "next_step_date", "date", "Next step date")}
-          </div>
+      <header class="card-head"><div class="card-title">
+        <label class="sr-only" for="id-card-name">Theme name</label>
+        <input type="text" id="id-card-name" class="title-input" data-field="name" data-kind="text" value="${esc(t.name)}">
+        <div class="head-fields">
+          ${select}
+          <div class="fld"><span>Linked investments</span><b>${s.count}</b></div>
+          <div class="fld"><span>Total check ($K)</span><b>${esc(Fmt.thousands(s.check))}</b></div>
+          <div class="fld score"><span>Blended liquidity score</span><b>${s.blended === null ? "n/a" : esc(s.blended.toFixed(0))}</b> <span class="muted">check-weighted</span></div>
+          <div class="fld"><span>At risk / broken</span><b>theme ${s.flagged} · investments ${s.invFlagged}</b></div>
         </div>
-      </header>
+        ${reason}
+      </div></header>
+
+      <section class="card-sec"><h3>Thesis</h3>
+        <textarea data-field="thesis" data-kind="text" rows="3" aria-label="Thesis">${esc(t.thesis || "")}</textarea></section>
+      <section class="card-sec"><h3>Why now</h3>
+        <textarea data-field="why_now" data-kind="text" rows="2" aria-label="Why now">${esc(t.why_now || "")}</textarea></section>
+
+      <section class="card-sec"><h3>Value chain</h3>
+        <ul class="edit-list">${vc || `<li class="muted">None yet.</li>`}</ul>
+        <div class="add-line"><input type="text" id="id-vc-seg" placeholder="Segment" aria-label="New segment">
+          <input type="text" id="id-vc-who" placeholder="Who captures value" aria-label="Who captures value">
+          <button type="button" class="btn" data-vc-add>Add</button></div></section>
+
+      ${assumptionsSection(t)}
+      <section class="card-sec"><h3>What would change my mind</h3>${editableList(t, "triggers", "Trigger")}</section>
+
+      <section class="card-sec"><h3>Linked investments</h3>
+        ${linked.length ? `<div class="table-wrap"><table class="grid mini"><thead><tr><th class="col-name">Investment</th><th class="num">Check ($K)</th><th>Status</th><th class="num">Liquidity score</th></tr></thead>
+          <tbody>${mini}</tbody></table></div>` : `<p class="muted">No investments linked yet.</p>`}
+        <p class="note">Pick investments for this theme. An investment belongs to one theme; ticking it here moves it.</p>
+        <div class="picks" role="group" aria-label="Linked investments">${picks}</div></section>
+
+      <section class="card-sec"><h3>Watch list: public</h3>${editableList(t, "watch_public", "Ticker")}</section>
+      <section class="card-sec"><h3>Watch list: private</h3>${editableList(t, "watch_private", "Company or asset")}</section>
+      <section class="card-sec"><h3>Contacts</h3><p class="note">Roles only, no names.</p>${editableList(t, "contacts", "Contact role")}</section>
+      ${signalsSection(t)}
+      ${logSection(t)}
+    </article>`;
+  }
+
+  // ---------------- Investment card ----------------
+  function investmentCard(i) {
+    const { select, reason } = statusHeader(i, STATUSES, L.status);
+    const funded = (Number(i.check_size) || 0) * (Number(i.funded_pct) || 0);
+    return `
+    <article class="idea-card" aria-labelledby="id-card-name">
+      <header class="card-head"><div class="card-title">
+        <label class="sr-only" for="id-card-name">Investment name</label>
+        <input type="text" id="id-card-name" class="title-input" data-field="name" data-kind="text" value="${esc(i.name)}">
+        <div class="head-fields">
+          <label class="fld"><span>Type</span><select data-field="type" data-kind="text">${TYPES.map(t => opt(t, L.type[t], i.type)).join("")}</select></label>
+          ${select}
+          <label class="fld"><span>Theme</span><select data-theme-select><option value="">None</option>${(ctx.state.themes || []).map(t => opt(t.id, t.name, i.theme_id || "")).join("")}</select></label>
+          <div class="fld score"><span>Liquidity score</span><b id="id-score">${esc(Metrics.liquidityScore(i).toFixed(0))}</b> <span class="muted" id="id-score-build">${esc(scoreBuild(i))}</span></div>
+        </div>
+        ${reason}
+        <div class="head-fields">
+          ${field(i, "next_step", "text", "Next step", ' class="wide"')}
+          ${field(i, "next_step_date", "date", "Next step date")}
+        </div>
+      </div></header>
 
       <section class="card-sec"><h3>Thesis</h3>
         <textarea data-field="thesis" data-kind="text" rows="3" aria-label="Thesis">${esc(i.thesis || "")}</textarea></section>
-
-      <section class="card-sec"><h3>Assumptions</h3>
-        <p class="note">Click a status to cycle intact, at risk, broken.</p>
-        <ul class="edit-list">${assumptions || `<li class="muted">None yet.</li>`}</ul>
-        <div class="add-line"><input type="text" id="id-new-assume" placeholder="New assumption" aria-label="New assumption">
-          <button type="button" class="btn" data-assume-add>Add</button></div></section>
-
+      ${assumptionsSection(i)}
       <section class="card-sec"><h3>What would change my mind</h3>${editableList(i, "triggers", "Trigger")}</section>
 
       <section class="card-sec"><h3>Terms</h3>
@@ -204,23 +310,25 @@
         </div></section>
 
       <section class="card-sec"><h3>Contacts</h3><p class="note">Roles only, no names.</p>${editableList(i, "contacts", "Contact role")}</section>
-
-      <section class="card-sec"><h3>Signals</h3>
-        <ul class="signals">${signals || `<li class="muted">No signals yet.</li>`}</ul>
-        <div class="note-form" role="group" aria-label="Add note">
-          <label class="fld"><span>Date</span><input type="date" id="id-note-date" value="${esc(today())}"></label>
-          <label class="fld grow"><span>Note</span><input type="text" id="id-note-text" placeholder="What happened"></label>
-          <label class="fld"><span>Assumption</span><select id="id-note-assume"><option value="">None</option>
-            ${(i.assumptions || []).map(a => `<option value="${esc(a.id)}">${esc(a.text.length > 50 ? a.text.slice(0, 50) + "…" : a.text)}</option>`).join("")}</select></label>
-          <button type="button" class="btn" data-note-add>Add note</button>
-        </div></section>
-
+      ${signalsSection(i)}
       <section class="card-sec"><h3>Source-document flags</h3>${editableList(i, "doc_flags", "Document flag", { label: "Doc check", readOnly: true })}</section>
-
-      <section class="card-sec"><h3>Decision log</h3>
-        <div class="table-wrap"><table class="grid log"><thead><tr><th>Date</th><th>From</th><th>To</th><th>Reason</th></tr></thead>
-        <tbody>${log || `<tr><td colspan="4" class="muted">No entries yet.</td></tr>`}</tbody></table></div></section>
+      ${logSection(i)}
     </article>`;
+  }
+
+  function renderCard() {
+    const cur = current();
+    const thBox = document.getElementById("th-card"), invBox = document.getElementById("id-card");
+    thBox.innerHTML = cur && isTheme() ? themeCard(cur) : "";
+    invBox.innerHTML = cur && !isTheme() ? investmentCard(cur)
+      : `<p class="placeholder">Select an investment in the table to open its card.</p>`;
+  }
+
+  function renderAll() {
+    renderThemeGrid();
+    renderFilters();
+    renderTable();
+    renderCard();
   }
 
   // ---------------- Edits ----------------
@@ -237,29 +345,30 @@
     return n;
   }
 
-  // Field edits save and refresh the table and score without rebuilding the card, so focus stays put.
+  // Field edits save and refresh the lists without rebuilding the card, so focus stays put.
   function onFieldChange(el) {
-    const i = idea();
+    const i = current();
     if (!i) return;
     const v = parseField(el.dataset.kind, el.value);
     if (v === undefined) { el.value = blank(i[el.dataset.field]) ? "" : i[el.dataset.field]; return; }
     if (el.dataset.field === "name" && !v) { el.value = i.name; return; }
     i[el.dataset.field] = v;
     save();
+    renderThemeGrid();
     renderFilters();
     renderTable();
     const score = document.getElementById("id-score");
-    if (score) {
+    if (score && !isTheme()) {
       score.textContent = Metrics.liquidityScore(i).toFixed(0);
       document.getElementById("id-score-build").textContent = scoreBuild(i);
     }
-    if (["check_size", "funded_pct", "asset_class", "type"].includes(el.dataset.field)) renderCard();
+    if (!isTheme() && ["check_size", "funded_pct", "asset_class", "type"].includes(el.dataset.field)) renderCard();
   }
 
   function commit() { save(); ctx.onChange(false); }
 
   function saveStatus() {
-    const i = idea(), p = ui.pending;
+    const i = current(), p = ui.pending;
     if (!i || !p) return;
     const reason = (document.getElementById("id-reason").value || "").trim();
     if (!reason) {
@@ -275,6 +384,15 @@
     commit();
   }
 
+  function select(kind, id) {
+    const same = ui.sel && ui.sel.kind === kind && ui.sel.id === id;
+    if (!same) ui.pending = null;
+    ui.sel = { kind, id };
+    ctx.onChange(false);
+    const box = document.getElementById(kind === "theme" ? "th-card" : "id-card");
+    if (box && box.scrollIntoView) box.scrollIntoView({ block: "start" });
+  }
+
   function bind() {
     if (ui.bound) return;
     ui.bound = true;
@@ -282,6 +400,7 @@
 
     panel.addEventListener("click", e => {
       const t = e.target;
+      if (t.closest("#id-intake")) return; // the intake module handles its own clicks
       const chip = t.closest("[data-chip]");
       if (chip) {
         const set = ui[chip.dataset.chip];
@@ -295,10 +414,14 @@
         ui.sort = ui.sort.key === key ? { key, dir: -ui.sort.dir } : { key, dir: 1 };
         return ctx.onChange(false);
       }
-      const row = t.closest("tr[data-idea]");
-      if (row) return selectIdea(row.dataset.idea);
+      const tile = t.closest("[data-theme]");
+      if (tile) return select("theme", tile.dataset.theme);
+      const row = t.closest("tr[data-inv]");
+      if (row) return select("investment", row.dataset.inv);
+      const open = t.closest("tr[data-open-inv]");
+      if (open) return select("investment", open.dataset.openInv);
 
-      const i = idea();
+      const i = current();
       if (!i) return;
       if (t.closest("[data-status-save]")) return saveStatus();
       if (t.closest("[data-status-cancel]")) { ui.pending = null; return ctx.onChange(false); }
@@ -329,20 +452,30 @@
 
       const ldel = t.closest("[data-list-del]");
       if (ldel) {
-        const key = ldel.dataset.listDel;
-        i[key].splice(Number(ldel.dataset.index), 1);
+        i[ldel.dataset.listDel].splice(Number(ldel.dataset.index), 1);
         return commit();
       }
       const ladd = t.closest("[data-list-add]");
       if (ladd) {
         const key = ladd.dataset.listAdd;
         const inp = panel.querySelector(`[data-list-new="${key}"]`);
-        const text = inp.value.trim();
+        let text = inp.value.trim();
         if (!text) return inp.focus();
+        if (key === "watch_public") text = text.toUpperCase();
         i[key] = i[key] || [];
         i[key].push(text);
         return commit();
       }
+
+      if (t.closest("[data-vc-add]")) {
+        const seg = document.getElementById("id-vc-seg").value.trim();
+        if (!seg) return document.getElementById("id-vc-seg").focus();
+        i.value_chain = i.value_chain || [];
+        i.value_chain.push({ segment: seg, who_captures_value: document.getElementById("id-vc-who").value.trim() });
+        return commit();
+      }
+      const vdel = t.closest("[data-vc-del]");
+      if (vdel) { i.value_chain.splice(Number(vdel.dataset.vcDel), 1); return commit(); }
 
       if (t.closest("[data-note-add]")) {
         const text = document.getElementById("id-note-text").value.trim();
@@ -363,7 +496,8 @@
 
     panel.addEventListener("change", e => {
       const el = e.target;
-      const i = idea();
+      if (el.closest("#id-intake")) return;
+      const i = current();
       if (!i) return;
       if (el.matches("[data-status-select]")) {
         ui.pending = el.value === i.status ? null : { id: i.id, from: i.status, to: el.value, reason: "" };
@@ -372,30 +506,41 @@
         if (r) r.focus();
         return;
       }
+      if (el.matches("[data-theme-select]")) { TM.setTheme(ctx.state, i.id, el.value || null); return commit(); }
+      if (el.matches("[data-link-inv]")) { TM.setTheme(ctx.state, el.dataset.linkInv, el.checked ? i.id : null); return commit(); }
       if (el.matches("[data-field]")) return onFieldChange(el);
+      if (el.matches("[data-vc]")) {
+        const row = i.value_chain[Number(el.dataset.vc)];
+        if (row) { row[el.dataset.vcKey] = el.value.trim(); save(); }
+        return;
+      }
       if (el.matches("[data-assume-text]")) {
         const a = i.assumptions.find(x => x.id === el.dataset.assumeText);
         const text = el.value.trim();
-        if (a && text && text !== a.text) { a.text = text; a.changed = today(); save(); }
+        if (a && text && text !== a.text) { a.text = text; a.changed = today(); save(); renderThemeGrid(); }
         else if (a) el.value = a.text;
         return;
       }
       if (el.matches("[data-list]")) {
-        const text = el.value.trim();
-        if (text) { i[el.dataset.list][Number(el.dataset.index)] = text; save(); }
+        let text = el.value.trim();
+        if (el.dataset.list === "watch_public") text = text.toUpperCase();
+        if (text) { i[el.dataset.list][Number(el.dataset.index)] = text; el.value = text; save(); }
         else el.value = i[el.dataset.list][Number(el.dataset.index)];
       }
     });
 
     panel.addEventListener("keydown", e => {
       const el = e.target;
-      if (e.key === "Enter" && el.matches && el.matches("tr[data-idea]")) { e.preventDefault(); return selectIdea(el.dataset.idea); }
-      if (e.key !== "Enter" || !el.matches) return;
+      if (!el.matches || el.closest("#id-intake")) return;
+      if (e.key === "Enter" && el.matches("tr[data-inv]")) { e.preventDefault(); return select("investment", el.dataset.inv); }
+      if (e.key === "Enter" && el.matches("tr[data-open-inv]")) { e.preventDefault(); return select("investment", el.dataset.openInv); }
+      if (e.key !== "Enter") return;
       if (el.id === "id-reason") { e.preventDefault(); if (ui.pending) ui.pending.reason = el.value; return saveStatus(); }
       if (el.id === "id-new-assume") { e.preventDefault(); return panel.querySelector("[data-assume-add]").click(); }
       if (el.id === "id-note-text") { e.preventDefault(); return panel.querySelector("[data-note-add]").click(); }
+      if (el.id === "id-vc-seg" || el.id === "id-vc-who") { e.preventDefault(); return panel.querySelector("[data-vc-add]").click(); }
       if (el.matches("[data-list-new]")) { e.preventDefault(); return panel.querySelector(`[data-list-add="${el.dataset.listNew}"]`).click(); }
-      if (el.matches("input[data-field], input[data-list], input[data-assume-text]")) { e.preventDefault(); el.blur(); }
+      if (el.matches("input[data-field], input[data-list], input[data-assume-text], input[data-vc]")) { e.preventDefault(); el.blur(); }
     });
 
     panel.addEventListener("input", e => {
@@ -419,30 +564,20 @@
       s.ai = { line: res.line, effect: res.effect, assumption_id: res.assumption_id, date: today() };
       save();
     }
-    if (ctx.state.ideas.includes(i)) ctx.onChange(false);
-  }
-
-  function selectIdea(id) {
-    if (ui.selected !== id) ui.pending = null;
-    ui.selected = id;
     ctx.onChange(false);
-    const card = document.getElementById("id-card");
-    if (card && card.scrollIntoView) card.scrollIntoView({ block: "start" });
   }
 
   function render(state, onChange) {
     if (ctx && ctx.state !== state) ui.pending = null; // state replaced (reset): drop any unsaved status change
     ctx = { state, onChange };
     bind();
-    if (ui.selected && !state.ideas.some(i => i.id === ui.selected)) { ui.selected = null; ui.pending = null; }
-    root.Intake.render(state, newIdea => {
-      ctx.state.ideas.push(newIdea);
+    if (ui.sel && !current()) { ui.sel = null; ui.pending = null; }
+    root.Intake.render(state, inv => {
+      ctx.state.investments.push(inv);
       save();
-      selectIdea(newIdea.id);
+      select("investment", inv.id);
     });
-    renderFilters();
-    renderTable();
-    renderCard();
+    renderAll();
   }
 
   root.Ideas = { render };
