@@ -7,7 +7,7 @@
 // Public equity prices: Yahoo Finance regular-market close, 2026-09-28.
 
 window.SEED = {
-  version: 1,
+  version: 2,
   as_of: "2026-09-28",
   sample_data: true,
 
@@ -21,9 +21,10 @@ window.SEED = {
       largest_sector_pct: 0.25,
       dry_powder_floor: 5000000
     },
-    call_horizon_years: 3,
-    // Sectors ignored when finding the largest sector (not a concentration risk).
-    sector_exclude: ["Cash", "Diversified"]
+    call_horizon_years: 3,   // straight-line default spreads unfunded over this many years
+    ladder_years: 5,
+    // Sectors ignored by the largest-sector limit (not a single-sector exposure). Cash and T-bills are always excluded.
+    sector_exclude: ["Multi-sector (ETF/funds)"]
   },
 
   holdings: [
@@ -59,7 +60,7 @@ window.SEED = {
 
     // ---- Liquid credit (~$7M). Bond quantity = face; price per 100 of face. Bond prices are sample prices. ----
     { id: "h-hyg", asset_class: "credit", name: "iShares iBoxx $ High Yield Corp Bond ETF", ticker_or_id: "HYG", security_type: "etf",
-      sector: "Diversified", price_or_mark: 77.54, quantity: 30000, market_value: null, cost: 2370000,
+      sector: "Multi-sector (ETF/funds)", price_or_mark: 77.54, quantity: 30000, market_value: null, cost: 2370000,
       commitment: null, unfunded: 0, call_schedule: null, liquidity_bucket: "liquid_now", liquidity_date: "2026-09-28",
       mark_source: "Yahoo Finance close", mark_date: "2026-09-28" },
     { id: "h-hyb-a", asset_class: "credit", name: "HY bond A (industrials)", ticker_or_id: "HYB-A", security_type: "bond",
@@ -77,7 +78,7 @@ window.SEED = {
 
     // ---- Private funds (~$10M NAV, $4.5M unfunded). call_schedule = share of current unfunded called in years 1..3; null = straight-line. ----
     { id: "h-fund-a", asset_class: "private_fund", name: "Buyout Fund A (2021 vintage)", ticker_or_id: "PF-A", security_type: "lp_interest",
-      sector: "Diversified", price_or_mark: 2450000, quantity: null, market_value: null, cost: 2100000,
+      sector: "Multi-sector (ETF/funds)", price_or_mark: 2450000, quantity: null, market_value: null, cost: 2100000,
       commitment: 3000000, unfunded: 750000, call_schedule: [0.5, 0.5, 0], liquidity_bucket: "3y_plus", liquidity_date: "2030-06-30",
       mark_source: "GP statement Q2 2026", mark_date: "2026-06-30" },
     { id: "h-fund-b", asset_class: "private_fund", name: "Growth Equity Fund B (2023 vintage)", ticker_or_id: "PF-B", security_type: "lp_interest",
@@ -85,7 +86,7 @@ window.SEED = {
       commitment: 4000000, unfunded: 1750000, call_schedule: null, liquidity_bucket: "3y_plus", liquidity_date: "2032-12-31",
       mark_source: "GP statement Q2 2026", mark_date: "2026-06-30" },
     { id: "h-fund-c", asset_class: "private_fund", name: "Private Credit Fund C (2022 vintage)", ticker_or_id: "PF-C", security_type: "lp_interest",
-      sector: "Diversified", price_or_mark: 2450000, quantity: null, market_value: null, cost: 2500000,
+      sector: "Multi-sector (ETF/funds)", price_or_mark: 2450000, quantity: null, market_value: null, cost: 2500000,
       commitment: 3000000, unfunded: 500000, call_schedule: [1, 0, 0], liquidity_bucket: "1_3y", liquidity_date: "2028-06-30",
       mark_source: "GP statement Q2 2026", mark_date: "2026-06-30" },
     { id: "h-fund-d", asset_class: "private_fund", name: "Venture Fund D (2024 vintage)", ticker_or_id: "PF-D", security_type: "lp_interest",
