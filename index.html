@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sandune Monitor</title>
+<style>
+  body { font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; color: #111; background: #fff; margin: 16px; }
+  h1 { font-size: 16px; margin: 0 0 4px; }
+  h2 { font-size: 13px; margin: 20px 0 6px; }
+  .sample { color: #b42318; font-weight: 600; }
+  table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { border-bottom: 1px solid #e5e5e5; padding: 3px 10px 3px 0; text-align: left; vertical-align: top; }
+  td.num, th.num { text-align: right; }
+  .breach { color: #b42318; font-weight: 600; }
+  .note { color: #555; }
+</style>
+</head>
+<body>
+<h1>Sandune Monitor: Stage 1 metric check</h1>
+<p class="sample">SAMPLE DATA. All holdings, ideas and figures are illustrative.</p>
+<p class="note" id="asof"></p>
+
+<h2>Metrics</h2>
+<table id="metrics"></table>
+
+<h2>By asset class</h2>
+<table id="classes"></table>
+
+<h2>Dry powder</h2>
+<table id="dry"></table>
+
+<h2>Capital calls and liquidity ladder</h2>
+<table id="ladder"></table>
+
+<h2>Ideas: liquidity score</h2>
+<table id="ideas"></table>
+
+<script src="data/seed.js"></script>
+<script src="js/metrics.js"></script>
+<script>
+(function () {
+  "use strict";
+  const seed = window.SEED;
+  const s = seed.settings;
+  const m = Metrics.summary(seed.holdings, s, seed.as_of);
+
+  const M = v => (v / 1e6).toFixed(2);
+  const P = v => (v * 100).toFixed(1) + "%";
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const row = cells => "<tr>" + cells.map(c =>
+    typeof c === "object" ? `<td class="${c.cls || ""}">${c.html}</td>` : `<td>${esc(c)}</td>`).join("") + "</tr>";
+  const num = (v, cls) => ({ html: esc(v), cls: "num " + (cls || "") });
+  const head = cols => "<tr>" + cols.map(c => `<th class="${c.num ? "num" : ""}">${esc(c.t)}</th>`).join("") + "</tr>";
+  const flag = breached => breached ? { html: "Breach", cls: "breach" } : "OK";
+
+  document.getElementById("asof").textContent =
+    `As of ${seed.as_of}. $M unless noted. Public prices: Yahoo Finance close ${seed.as_of}.`;
+
+  const lp = m.largest_position, ls = m.largest_sector, il = m.illiquid, dp = m.dry_powder;
+  document.getElementById("metrics").innerHTML =
+    head([{ t: "Metric" }, { t: "Value", num: true }, { t: "Limit", num: true }, { t: "Status" }]) +
+    row(["NAV", num(M(m.nav)), "", ""]) +
+    row(["Cash and T-bills", num(M(m.cash_and_bills)), "", ""]) +
+    row(["Unfunded commitments", num(M(m.unfunded)), "", ""]) +
+    row(["Dry powder", num(M(dp.total)), num(M(s.limits.dry_powder_floor) + " floor"), flag(dp.total < s.limits.dry_powder_floor)]) +
+    row(["Illiquid %", num(P(il.pct)), "", ""]) +
+    row(["Illiquid % incl. unfunded", num(P(il.pct_incl_unfunded)), num(P(s.limits.illiquid_incl_unfunded_pct)),
+         flag(il.pct_incl_unfunded > s.limits.illiquid_incl_unfunded_pct)]) +
+    row([`Largest position (${lp.holding.name}, excl. cash)`, num(`${M(lp.value)} / ${P(lp.pct)}`),
+         num(P(s.limits.single_position_pct)), flag(lp.pct > s.limits.single_position_pct)]) +
+    row([`Largest sector (${ls.sector}, excl. ${s.sector_exclude.join(", ")})`, num(`${M(ls.value)} / ${P(ls.pct)}`),
+         num(P(s.limits.largest_sector_pct)), flag(ls.pct > s.limits.largest_sector_pct)]);
+
+  const labels = { public_equity: "Public equity", credit: "Liquid credit", private_fund: "Private funds",
+                   direct: "Directs / co-invests", real_estate: "Real estate", cash: "Cash and T-bills" };
+  document.getElementById("classes").innerHTML =
+    head([{ t: "Asset class" }, { t: "Value", num: true }, { t: "% NAV", num: true }]) +
+    Object.entries(m.by_asset_class).map(([k, v]) => row([labels[k] || k, num(M(v)), num(P(v / m.nav))])).join("") +
+    row([{ html: "<b>Total</b>" }, num(M(m.nav)), num(P(1))]);
+
+  document.getElementById("dry").innerHTML =
+    head([{ t: "Step" }, { t: "Value", num: true }, { t: "Haircut", num: true }, { t: "Counted", num: true }]) +
+    row(["Cash balance", num(M(dp.cash)), num("n/a"), num(M(dp.cash))]) +
+    dp.lines.map(l => row([`+ Liquid ${l.key} (${l.count})`, num(M(l.value)), num(P(l.haircut)), num(M(l.counted))])).join("") +
+    row(["- Unfunded commitments", "", "", num("-" + M(dp.unfunded))]) +
+    row(["- Reserve", "", "", num("-" + M(dp.reserve))]) +
+    row([{ html: "<b>Dry powder</b>" }, "", "", num(M(dp.total))]);
+
+  document.getElementById("ladder").innerHTML =
+    head([{ t: "Year" }, { t: "Through" }, { t: "Calls in year", num: true }, { t: "Cash + T-bills", num: true },
+          { t: "Other value liquid by date", num: true }, { t: "Cum. calls", num: true }, { t: "Ladder", num: true }]) +
+    m.ladder.map((l, i) => row([String(l.year), l.through, num(M(m.capital_calls[i])), num(M(l.cash)),
+                                num(M(l.available)), num(M(l.cumulative_calls)), num(M(l.net))])).join("");
+
+  document.getElementById("ideas").innerHTML =
+    head([{ t: "Idea" }, { t: "Type" }, { t: "Status" }, { t: "Check", num: true }, { t: "Funded", num: true },
+          { t: "Hold (mo)", num: true }, { t: "To 50% back (mo)", num: true }, { t: "Interim cash" }, { t: "Liquidity score", num: true }]) +
+    seed.ideas.map(i => row([i.name, i.type, i.status, num(M(i.check_size)), num(M(i.check_size * i.funded_pct)),
+                             num(i.hold_months ?? "n/a"), num(i.months_to_50pct_back ?? "n/a"),
+                             i.interim_cash ? "Yes" : "No", num(Metrics.liquidityScore(i).toFixed(0))])).join("");
+})();
+</script>
+</body>
+</html>
