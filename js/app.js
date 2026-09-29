@@ -52,6 +52,28 @@
     render();
   });
 
+  // Price source toggle. Quotes arrive asynchronously; if the viewer is typing in a field,
+  // the re-render waits until they leave it so their edit isn't wiped.
+  function paintPriceToggle() {
+    document.querySelectorAll("[data-price-mode]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.priceMode === root.Prices.mode())));
+    document.getElementById("price-status").textContent = root.Prices.statusText();
+  }
+  function renderWhenIdle() {
+    const el = document.activeElement;
+    if (el && el.closest && el.closest("main") && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) {
+      el.addEventListener("blur", () => setTimeout(render, 0), { once: true });
+    } else {
+      render();
+    }
+  }
+  root.Prices.onUpdate(() => { paintPriceToggle(); renderWhenIdle(); });
+  document.querySelector(".price-toggle").addEventListener("click", e => {
+    const b = e.target.closest("[data-price-mode]");
+    if (b) root.Prices.setMode(b.dataset.priceMode, state);
+  });
+  root.Prices.init(state);
+  paintPriceToggle();
+
   let start = "portfolio";
   try { start = root.localStorage.getItem("sandune-monitor.tab") || start; } catch (e) { /* ignore */ }
   showTab(TABS.includes(start) ? start : "portfolio");

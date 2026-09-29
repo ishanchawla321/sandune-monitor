@@ -66,7 +66,8 @@
   // Returns { holdings, trades, warnings }. "Today" is the book's as-of date so ladder years line up.
   function apply(state, selections) {
     const asOf = state.as_of;
-    const holdings = clone(state.holdings);
+    // Live prices (if any) are baked into the working copy so sales happen at the displayed price.
+    const holdings = clone(state.holdings).map(h => Metrics.effective(h));
     const trades = [], warnings = [];
     let cash = holdings.find(h => h.security_type === "cash");
     if (!cash) {

@@ -15,9 +15,19 @@
            (h.asset_class === "public_equity" && h.security_type !== "basket");
   }
 
+  // Optional price overlay (live quotes). It returns fields to override on a holding, or null.
+  // Stored holdings are never changed by it, so switching the overlay off restores seed prices exactly.
+  let overlay = null;
+  function setPriceOverlay(fn) { overlay = fn || null; }
+  function effective(h) {
+    const o = overlay && overlay(h);
+    return o ? Object.assign({}, h, o) : h;
+  }
+
   // public equity and ETFs = price x shares; bonds and T-bills = price x face / 100;
   // funds, privates, real estate and cash = mark / balance.
-  function marketValue(h) {
+  function marketValue(holding) {
+    const h = effective(holding);
     const p = Number(h.price_or_mark) || 0;
     const q = Number(h.quantity) || 0;
     if (h.security_type === "bond" || h.security_type === "t_bill") return p * q / 100;
@@ -26,7 +36,7 @@
   }
 
   function withValues(holdings) {
-    return holdings.map(h => Object.assign({}, h, { market_value: marketValue(h) }));
+    return holdings.map(h => Object.assign({}, effective(h), { market_value: marketValue(h) }));
   }
 
   const sum = (arr, f) => arr.reduce((s, x) => s + f(x), 0);
@@ -166,7 +176,7 @@
     };
   }
 
-  const Metrics = { isPriced, marketValue, withValues, nav, cashBalance, cashAndBills, unfundedTotal,
+  const Metrics = { isPriced, setPriceOverlay, effective, marketValue, withValues, nav, cashBalance, cashAndBills, unfundedTotal,
                     byAssetClass, bySector, haircutFor, dryPowder, illiquid, largestPosition, largestSector,
                     capitalCalls, ladder, liquidityScoreParts, liquidityScore, summary };
   if (typeof module !== "undefined" && module.exports) module.exports = Metrics;

@@ -10,7 +10,15 @@
 <header class="app-header">
   <div class="brand-row">
     <h1>Sandune Monitor</h1>
-    <button type="button" class="btn" id="reset">Reset to sample data</button>
+    <div class="header-tools">
+      <div class="price-toggle" role="group" aria-label="Price source">
+        <span class="muted">Prices:</span>
+        <button type="button" class="seg" data-price-mode="live" aria-pressed="true">Live</button>
+        <button type="button" class="seg" data-price-mode="seed" aria-pressed="false">Seed (9/28)</button>
+        <span class="price-status muted" id="price-status" role="status"></span>
+      </div>
+      <button type="button" class="btn" id="reset">Reset to sample data</button>
+    </div>
   </div>
   <p class="banner" role="note">Sample data. All holdings, ideas and figures are illustrative.</p>
   <nav class="tabs" role="tablist" aria-label="Sections">
@@ -59,6 +67,7 @@
 
   <section id="tab-ideas" role="tabpanel" aria-labelledby="tabbtn-ideas" hidden>
     <p class="asof">Pipeline ideas. Figures are sample data. Click a row to open its card; edits save in this browser.</p>
+    <div id="id-intake"></div>
     <div class="filters" id="id-filters"></div>
     <div class="table-wrap">
       <table class="grid ideas" id="id-table"></table>
@@ -110,7 +119,11 @@
 <script src="js/metrics.js"></script>
 <script src="js/format.js"></script>
 <script src="js/store.js"></script>
+<script src="js/api.js"></script>
+<script src="js/prices.js"></script>
 <script src="js/portfolio.js"></script>
+<script src="samples/sample-om-extracted.js"></script>
+<script src="js/intake.js"></script>
 <script src="js/ideas.js"></script>
 <script src="js/proforma-model.js"></script>
 <script src="js/proforma.js"></script>

@@ -33,3 +33,8 @@ Reserve $2.0M. Illiquid incl. unfunded 50%. Single position 5%. Largest sector 2
 
 ## Stages
 1 data + seed, 2 Portfolio, 3 Ideas, 4 Pro Forma, 5 live prices + document extraction, 6 polish and mobile.
+
+## Decisions
+Settled choices. Do not change these without the owner's say-so.
+- Model: keep `claude-sonnet-5` (set in api/_lib.js). Do not switch to `claude-sonnet-5-5` or any other model. To be revisited when the Anthropic key is added.
+- /api/extract timeout: keep `maxDuration: 60` in vercel.json. This is our choice, not a plan limit: Vercel Hobby functions can run up to 300 seconds. vercel.json is strict JSON and can't hold comments, so the reasoning lives here.

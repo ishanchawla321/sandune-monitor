@@ -126,12 +126,22 @@
 
     const signals = (i.signals || []).map((s, n) => ({ s, n }))
       .sort((a, b) => (a.s.date < b.s.date ? 1 : a.s.date > b.s.date ? -1 : b.n - a.n))
-      .map(({ s }) => s.kind === "price"
-        ? `<li><span class="sig-date">${esc(s.date)}</span><span class="sig-body"><b>${esc(s.ticker)}</b> ${esc(Fmt.number(s.price, s.price < 10 ? 3 : 2))}
-            <span class="tag">Price, as of ${esc(s.date)}</span> <span class="muted">${esc(s.source || "")}. Static seed price; live prices arrive in Stage 5.</span></span></li>`
-        : `<li><span class="sig-date">${esc(s.date)}</span><span class="sig-body">${esc(s.text)}
-            <span class="tag">${s.assumption_id ? (assumeName(s.assumption_id) ? "Assumption: " + esc(assumeName(s.assumption_id)) : "Tagged assumption was deleted") : "Untagged"}</span></span>
-            <button type="button" class="link danger" data-note-del="${esc(s.id)}">Delete</button></li>`).join("");
+      .map(({ s }) => {
+        if (s.kind === "price") {
+          const live = root.Prices && root.Prices.quote(s.ticker);
+          const px = live ? live.price : s.price;
+          return `<li><span class="sig-date">${esc(live ? live.when.slice(0, 10) : s.date)}</span><span class="sig-body"><b>${esc(s.ticker)}</b> ${esc(Fmt.number(px, px < 10 ? 3 : 2))}
+            <span class="tag">${live ? `Live · Finnhub, ${esc(live.when)}` : `Cached, as of ${esc(s.date)}`}</span>${live ? ` <span class="muted">Seed ${esc(Fmt.number(s.price, s.price < 10 ? 3 : 2))} on ${esc(s.date)}.</span>` : ""}</span></li>`;
+        }
+        const busy = ui.assessing === s.id;
+        const check = root.Api.available
+          ? `<button type="button" class="link" data-assess="${esc(s.id)}"${busy ? " disabled" : ""}>${busy ? "Checking…" : "Check thesis"}</button>`
+          : `<button type="button" class="link" disabled title="Available on the hosted site; needs the /api functions.">Check thesis</button>`;
+        return `<li><span class="sig-date">${esc(s.date)}</span><span class="sig-body">${esc(s.text)}
+            <span class="tag">${s.assumption_id ? (assumeName(s.assumption_id) ? "Assumption: " + esc(assumeName(s.assumption_id)) : "Tagged assumption was deleted") : "Untagged"}</span>
+            ${s.ai ? `<span class="ai-read"><span class="tag tag-ai">AI read</span> ${esc(s.ai.line)} <span class="muted">(${esc(s.ai.date)})</span></span>` : ""}</span>
+            <span class="sig-actions">${check} <button type="button" class="link danger" data-note-del="${esc(s.id)}">Delete</button></span></li>`;
+      }).join("");
 
     const log = (i.decision_log || []).map((d, n) => ({ d, n }))
       .sort((a, b) => (a.d.date < b.d.date ? 1 : a.d.date > b.d.date ? -1 : b.n - a.n))
@@ -347,6 +357,8 @@
         i.signals = i.signals.filter(s => s.id !== ndel.dataset.noteDel);
         return commit();
       }
+      const chk = t.closest("[data-assess]");
+      if (chk && !ui.assessing) return checkThesis(i, chk.dataset.assess);
     });
 
     panel.addEventListener("change", e => {
@@ -391,6 +403,25 @@
     });
   }
 
+  // "Does this change the thesis?" One short AI read stored under the note. Fails silently.
+  async function checkThesis(i, signalId) {
+    const s = (i.signals || []).find(x => x.id === signalId);
+    if (!s) return;
+    ui.assessing = s.id;
+    renderCard();
+    const res = await root.Api.assess({
+      thesis: i.thesis || "",
+      assumptions: (i.assumptions || []).map(a => ({ id: a.id, text: a.text })),
+      note: s.text
+    });
+    ui.assessing = null;
+    if (res && res.ok && res.line) {
+      s.ai = { line: res.line, effect: res.effect, assumption_id: res.assumption_id, date: today() };
+      save();
+    }
+    if (ctx.state.ideas.includes(i)) ctx.onChange(false);
+  }
+
   function selectIdea(id) {
     if (ui.selected !== id) ui.pending = null;
     ui.selected = id;
@@ -404,6 +435,11 @@
     ctx = { state, onChange };
     bind();
     if (ui.selected && !state.ideas.some(i => i.id === ui.selected)) { ui.selected = null; ui.pending = null; }
+    root.Intake.render(state, newIdea => {
+      ctx.state.ideas.push(newIdea);
+      save();
+      selectIdea(newIdea.id);
+    });
     renderFilters();
     renderTable();
     renderCard();
