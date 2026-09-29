@@ -8,16 +8,16 @@
   const BUCKETS = ["liquid_now", "1_3y", "3y_plus"];
   const LIQUID_CLASSES = ["public_equity", "credit", "cash"];
 
-  const ACCENT = "#1f3a5f", MUTED = "#a3adb8", GRID = "#e5e7eb", INK = "#1a1a1a", INK2 = "#5b6470";
+  const ACCENT = "#1f3a5f", MUTED = "#a3adb8", GRID = "#e6e8ec", INK = "#1a2230", INK2 = "#5b6470";
 
   // ---- Column definitions. `scale` converts the typed value to stored dollars ($K fields = 1000). ----
   const COLS = [
-    { key: "asset_class", label: "Asset class", edit: "select", options: CLASS_ORDER, show: h => L.asset_class[h.asset_class] || h.asset_class },
     { key: "name", label: "Name", edit: "text", cls: "col-name" },
+    { key: "asset_class", label: "Asset class", wrap: true, edit: "select", options: CLASS_ORDER, show: h => L.asset_class[h.asset_class] || h.asset_class },
     { key: "ticker_or_id", label: "Ticker/ID", edit: "text" },
     { key: "security_type", label: "Security type", edit: "select", options: Object.keys(L.security_type),
       show: h => L.security_type[h.security_type] || h.security_type },
-    { key: "sector", label: "Sector", edit: "text" },
+    { key: "sector", label: "Sector", wrap: true, edit: "text" },
     // Unit price for priced securities only; funds, directs, real estate and cash carry their mark in Market value.
     { key: "price_or_mark", label: "Price", num: true, edit: "number", editable: h => Metrics.isPriced(h),
       show: h => (Metrics.isPriced(h) ? Fmt.number(h.price_or_mark, 2) : "") },
@@ -31,13 +31,17 @@
     { key: "commitment", label: "Commitment", num: true, k: true, edit: "number", scale: () => 1000, nullable: true },
     { key: "unfunded", label: "Unfunded", num: true, k: true, edit: "number", scale: () => 1000 },
     { key: "pct_nav", label: "% NAV", num: true, show: h => Fmt.pct(h.pct_nav) },
-    { key: "liquidity_bucket", label: "Liquidity bucket", edit: "select", options: BUCKETS, show: h => L.liquidity_bucket[h.liquidity_bucket] || h.liquidity_bucket },
+    { key: "liquidity_bucket", label: "Liquidity", edit: "select", options: BUCKETS, show: h => L.liquidity_bucket[h.liquidity_bucket] || h.liquidity_bucket },
     { key: "liquidity_date", label: "Liquidity date", edit: "date" },
     { key: "mark_source", label: "Mark source", edit: "text" },
     { key: "mark_date", label: "Mark date", edit: "date" }
   ];
 
-  const ui = { sort: { key: null, dir: 1 }, dpOpen: false, charts: {}, bound: false, addClass: "public_equity" };
+  // Default (compact) column set; "All columns" shows every column in COLS order.
+  const COMPACT = ["name", "asset_class", "sector", "price_or_mark", "quantity", "market_value", "pct_nav", "pnl", "unfunded", "liquidity_bucket"];
+  const visibleCols = all => (all ? COLS : COMPACT.map(k => COLS.find(c => c.key === k)));
+
+  const ui = { sort: { key: null, dir: 1 }, dpOpen: false, charts: {}, bound: false, addClass: "public_equity", allCols: false };
   let ctx = null; // { state, onChange }
 
   const today = () => Fmt.today();
@@ -63,7 +67,7 @@
     const calls12 = y1 ? y1.calls : 0;
     const dpBreach = dp.total < s.limits.dry_powder_floor;
     const ilBreach = il.pct_incl_unfunded > s.limits.illiquid_incl_unfunded_pct;
-    const status = (breach, text) => `<span class="${breach ? "breach" : "ok"}">${breach ? "Breach" : "Within limit"}</span> · ${text}`;
+    const status = (breach, text) => `<span class="status-pill ${breach ? "is-breach" : "is-ok"}">${breach ? "Breach" : "Within limit"}</span> <span class="tile-sub-text">${text}</span>`;
 
     document.getElementById("pf-tiles").innerHTML = `
       <div class="tile"><div class="tile-label">NAV</div><div class="tile-value">${Fmt.millions(m.nav)}</div>
@@ -77,7 +81,7 @@
         <div class="tile-value">${Fmt.millions(dp.total)}</div>
         <div class="tile-sub">${status(dpBreach, "floor " + Fmt.millions(s.limits.dry_powder_floor))}</div></button>
       <div class="tile"><div class="tile-label">Illiquid</div>
-        <div class="tile-value">${Fmt.pct(il.pct)} <span class="tile-value-2">/ ${Fmt.pct(il.pct_incl_unfunded)} incl. unfunded</span></div>
+        <div class="tile-value">${Fmt.pct(il.pct)} <span class="tile-value-2">${Fmt.pct(il.pct_incl_unfunded)} incl. unfunded</span></div>
         <div class="tile-sub">${status(ilBreach, "limit " + Fmt.pct(s.limits.illiquid_incl_unfunded_pct, 0) + " incl. unfunded")}</div></div>`;
 
     const build = document.getElementById("pf-dp-build");
@@ -85,7 +89,7 @@
     if (ui.dpOpen) {
       const line = (label, value, haircut, counted, cls) =>
         `<tr class="${cls || ""}"><td>${label}</td><td class="num">${value}</td><td class="num">${haircut}</td><td class="num">${counted}</td></tr>`;
-      build.innerHTML = `<table class="build">
+      build.innerHTML = `<div class="card-header"><h2>Dry powder build</h2></div><div class="table-wrap"><table class="grid build">
         <thead><tr><th>Step</th><th class="num">Value</th><th class="num">Haircut</th><th class="num">Counted</th></tr></thead>
         <tbody>
         ${line("Cash balance", Fmt.dollars(dp.cash), "", Fmt.dollars(dp.cash))}
@@ -95,7 +99,7 @@
         ${line("− Unfunded commitments", "", "", Fmt.dollars(-dp.unfunded))}
         ${line("− Reserve", "", "", Fmt.dollars(-dp.reserve))}
         ${line("Dry powder", "", "", Fmt.dollars(dp.total), "total")}
-        </tbody></table>`;
+        </tbody></table></div>`;
     }
   }
 
@@ -174,6 +178,7 @@
   // ---------------- Holdings table ----------------
   function renderTable(m) {
     const rows = rowsWithDerived(m);
+    const cols = visibleCols(ui.allCols);
     const sortCol = COLS.find(c => c.key === ui.sort.key);
     const sortVal = h => {
       if (!sortCol.num) return String(cellText(sortCol, h)).toLowerCase();
@@ -181,7 +186,7 @@
       return v === null || v === undefined || v === "" ? -Infinity : Number(v);
     };
 
-    const head = COLS.map(c => {
+    const head = cols.map(c => {
       const active = ui.sort.key === c.key;
       const aria = active ? (ui.sort.dir > 0 ? "ascending" : "descending") : "none";
       const mark = active ? (ui.sort.dir > 0 ? " ▲" : " ▼") : "";
@@ -194,7 +199,7 @@
       const mv = sumK(list, "market_value");
       const withCost = list.filter(h => h.pnl !== null);
       const hasCommitments = list.some(h => (h.commitment !== null && h.commitment !== undefined) || Number(h.unfunded) > 0);
-      return `<tr class="${cls}">` + COLS.map(c => {
+      return `<tr class="${cls}">` + cols.map(c => {
         let v = "";
         if (c.key === "name") v = Fmt.esc(label);
         else if (c.key === "market_value") v = Fmt.thousands(mv);
@@ -213,16 +218,16 @@
       let group = rows.filter(h => h.asset_class === cls);
       if (!group.length) return;
       if (sortCol) group = group.slice().sort((a, b) => (sortVal(a) > sortVal(b) ? 1 : sortVal(a) < sortVal(b) ? -1 : 0) * ui.sort.dir);
-      body += group.map(h => `<tr data-id="${Fmt.esc(h.id)}">` + COLS.map(c => {
+      body += group.map(h => `<tr data-id="${Fmt.esc(h.id)}">` + cols.map(c => {
         const editable = c.edit && (!c.editable || c.editable(h));
         const attrs = editable ? ` data-edit="${c.key}" tabindex="0" title="Click to edit${c.scale && c.scale(h) === 1000 ? " ($K)" : ""}"` : "";
-        return `<td class="${c.num ? "num " : ""}${c.cls || ""}${editable ? " editable" : ""}"${attrs}>${Fmt.esc(cellText(c, h))}</td>`;
+        return `<td class="${c.num ? "num " : ""}${c.cls || ""}${c.wrap ? " wrap-sm" : ""}${editable ? " editable" : ""}"${attrs}>${Fmt.esc(cellText(c, h))}</td>`;
       }).join("") + `<td class="col-act"><button type="button" class="link danger" data-delete="${Fmt.esc(h.id)}" aria-label="Delete ${Fmt.esc(h.name)}">Delete</button></td></tr>`).join("");
       body += totalRow((L.asset_class[cls] || cls) + " subtotal", group, "subtotal");
     });
     body += totalRow("Total (NAV)", rows, "grandtotal");
 
-    const addRow = `<tr class="addrow"><td colspan="${COLS.length + 1}"><div class="addrow-inner">
+    const addRow = `<tr class="addrow"><td colspan="${cols.length + 1}"><div class="addrow-inner">
         <label for="pf-add-class">Add holding to</label>
         <select id="pf-add-class">${CLASS_ORDER.map(k => `<option value="${k}"${k === ui.addClass ? " selected" : ""}>${L.asset_class[k]}</option>`).join("")}</select>
         <button type="button" class="btn" id="pf-add">Add holding</button></div></td></tr>`;
@@ -378,6 +383,7 @@
       }
       if (t.closest("#pf-add")) return addHolding(document.getElementById("pf-add-class").value);
       if (t.closest("#pf-csv")) return downloadCsv();
+      if (t.closest("#pf-cols")) { ui.allCols = !ui.allCols; return ctx.onChange(false); }
       const td = t.closest("td[data-edit]");
       if (td) startEdit(td);
     });
@@ -398,10 +404,13 @@
       `As of ${state.as_of}. Public prices are Yahoo Finance closes; bond and T-bill prices are sample prices; private marks are the latest GP or sponsor statements.`;
     renderTiles(m, state.settings);
     renderCharts(m);
+    const tog = document.getElementById("pf-cols");
+    tog.setAttribute("aria-pressed", String(ui.allCols));
+    tog.textContent = ui.allCols ? "Compact view" : "All columns";
     renderTable(m);
     return m;
   }
 
   // Columns and cell text are shared with the Pro Forma holdings table.
-  root.Portfolio = { render, COLS, cellText, rowsWithDerived };
+  root.Portfolio = { render, COLS, COMPACT, visibleCols, cellText, rowsWithDerived };
 })(window);

@@ -5,10 +5,10 @@
   const Fmt = root.Fmt, Metrics = root.Metrics, Model = root.ProFormaModel;
   const L = Fmt.LABELS, esc = Fmt.esc;
   const CLASS_ORDER = Object.keys(L.asset_class);
-  const ACCENT = "#1f3a5f", MUTED = "#a3adb8", GRID = "#e5e7eb", INK = "#1a1a1a", INK2 = "#5b6470";
+  const ACCENT = "#1f3a5f", MUTED = "#a3adb8", GRID = "#e6e8ec", INK = "#1a2230", INK2 = "#5b6470";
   const Y_AXIS_WIDTH = 64;
 
-  const ui = { bound: false, charts: {} };
+  const ui = { bound: false, charts: {}, allCols: false };
   let ctx = null; // { state, onChange }
 
   function pfState() {
@@ -110,12 +110,17 @@
     const b = check.breach(before), a = check.breach(after);
     return { before: b, after: a, state: a ? (b ? "pre" : "caused") : "ok" };
   }
-  const FLAG_TEXT = { ok: "OK", caused: "Breach caused by this trade", pre: "Breach before trade" };
+  const FLAG_TEXT = { ok: "OK", caused: "Breach from trade", pre: "Breach before trade" };
   const flagHtml = f => `<span class="flag flag-${f.state}">${FLAG_TEXT[f.state]}</span>`;
 
   // ---------------- Outputs ----------------
-  const dM = v => (Math.abs(v) < 500 ? "0.00" : (v > 0 ? "+" : "") + Fmt.millions(v, 2));
-  const dPP = v => (Math.abs(v) < 0.00005 ? "0.00 pp" : (v > 0 ? "+" : "(") + Math.abs(v * 100).toFixed(2) + (v > 0 ? " pp" : ") pp"));
+  // Changes are signed ($M or percentage points). dir: +1 higher is better, -1 lower is better, 0 neither.
+  const MINUS = "−";
+  const EPS = { m: 500, pp: 0.00005 };
+  const signed = (v, s) => (v > 0 ? "+" : MINUS) + s;
+  const dM = v => (Math.abs(v) < EPS.m ? "0.00" : signed(v, Math.abs(v / 1e6).toFixed(2)));
+  const dPP = v => (Math.abs(v) < EPS.pp ? "0.00 pp" : signed(v, Math.abs(v * 100).toFixed(2) + " pp"));
+  const chgClass = (v, dir, eps) => (Math.abs(v) < eps ? "chg-flat" : dir === 0 ? "chg-neutral" : v * dir > 0 ? "chg-good" : "chg-bad");
 
   function renderOutputs() {
     const st = ctx.state, s = st.settings;
@@ -136,34 +141,48 @@
     document.getElementById("pf2-trades").innerHTML = `<ul class="trades">${tradeText}</ul>` +
       (pf.warnings.length ? `<div class="warn" role="alert">${pf.warnings.map(w => `<p>${esc(w)}</p>`).join("")}</div>` : "");
 
-    // Before / After / Change table
-    const row = (label, b, a, chg, flag, limit, cls) =>
-      `<tr class="${cls || ""}"><td class="col-name">${label}</td><td class="num">${b}</td><td class="num">${a}</td><td class="num">${chg}</td>` +
-      `<td>${limit || ""}</td><td>${flag ? flagHtml(flag) : ""}</td></tr>`;
-    const money = (label, key, flag, limit) => row(label, Fmt.millions(key(before), 2), Fmt.millions(key(after), 2), dM(key(after) - key(before)), flag, limit);
-    const pct = (label, key, flag, limit) => row(label, Fmt.pct(key(before), 2), Fmt.pct(key(after), 2), dPP(key(after) - key(before)), flag, limit);
-    const named = (x, nameKey) => (x ? `${esc(x[nameKey])}<br><span class="muted">${Fmt.pct(x.pct, 2)}</span>` : "n/a");
+    // Current / Pro Forma / Change table with a Threshold group (Limit, Flag).
+    const row = (label, b, a, chg, chgCls, flag, limit) =>
+      `<tr class="${flag && flag.state !== "ok" ? "row-" + flag.state : ""}"><td class="col-name">${label}</td><td class="num">${b}</td>` +
+      `<td class="num pfc">${a}</td><td class="num ${chgCls}">${chg}</td>` +
+      `<td class="lim">${limit || ""}</td><td>${flag ? flagHtml(flag) : ""}</td></tr>`;
+    const money = (label, key, dir, flag, limit) => {
+      const d = key(after) - key(before);
+      return row(label, Fmt.millions(key(before), 2), Fmt.millions(key(after), 2), dM(d), chgClass(d, dir, EPS.m), flag, limit);
+    };
+    const pct = (label, key, dir, flag, limit) => {
+      const d = key(after) - key(before);
+      return row(label, Fmt.pct(key(before), 2), Fmt.pct(key(after), 2), dPP(d), chgClass(d, dir, EPS.pp), flag, limit);
+    };
+    const named = (x, nameKey) => (x ? `${esc(x[nameKey])}<span class="sub-num">${Fmt.pct(x.pct, 2)}</span>` : "n/a");
     const lpName = x => (x ? { name: x.holding.name, pct: x.pct } : null);
+    const pctOf = x => (x ? x.pct : 0);
+    const group = label => `<tr class="group-row"><td class="col-name" colspan="6">${esc(label)}</td></tr>`;
 
-    let html = `<thead><tr><th class="col-name">Metric</th><th class="num">Before</th><th class="num">After</th><th class="num">Change</th><th>Limit</th><th>Flag</th></tr></thead><tbody>`;
-    html += money("NAV", m => m.nav);
-    html += money("Cash and T-bills", m => m.cash_and_bills);
-    html += money("Unfunded", m => m.unfunded);
-    html += money("Dry powder", m => m.dry_powder.total, flags.dry_powder, checks.dry_powder.limit);
+    let html = `<thead>
+        <tr><th class="col-name" rowspan="2">Metric</th><th class="num" rowspan="2">Current</th><th class="num pfc" rowspan="2">Pro Forma</th>
+          <th class="num" rowspan="2">Change</th><th class="th-group" colspan="2">Threshold</th></tr>
+        <tr><th class="lim">Limit</th><th>Flag</th></tr></thead><tbody>`;
+    html += group("Liquidity");
+    html += money("NAV", m => m.nav, 1);
+    html += money("Cash and T-bills", m => m.cash_and_bills, 1);
+    html += money("Unfunded", m => m.unfunded, -1);
+    html += money("Dry powder", m => m.dry_powder.total, 1, flags.dry_powder, checks.dry_powder.limit);
     html += `<tr class="note-row"><td colspan="6">Funding from a liquid position instead of cash reduces dry powder by the haircut-adjusted amount, not the full amount.</td></tr>`;
-    html += pct("Illiquid %", m => m.illiquid.pct);
-    html += pct("Illiquid % incl. unfunded", m => m.illiquid.pct_incl_unfunded, flags.illiquid_incl, checks.illiquid_incl.limit);
+    html += pct("Illiquid %", m => m.illiquid.pct, -1);
+    html += pct("Illiquid % incl. unfunded", m => m.illiquid.pct_incl_unfunded, -1, flags.illiquid_incl, checks.illiquid_incl.limit);
+    html += group("Concentration");
+    const dPos = pctOf(after.largest_position) - pctOf(before.largest_position);
     html += row("Largest position", named(lpName(before.largest_position), "name"), named(lpName(after.largest_position), "name"),
-                dPP((after.largest_position ? after.largest_position.pct : 0) - (before.largest_position ? before.largest_position.pct : 0)),
-                flags.largest_position, checks.largest_position.limit);
+                dPP(dPos), chgClass(dPos, -1, EPS.pp), flags.largest_position, checks.largest_position.limit);
+    const dSec = pctOf(after.largest_sector) - pctOf(before.largest_sector);
     html += row("Largest sector ex-cash", named(before.largest_sector, "sector"), named(after.largest_sector, "sector"),
-                dPP((after.largest_sector ? after.largest_sector.pct : 0) - (before.largest_sector ? before.largest_sector.pct : 0)),
-                flags.largest_sector, checks.largest_sector.limit);
-    html += `<tr class="group-row"><td class="col-name" colspan="6">Asset-class mix, % of NAV</td></tr>`;
+                dPP(dSec), chgClass(dSec, -1, EPS.pp), flags.largest_sector, checks.largest_sector.limit);
+    html += group("Asset mix, % of NAV");
     CLASS_ORDER.forEach(k => {
       const b = before.nav ? (before.by_asset_class[k] || 0) / before.nav : 0;
       const a = after.nav ? (after.by_asset_class[k] || 0) / after.nav : 0;
-      html += row(esc(L.asset_class[k]), Fmt.pct(b, 2), Fmt.pct(a, 2), dPP(a - b));
+      html += row(esc(L.asset_class[k]), Fmt.pct(b, 2), Fmt.pct(a, 2), dPP(a - b), chgClass(a - b, 0, EPS.pp));
     });
     document.getElementById("pf2-table").innerHTML = html + "</tbody>";
 
@@ -218,7 +237,10 @@
   // ---------------- Pro forma holdings ----------------
   function renderHoldings(after, pf) {
     const P = root.Portfolio;
-    const cols = P.COLS;
+    const cols = P.visibleCols(ui.allCols);
+    const tog = document.getElementById("pf2-cols");
+    tog.setAttribute("aria-pressed", String(!!ui.allCols));
+    tog.textContent = ui.allCols ? "Compact view" : "All columns";
     const rows = P.rowsWithDerived(after);
     const sold = {};
     pf.trades.forEach(t => { if (t.from_holding > 0) sold[t.source] = (sold[t.source] || 0) + t.from_holding; });
@@ -229,7 +251,7 @@
       let t = esc(P.cellText(c, h));
       if (c.key === "name" && h.pf) t = `<span class="badge badge-pf">PF</span> ` + t;
       if (c.key === "name" && sold[h.id]) t += ` <span class="badge badge-sold">Sold $${Fmt.thousands(sold[h.id])}K</span>`;
-      return `<td class="${c.num ? "num " : ""}${c.cls || ""}">${t}</td>`;
+      return `<td class="${c.num ? "num " : ""}${c.cls || ""}${c.wrap ? " wrap-sm" : ""}">${t}</td>`;
     };
     const total = (label, list, cls) => {
       const hasCommit = list.some(h => (h.commitment !== null && h.commitment !== undefined) || Number(h.unfunded) > 0);
@@ -258,15 +280,17 @@
   }
 
   // ---------------- Limits panel (shared settings) ----------------
-  const SETTINGS = [
-    { path: "reserve", label: "Reserve ($K)", kind: "k" },
-    { path: "limits.dry_powder_floor", label: "Dry powder floor ($K)", kind: "k" },
-    { path: "limits.illiquid_incl_unfunded_pct", label: "Illiquid incl. unfunded max (%)", kind: "pct" },
-    { path: "limits.single_position_pct", label: "Single position max (%)", kind: "pct" },
-    { path: "limits.largest_sector_pct", label: "Largest sector max (%)", kind: "pct" },
-    { path: "haircuts.t_bill", label: "Haircut: T-bills (% counted)", kind: "pct" },
-    { path: "haircuts.public_equity", label: "Haircut: public equity (% counted)", kind: "pct" },
-    { path: "haircuts.credit", label: "Haircut: liquid credit / HY (% counted)", kind: "pct" }
+  const LIMITS = [
+    { path: "reserve", label: "Reserve", kind: "k" },
+    { path: "limits.dry_powder_floor", label: "Dry powder floor", kind: "k" },
+    { path: "limits.illiquid_incl_unfunded_pct", label: "Illiquid incl. unfunded, max", kind: "pct" },
+    { path: "limits.single_position_pct", label: "Single position, max", kind: "pct" },
+    { path: "limits.largest_sector_pct", label: "Largest sector, max", kind: "pct" }
+  ];
+  const HAIRCUTS = [
+    { path: "haircuts.t_bill", label: "T-bills", kind: "pct" },
+    { path: "haircuts.public_equity", label: "Public equity", kind: "pct" },
+    { path: "haircuts.credit", label: "Liquid credit (HY)", kind: "pct" }
   ];
   const getPath = (o, p) => p.split(".").reduce((x, k) => (x ? x[k] : undefined), o);
   const setPath = (o, p, v) => { const ks = p.split("."); ks.slice(0, -1).reduce((x, k) => x[k], o)[ks[ks.length - 1]] = v; };
@@ -274,8 +298,13 @@
 
   function renderLimits() {
     const s = ctx.state.settings;
-    document.getElementById("pf2-limits").innerHTML = SETTINGS.map(x =>
-      `<label class="fld"><span>${esc(x.label)}</span><input inputmode="decimal" data-setting="${x.path}" data-kind="${x.kind}" value="${esc(toInput(x.kind, getPath(s, x.path)))}"></label>`).join("");
+    const rows = list => list.map(x => `<tr><td class="col-name">${esc(x.label)}</td><td class="num">
+        <span class="unit-input"><input inputmode="decimal" data-setting="${x.path}" data-kind="${x.kind}" value="${esc(toInput(x.kind, getPath(s, x.path)))}" aria-label="${esc(x.label)}"><span class="unit">${x.kind === "k" ? "$K" : "%"}</span></span></td></tr>`).join("");
+    document.getElementById("pf2-limits").innerHTML = `
+      <div class="table-wrap"><table class="grid limits"><thead><tr><th class="col-name">Limits</th><th class="num">Threshold</th></tr></thead>
+        <tbody>${rows(LIMITS)}</tbody></table></div>
+      <div class="table-wrap"><table class="grid limits"><thead><tr><th class="col-name">Haircuts</th><th class="num">% counted</th></tr></thead>
+        <tbody>${rows(HAIRCUTS)}</tbody></table></div>`;
   }
 
   function onSettingChange(el) {
@@ -291,6 +320,9 @@
     if (ui.bound) return;
     ui.bound = true;
     const panel = document.getElementById("tab-proforma");
+    panel.addEventListener("click", e => {
+      if (e.target.closest("#pf2-cols")) { ui.allCols = !ui.allCols; renderOutputs(); }
+    });
     panel.addEventListener("change", e => {
       if (e.target.id === "pf2-theme-pick") { const v = e.target.value; e.target.value = ""; return v ? addTheme(v) : undefined; }
       if (e.target.matches("[data-sel-field]")) return onSelectorChange(e.target);

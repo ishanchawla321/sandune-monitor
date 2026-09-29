@@ -1,5 +1,11 @@
 # Sandune Monitor: project brief
 
+## Status (as of Tue 2026-09-29)
+- Done: Stages 1-5, 6a (themes/investments), 6b visual pass, visual cleanup (background, close buttons, type scale).
+- Hand-checked Pro Forma cases A-D (Seed mode): dry powder 17.75 / 17.65 / 18.95 / 17.75; illiquid incl. unfunded 52.89 / 52.89 / 50.88 / 52.89%.
+- Next: review visual pass screenshots; phone test on the live URL; add ANTHROPIC_API_KEY in Vercel by Thursday 2026-10-01 midday, test live extraction, replace samples/sample-om-extracted.json with a real response; final incognito/phone checks; submission paragraph and walkthrough script.
+- Open decisions: default table columns (revisit), model stays claude-sonnet-5, extract timeout 60s.
+
 ## What this is
 A family office portfolio and pipeline monitor. Three tabs: Portfolio, Ideas, Pro Forma. Public demo for a job case study, due Fri Oct 2, 2026 10:00am ET. Every holding and figure is SAMPLE DATA and must be labeled as such on every tab.
 
@@ -9,7 +15,11 @@ A family office portfolio and pipeline monitor. Three tabs: Portfolio, Ideas, Pr
 - Hosted on Vercel. Server functions go in /api. API keys come from environment variables only. A key must never appear in front-end code or in git.
 - Every live call has a timeout of about 3s and falls back to cached data, tagged "cached, as of [date]". Nothing may show an error to the viewer.
 - Edits persist in localStorage under a versioned key. A new visitor always starts from the seed. Include a "Reset to sample data" button.
-- Design: dense internal investor tool. White background, one accent color, tabular numbers, right-aligned figures, no gradients, no emoji, no animations. Must work at 375px phone width; wide tables scroll inside their own container with the name column pinned.
+- Design: Calm, soft investor tool (reference: Stripe dashboard, Linear). Design tokens in css :root: navy accent #1f3a5f, ink #1a2230, muted #5b6470, page background #e3e9f2 (cool blue-gray), card #ffffff with a 1px #d6dde8 border plus the shadow, subtle fill #f6f7f9 inside cards (table header rows, subtotal/group rows, tags), line #e6e8ec, tints: accent #eef2f8, ok #e8f5ee / #1e7a4c, warn #fdf4e3 / #9a6700, breach #fdecec / #b42318. Radius 12px cards, 8px inputs, 999px pills. Card shadow 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.08). Spacing scale 4/8/12/16/24/32. Transitions 150ms ease on hover, focus and value changes only. No gradients, no emoji, no bouncy animation. Tabular numbers everywhere.
+- Type scale (CSS tokens --fs-*; every element uses one): section heading 16px/600; card title 18px/600; stat label 12px uppercase, letter-spacing .04em, muted; stat value 16px/600 tabular; body 14px; small/help text 12px muted. Only the Portfolio summary tiles use large 28px values (--fs-hero); no other large numbers anywhere.
+- Stat rows (card headers, theme tiles) are a CSS grid of equal-width columns (.stat-row .stat): label on top, value underneath, all top-aligned. No subtitles under values; qualifiers go in the label, e.g. "Blended liquidity (check-weighted)".
+- Detail cards (investment, theme): title line = name, status as a pill-shaped select, and an × close button (32px, aria-label "Close") at the far right. ×, Esc, or clicking the opening row again closes the card and scrolls back to that row. Theme tiles share one fixed layout (title + status pill, 2-line thesis, 3-column stat grid, at-risk counts as small amber pills) so every tile has the same height.
+- Layout: must work at 375px phone width and fit a 1366px laptop; wide tables scroll inside their own container with the name column pinned. The page itself never scrolls sideways.
 - Never store or bundle source PDFs. Deal names are shown generically.
 - Build one stage at a time. Stop after each stage and summarize what changed.
 

@@ -33,7 +33,7 @@
     <p class="asof" id="pf-asof"></p>
 
     <div class="tiles" id="pf-tiles"></div>
-    <div class="dp-build" id="pf-dp-build" hidden></div>
+    <div class="card dp-build" id="pf-dp-build" hidden></div>
 
     <div class="charts">
       <figure class="card">
@@ -55,51 +55,73 @@
       </figure>
     </div>
 
-    <div class="table-head">
-      <h2>Holdings</h2>
-      <button type="button" class="btn" id="pf-csv">Download CSV</button>
-    </div>
-    <p class="note">Click a cell to edit. Dollar columns are in $ thousands. Price is shown only for priced securities: per share for stocks and ETFs, per 100 face for bonds and T-bills; their market value is price x quantity. Funds, directs, real estate and cash have no unit price: Market value is the mark or balance, and you edit it there.</p>
-    <div class="table-wrap">
-      <table class="grid" id="pf-table"></table>
-    </div>
+    <section class="card" aria-labelledby="pf-holdings-h">
+      <div class="card-header">
+        <h2 id="pf-holdings-h">Holdings</h2>
+        <div class="card-actions">
+          <button type="button" class="btn btn-toggle" id="pf-cols" aria-pressed="false">All columns</button>
+          <button type="button" class="btn" id="pf-csv">Download CSV</button>
+        </div>
+      </div>
+      <p class="note">Click a cell to edit. Dollar columns are in $ thousands. Price is shown only for priced securities: per share for stocks and ETFs, per 100 face for bonds and T-bills; their market value is price x quantity. Funds, directs, real estate and cash have no unit price: Market value is the mark or balance, and you edit it there.</p>
+      <div class="table-wrap">
+        <table class="grid" id="pf-table"></table>
+      </div>
+    </section>
   </section>
 
   <section id="tab-ideas" role="tabpanel" aria-labelledby="tabbtn-ideas" hidden>
     <p class="asof">Themes and the investments that express them. Figures are sample data; edits save in this browser.</p>
-    <h2 class="sec-h">Themes</h2>
-    <div id="th-grid" class="theme-grid"></div>
+
+    <section class="card" aria-labelledby="th-h">
+      <div class="card-header"><h2 id="th-h">Themes</h2></div>
+      <div id="th-grid" class="theme-grid"></div>
+    </section>
     <div id="th-card" class="card-slot"></div>
-    <h2 class="sec-h">Investments</h2>
-    <p class="note">Click a row to open its card.</p>
-    <div id="id-intake"></div>
-    <div class="filters" id="id-filters"></div>
-    <div class="table-wrap">
-      <table class="grid ideas" id="id-table"></table>
-    </div>
+
+    <section class="card" aria-labelledby="inv-h">
+      <div class="card-header">
+        <h2 id="inv-h">Investments</h2>
+        <div class="card-actions">
+          <button type="button" class="btn btn-toggle" id="id-cols" aria-pressed="false">All columns</button>
+        </div>
+      </div>
+      <div id="id-intake"></div>
+      <div class="filters" id="id-filters"></div>
+      <p class="note">Click a row to open its card.</p>
+      <div class="table-wrap">
+        <table class="grid ideas" id="id-table"></table>
+      </div>
+    </section>
     <div id="id-card" class="card-slot"></div>
   </section>
 
   <section id="tab-proforma" role="tabpanel" aria-labelledby="tabbtn-proforma" hidden>
     <p class="asof">Tick investments to add them to the book, or add a whole theme. Figures are sample data; selections save in this browser.</p>
 
-    <h2>Investments to add</h2>
-    <label class="theme-pick"><span class="sr-only">Add theme</span><select id="pf2-theme-pick" aria-label="Add all investments in a theme"></select></label>
-    <div class="table-wrap">
-      <table class="grid" id="pf2-selector"></table>
-    </div>
-    <div id="pf2-trades" class="pf-trades"></div>
+    <section class="card" aria-labelledby="pf2-sel-h">
+      <div class="card-header">
+        <h2 id="pf2-sel-h">Investments to add</h2>
+        <div class="card-actions">
+          <label class="theme-pick"><span class="sr-only">Add theme</span><select id="pf2-theme-pick" aria-label="Add all investments in a theme"></select></label>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="grid" id="pf2-selector"></table>
+      </div>
+      <div id="pf2-trades" class="pf-trades"></div>
+    </section>
 
     <div class="pf-grid">
-      <div class="pf-main">
-        <h2>Before and after</h2>
+      <section class="card pf-main" aria-labelledby="pf2-baf-h">
+        <div class="card-header"><h2 id="pf2-baf-h">Current vs pro forma</h2></div>
         <div class="table-wrap">
           <table class="grid baf" id="pf2-table"></table>
         </div>
         <div id="pf2-pre" class="pre-breaches"></div>
-      </div>
+      </section>
       <aside class="card pf-limits" aria-labelledby="pf2-limits-h">
-        <h2 id="pf2-limits-h">Limits and haircuts</h2>
+        <div class="card-header"><h2 id="pf2-limits-h">Limits and haircuts</h2></div>
         <p class="note">Shared with the Portfolio tab. Changes apply to both.</p>
         <div id="pf2-limits" class="limits-grid"></div>
       </aside>
@@ -112,11 +134,18 @@
       <div class="chart-box chart-calls"><canvas id="pf2-chart-calls" role="img" aria-label="Bar chart of after-trade projected capital calls, years 1 to 5, aligned with the ladder above."></canvas></div>
     </figure>
 
-    <div class="table-head"><h2>Pro forma holdings</h2></div>
-    <p class="note">New investment rows are marked PF. Holdings sold to fund a trade show their reduced value. Dollar columns are in $ thousands.</p>
-    <div class="table-wrap">
-      <table class="grid" id="pf2-holdings"></table>
-    </div>
+    <section class="card" aria-labelledby="pf2-hold-h">
+      <div class="card-header">
+        <h2 id="pf2-hold-h">Pro forma holdings</h2>
+        <div class="card-actions">
+          <button type="button" class="btn btn-toggle" id="pf2-cols" aria-pressed="false">All columns</button>
+        </div>
+      </div>
+      <p class="note">New investment rows are marked PF. Holdings sold to fund a trade show their reduced value. Dollar columns are in $ thousands.</p>
+      <div class="table-wrap">
+        <table class="grid" id="pf2-holdings"></table>
+      </div>
+    </section>
   </section>
 </main>
 

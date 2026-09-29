@@ -17,15 +17,15 @@
 
   const COLS = [
     { key: "name", label: "Name", cls: "col-name" },
-    { key: "theme", label: "Theme", value: i => themeName(i.theme_id) },
-    { key: "type", label: "Type", show: i => L.type[i.type] || i.type },
+    { key: "theme", label: "Theme", wrapSm: true, value: i => themeName(i.theme_id) },
+    { key: "type", label: "Type", wrapSm: true, show: i => L.type[i.type] || i.type },
     { key: "status", label: "Status", show: i => L.status[i.status] || i.status },
     { key: "score", label: "Liquidity score", num: true, value: i => Metrics.liquidityScore(i), show: i => Metrics.liquidityScore(i).toFixed(0) },
     { key: "check_size", label: "Check size ($K)", num: true, show: i => Fmt.thousands(i.check_size) },
     { key: "funded_pct", label: "Funded %", num: true, show: i => Fmt.pct(i.funded_pct, 0) },
-    { key: "hold_months", label: "Hold (months)", num: true, show: i => (i.hold_months ?? "") + "" },
-    { key: "target_return", label: "Target return" },
-    { key: "next_step", label: "Next step" },
+    { key: "hold_months", label: "Hold (mo)", num: true, show: i => (i.hold_months ?? "") + "" },
+    { key: "target_return", label: "Target return", wrap: true },
+    { key: "next_step", label: "Next step", wrap: true },
     { key: "next_step_date", label: "Next step date" },
     { key: "contact", label: "Contact", value: i => (i.contacts || []).join("; ") },
     { key: "asset_class", label: "Asset class", show: i => L.asset_class[i.asset_class] || i.asset_class },
@@ -35,9 +35,12 @@
     { key: "quantity", label: "Quantity", num: true, show: i => Fmt.number(i.quantity, 0) }
   ];
 
+  // Default (compact) pipeline columns; "All columns" shows everything.
+  const COMPACT = ["name", "theme", "type", "status", "score", "check_size", "funded_pct", "hold_months", "target_return", "next_step"];
+
   // sel: { kind: "theme" | "investment", id }
   const ui = { sort: { key: null, dir: 1 }, status: new Set(), type: new Set(), sel: null,
-               pending: null, bound: false, assessing: null };
+               pending: null, bound: false, assessing: null, allCols: false };
   let ctx = null; // { state, onChange }
 
   const today = () => Fmt.today();
@@ -51,10 +54,16 @@
   const r1 = n => String(Math.round(n * 10) / 10);
   const statusLabel = s => L.status[s] || L.theme_status[s] || s;
 
+  // The score's build goes in its label, e.g. "(24 + 8 + 20)", so the value line holds only the number.
   function scoreBuild(i) {
     const s = Metrics.liquidityScoreParts(i);
-    return s.isPublic ? "Public = 100" : `${s.parts.map(r1).join(" + ")} = ${r1(s.total)}`;
+    return s.isPublic ? "(public)" : `(${s.parts.map(r1).join(" + ")})`;
   }
+
+  const stat = (label, value, attrs) => `<div class="stat"${attrs || ""}><span class="stat-label">${label}</span><span class="stat-value">${value}</span></div>`;
+  const riskPill = (label, n) => `<span class="status-pill ${n ? "is-warn" : "is-muted"}">${esc(label)} ${n}</span>`;
+  const THEME_STATUS_CLASS = { active: "is-ok", exploring: "is-accent", retired: "is-muted" };
+  const closeBtn = `<button type="button" class="close-btn" data-close aria-label="Close">×</button>`;
 
   function save() { root.Store.save(ctx.state); }
 
@@ -65,14 +74,14 @@
       const s = TM.stats(ctx.state, t);
       const on = ui.sel && ui.sel.kind === "theme" && ui.sel.id === t.id;
       return `<button type="button" class="theme-tile${on ? " selected" : ""}" data-theme="${esc(t.id)}" aria-pressed="${on}">
-        <span class="tt-head"><b>${esc(t.name)}</b> <span class="tag">${esc(L.theme_status[t.status] || t.status)}</span></span>
+        <span class="tt-head"><span class="tt-name" title="${esc(t.name)}">${esc(t.name)}</span><span class="status-pill ${THEME_STATUS_CLASS[t.status] || "is-muted"}">${esc(L.theme_status[t.status] || t.status)}</span></span>
         <span class="tt-thesis">${esc(t.thesis || "")}</span>
-        <span class="tt-stats">
-          <span><b>${s.count}</b> investments</span>
-          <span><b>$${esc(Fmt.thousands(s.check))}K</b> total check</span>
-          <span>Blended liquidity <b>${s.blended === null ? "n/a" : esc(s.blended.toFixed(0))}</b></span>
-          <span${s.flagged + s.invFlagged ? ' class="tt-flag"' : ""}>At risk / broken: theme <b>${s.flagged}</b> · investments <b>${s.invFlagged}</b></span>
-        </span></button>`;
+        <span class="stat-row cols-3">
+          <span class="stat"><span class="stat-label">Investments</span><span class="stat-value">${s.count}</span></span>
+          <span class="stat"><span class="stat-label">Total check</span><span class="stat-value">$${esc(Fmt.thousands(s.check))}K</span></span>
+          <span class="stat"><span class="stat-label">Blended liquidity</span><span class="stat-value">${s.blended === null ? "n/a" : esc(s.blended.toFixed(0))}</span></span>
+        </span>
+        <span class="tt-risk"><span class="stat-label">At risk / broken</span>${riskPill("Theme", s.flagged)}${riskPill("Investments", s.invFlagged)}</span></button>`;
     }).join("") : `<p class="muted">No themes yet.</p>`;
   }
 
@@ -101,15 +110,19 @@
       rows = rows.slice().sort((a, b) => (v(a) > v(b) ? 1 : v(a) < v(b) ? -1 : 0) * ui.sort.dir);
     }
     const selId = ui.sel && ui.sel.kind === "investment" ? ui.sel.id : null;
-    const head = COLS.map(c => {
+    const cols = ui.allCols ? COLS : COMPACT.map(k => COLS.find(c => c.key === k));
+    const head = cols.map(c => {
       const active = ui.sort.key === c.key;
       const aria = active ? (ui.sort.dir > 0 ? "ascending" : "descending") : "none";
       return `<th class="${c.num ? "num " : ""}${c.cls || ""}" aria-sort="${aria}"><button type="button" class="sort" data-sort="${c.key}">${esc(c.label)}${active ? (ui.sort.dir > 0 ? " ▲" : " ▼") : ""}</button></th>`;
     }).join("");
     const body = rows.map(i => `<tr class="idea-row${i.id === selId ? " selected" : ""}" data-inv="${esc(i.id)}" tabindex="0" aria-selected="${i.id === selId}">` +
-      COLS.map(c => `<td class="${c.num ? "num " : ""}${c.cls || ""}">${esc(colText(c, i))}</td>`).join("") + "</tr>").join("");
-    const empty = rows.length ? "" : `<tr><td class="col-name" colspan="${COLS.length}">No investments match these filters.</td></tr>`;
+      cols.map(c => `<td class="${c.num ? "num " : ""}${c.cls || ""}${c.wrap ? " wrap" : ""}${c.wrapSm ? " wrap-sm" : ""}">${esc(colText(c, i))}</td>`).join("") + "</tr>").join("");
+    const empty = rows.length ? "" : `<tr><td class="col-name" colspan="${cols.length}">No investments match these filters.</td></tr>`;
     document.getElementById("id-table").innerHTML = `<thead><tr>${head}</tr></thead><tbody>${body}${empty}</tbody>`;
+    const tog = document.getElementById("id-cols");
+    tog.setAttribute("aria-pressed", String(ui.allCols));
+    tog.textContent = ui.allCols ? "Compact view" : "All columns";
   }
 
   // ---------------- Card pieces (shared) ----------------
@@ -138,7 +151,9 @@
   function statusHeader(i, statuses, labels) {
     const p = ui.pending && ui.pending.id === i.id ? ui.pending : null;
     const shown = p ? p.to : i.status;
-    const select = `<label class="fld"><span>Status</span><select data-status-select>${statuses.map(s => opt(s, labels[s], shown)).join("")}</select></label>`;
+    const tone = { watching: "is-muted", researching: "is-accent", IC: "is-warn", invested: "is-ok", passed: "is-muted",
+                   exploring: "is-accent", active: "is-ok", retired: "is-muted" }[shown] || "is-muted";
+    const select = `<label class="sr-only" for="id-status">Status</label><select id="id-status" class="status-select ${tone}" data-status-select>${statuses.map(s => opt(s, labels[s], shown)).join("")}</select>`;
     const reason = p ? `<div class="reason" role="group" aria-label="Reason for status change">
         <label for="id-reason">Reason for moving from ${esc(statusLabel(p.from))} to ${esc(statusLabel(p.to))} (required)</label>
         <div class="add-line"><input type="text" id="id-reason" value="${esc(p.reason || "")}" placeholder="One line">
@@ -221,18 +236,21 @@
 
     return `
     <article class="idea-card" aria-labelledby="id-card-name">
-      <header class="card-head"><div class="card-title">
-        <label class="sr-only" for="id-card-name">Theme name</label>
-        <input type="text" id="id-card-name" class="title-input" data-field="name" data-kind="text" value="${esc(t.name)}">
-        <div class="head-fields">
+      <header class="card-head">
+        <div class="title-line">
+          <label class="sr-only" for="id-card-name">Theme name</label>
+          <input type="text" id="id-card-name" class="title-input" data-field="name" data-kind="text" value="${esc(t.name)}">
           ${select}
-          <div class="fld"><span>Linked investments</span><b>${s.count}</b></div>
-          <div class="fld"><span>Total check ($K)</span><b>${esc(Fmt.thousands(s.check))}</b></div>
-          <div class="fld score"><span>Blended liquidity score</span><b>${s.blended === null ? "n/a" : esc(s.blended.toFixed(0))}</b> <span class="muted">check-weighted</span></div>
-          <div class="fld"><span>At risk / broken</span><b>theme ${s.flagged} · investments ${s.invFlagged}</b></div>
+          ${closeBtn}
         </div>
         ${reason}
-      </div></header>
+        <div class="stat-row cols-4">
+          ${stat("Linked investments", s.count)}
+          ${stat("Total check ($K)", esc(Fmt.thousands(s.check)))}
+          ${stat("Blended liquidity (check-weighted)", s.blended === null ? "n/a" : esc(s.blended.toFixed(0)))}
+          ${stat("At risk / broken", riskPill("Theme", s.flagged) + riskPill("Investments", s.invFlagged))}
+        </div>
+      </header>
 
       <section class="card-sec"><h3>Thesis</h3>
         <textarea data-field="thesis" data-kind="text" rows="3" aria-label="Thesis">${esc(t.thesis || "")}</textarea></section>
@@ -268,21 +286,25 @@
     const funded = (Number(i.check_size) || 0) * (Number(i.funded_pct) || 0);
     return `
     <article class="idea-card" aria-labelledby="id-card-name">
-      <header class="card-head"><div class="card-title">
-        <label class="sr-only" for="id-card-name">Investment name</label>
-        <input type="text" id="id-card-name" class="title-input" data-field="name" data-kind="text" value="${esc(i.name)}">
-        <div class="head-fields">
-          <label class="fld"><span>Type</span><select data-field="type" data-kind="text">${TYPES.map(t => opt(t, L.type[t], i.type)).join("")}</select></label>
+      <header class="card-head">
+        <div class="title-line">
+          <label class="sr-only" for="id-card-name">Investment name</label>
+          <input type="text" id="id-card-name" class="title-input" data-field="name" data-kind="text" value="${esc(i.name)}">
           ${select}
-          <label class="fld"><span>Theme</span><select data-theme-select><option value="">None</option>${(ctx.state.themes || []).map(t => opt(t.id, t.name, i.theme_id || "")).join("")}</select></label>
-          <div class="fld score"><span>Liquidity score</span><b id="id-score">${esc(Metrics.liquidityScore(i).toFixed(0))}</b> <span class="muted" id="id-score-build">${esc(scoreBuild(i))}</span></div>
+          ${closeBtn}
         </div>
         ${reason}
+        <div class="stat-row cols-4">
+          ${stat('<label for="id-type">Type</label>', `<select id="id-type" data-field="type" data-kind="text">${TYPES.map(t => opt(t, L.type[t], i.type)).join("")}</select>`)}
+          ${stat('<label for="id-theme">Theme</label>', `<select id="id-theme" data-theme-select><option value="">None</option>${(ctx.state.themes || []).map(t => opt(t.id, t.name, i.theme_id || "")).join("")}</select>`)}
+          ${stat("Check size ($K)", `<span id="id-check">${esc(Fmt.thousands(i.check_size))}</span>`)}
+          ${stat(`Liquidity score <span id="id-score-build">${esc(scoreBuild(i))}</span>`, `<span id="id-score">${esc(Metrics.liquidityScore(i).toFixed(0))}</span>`)}
+        </div>
         <div class="head-fields">
           ${field(i, "next_step", "text", "Next step", ' class="wide"')}
           ${field(i, "next_step_date", "date", "Next step date")}
         </div>
-      </div></header>
+      </header>
 
       <section class="card-sec"><h3>Thesis</h3>
         <textarea data-field="thesis" data-kind="text" rows="3" aria-label="Thesis">${esc(i.thesis || "")}</textarea></section>
@@ -384,13 +406,37 @@
     commit();
   }
 
-  function select(kind, id) {
+  // Opening a row or tile that is already open closes it (toggle).
+  function select(kind, id, toggle) {
     const same = ui.sel && ui.sel.kind === kind && ui.sel.id === id;
+    if (same && toggle) return closeCard();
     if (!same) ui.pending = null;
     ui.sel = { kind, id };
     ctx.onChange(false);
     const box = document.getElementById(kind === "theme" ? "th-card" : "id-card");
     if (box && box.scrollIntoView) box.scrollIntoView({ block: "start" });
+  }
+
+  // Close the open card (×, Esc, or re-clicking its row) and return to the row or tile that opened it.
+  // Any field being typed in is blurred first so its edit is saved.
+  function closeCard() {
+    if (!ui.sel) return;
+    const { kind, id } = ui.sel;
+    const active = document.activeElement;
+    if (active && active.closest && active.closest(".idea-card")) {
+      // Commit whatever is being typed before the card goes away (change handlers are no-ops if nothing changed).
+      if (/^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) active.dispatchEvent(new Event("change", { bubbles: true }));
+      if (active.blur) active.blur();
+    }
+    ui.sel = null;
+    ui.pending = null;
+    ctx.onChange(false);
+    const sel = kind === "theme" ? `[data-theme="${CSS.escape(id)}"]` : `tr[data-inv="${CSS.escape(id)}"]`;
+    const opener = document.querySelector("#tab-ideas " + sel);
+    if (opener) {
+      opener.scrollIntoView({ block: "center" });
+      opener.focus({ preventScroll: true });
+    }
   }
 
   function bind() {
@@ -408,16 +454,18 @@
         return ctx.onChange(false);
       }
       if (t.closest("[data-chip-clear]")) { ui.status.clear(); ui.type.clear(); return ctx.onChange(false); }
+      if (t.closest("#id-cols")) { ui.allCols = !ui.allCols; return ctx.onChange(false); }
       const sortBtn = t.closest("[data-sort]");
       if (sortBtn) {
         const key = sortBtn.dataset.sort;
         ui.sort = ui.sort.key === key ? { key, dir: -ui.sort.dir } : { key, dir: 1 };
         return ctx.onChange(false);
       }
+      if (t.closest("[data-close]")) return closeCard();
       const tile = t.closest("[data-theme]");
-      if (tile) return select("theme", tile.dataset.theme);
+      if (tile) return select("theme", tile.dataset.theme, true);
       const row = t.closest("tr[data-inv]");
-      if (row) return select("investment", row.dataset.inv);
+      if (row) return select("investment", row.dataset.inv, true);
       const open = t.closest("tr[data-open-inv]");
       if (open) return select("investment", open.dataset.openInv);
 
@@ -532,7 +580,7 @@
     panel.addEventListener("keydown", e => {
       const el = e.target;
       if (!el.matches || el.closest("#id-intake")) return;
-      if (e.key === "Enter" && el.matches("tr[data-inv]")) { e.preventDefault(); return select("investment", el.dataset.inv); }
+      if (e.key === "Enter" && el.matches("tr[data-inv]")) { e.preventDefault(); return select("investment", el.dataset.inv, true); }
       if (e.key === "Enter" && el.matches("tr[data-open-inv]")) { e.preventDefault(); return select("investment", el.dataset.openInv); }
       if (e.key !== "Enter") return;
       if (el.id === "id-reason") { e.preventDefault(); if (ui.pending) ui.pending.reason = el.value; return saveStatus(); }
@@ -541,6 +589,14 @@
       if (el.id === "id-vc-seg" || el.id === "id-vc-who") { e.preventDefault(); return panel.querySelector("[data-vc-add]").click(); }
       if (el.matches("[data-list-new]")) { e.preventDefault(); return panel.querySelector(`[data-list-add="${el.dataset.listNew}"]`).click(); }
       if (el.matches("input[data-field], input[data-list], input[data-assume-text], input[data-vc]")) { e.preventDefault(); el.blur(); }
+    });
+
+    // Esc closes the open card while the Ideas tab is showing (the document intake handles its own keys).
+    document.addEventListener("keydown", e => {
+      if (e.key !== "Escape" || !ui.sel || panel.hidden) return;
+      if (e.target.closest && e.target.closest("#id-intake")) return;
+      e.preventDefault();
+      closeCard();
     });
 
     panel.addEventListener("input", e => {
