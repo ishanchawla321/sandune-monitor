@@ -402,5 +402,6 @@
     return m;
   }
 
-  root.Portfolio = { render };
+  // Columns and cell text are shared with the Pro Forma holdings table.
+  root.Portfolio = { render, COLS, cellText, rowsWithDerived };
 })(window);

@@ -7,8 +7,8 @@
   const signed = (v, s) => (v < 0 ? "(" + s + ")" : s);
 
   const Fmt = {
-    // $M to one decimal, for tiles: $49.7M
-    millions(v) { return blank(v) ? "n/a" : signed(v, "$" + grouped(v / 1e6, 1) + "M"); },
+    // $M to one decimal by default, for tiles: $49.7M
+    millions(v, dp) { return blank(v) ? "n/a" : signed(v, "$" + grouped(v / 1e6, dp === undefined ? 1 : dp) + "M"); },
     // $ thousands, no decimals, for the table: 2,450 / (1,234)
     thousands(v) { return blank(v) ? "" : signed(Math.round(v / 1000), grouped(Math.round(v / 1000), 0)); },
     // whole dollars: $19,749,461 / ($4,500,000)
@@ -34,7 +34,7 @@
     liquidity_bucket: { liquid_now: "Liquid now", "1_3y": "1-3 years", "3y_plus": "3+ years" },
     security_type: { common_stock: "Common stock", etf: "ETF", bond: "Bond", t_bill: "T-bill", lp_interest: "LP interest",
                      common_equity: "Common equity", preferred_equity: "Preferred equity", jv_equity: "JV equity",
-                     first_lien_loan: "First-lien loan", cash: "Cash" },
+                     first_lien_loan: "First-lien loan", basket: "Basket", cash: "Cash" },
     status: { watching: "Watching", researching: "Researching", IC: "IC", invested: "Invested", passed: "Passed" },
     type: { public: "Public", private_equity: "Private equity", private_credit: "Private credit",
             venture: "Venture (late-stage)", theme: "Theme" },

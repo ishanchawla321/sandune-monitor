@@ -11,6 +11,7 @@
   function render() {
     if (active === "portfolio") root.Portfolio.render(state, onChange);
     if (active === "ideas") root.Ideas.render(state, onChange);
+    if (active === "proforma") root.ProForma.render(state, onChange);
   }
 
   // persist = true for data edits; false for view-only changes (sort, expand, cancelled edit).

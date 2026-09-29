@@ -9,9 +9,10 @@
   const isIlliquid = h => ALWAYS_ILLIQUID.includes(h.asset_class) || ILLIQUID_BUCKETS.includes(h.liquidity_bucket);
 
   // Priced holdings carry a unit price and a quantity; everything else carries a mark (or balance) in dollars.
+  // A public equity "basket" (e.g. a pro forma theme position) is carried at a mark.
   function isPriced(h) {
-    return h.security_type === "bond" || h.security_type === "t_bill" ||
-           h.security_type === "etf" || h.asset_class === "public_equity";
+    return h.security_type === "bond" || h.security_type === "t_bill" || h.security_type === "etf" ||
+           (h.asset_class === "public_equity" && h.security_type !== "basket");
   }
 
   // public equity and ETFs = price x shares; bonds and T-bills = price x face / 100;
