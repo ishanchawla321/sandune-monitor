@@ -335,7 +335,7 @@ table.grid.hold th.col-name, table.grid.hold td.col-name { padding-left: var(--s
 table.grid.hold th.col-w { min-width: 104px; }
 .hc .card-header h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s1) var(--s2); }
 table.grid.hold-total td.col-name, table.grid.hold-total th.col-name { min-width: 160px; }
-table.grid.hold-total { width: auto; min-width: 480px; }
+table.grid.hold-total { width: 100%; }
 @media (max-width: 720px) {
   .hc-stack { gap: var(--s4); }
   table.grid.hold-total { min-width: 0; width: 100%; }

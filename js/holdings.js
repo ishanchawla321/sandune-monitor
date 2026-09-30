@@ -155,7 +155,7 @@
 
   // ---------------- Instance ----------------
   function create(opts) {
-    const o = Object.assign({ prefix: "hc", editable: true, badge: null }, opts || {});
+    const o = Object.assign({ prefix: "hc", editable: true, badge: null, suffix: null, rowClass: null }, opts || {});
     const ui = { sort: {}, allCols: {}, bound: false };
     let ctx = null; // { state, onChange, holdings (with values), nav, positions, container }
 
@@ -207,6 +207,7 @@
         const title = editable ? `Click to edit${c.unit === "$K" ? " ($K)" : ""}` : derived ? c.derivedNote : "";
         let text = esc(show(c, r));
         if (c.key === "name" && o.badge) text = o.badge(r) + text;
+        if (c.key === "name" && o.suffix) text += o.suffix(r);
         return `<td class="${c.num ? "num " : ""}${c.cls || ""}${c.wrap ? " wrap-sm" : ""}${editable ? " editable" : ""}${derived ? " derived" : ""}"${editable ? ` data-edit="${c.key}" data-card="${card.key}" tabindex="0"` : ""}${title ? ` title="${esc(title)}"` : ""}>${text}</td>`;
       }).join("") + (o.editable ? `<td class="col-act"><button type="button" class="link danger" data-hdel="${esc(r.id)}" aria-label="Delete ${esc(r.name)}">Delete</button></td>` : "") + "</tr>").join("");
       const total = `<tr class="subtotal">` + cols.map(c => `<td class="${c.num ? "num " : ""}${c.cls || ""}">${totalCell(c, rows, card.title + " subtotal")}</td>`).join("") + (o.editable ? `<td class="col-act"></td>` : "") + "</tr>";

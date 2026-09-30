@@ -237,7 +237,8 @@
   // ---------------- Pro forma holdings (same cards as Portfolio > Current, read-only) ----------------
   const sold = {};
   const holdings = root.Holdings.create({ prefix: "pf2", editable: false,
-    badge: r => (r.pf ? `<span class="badge badge-pf">PF</span> ` : "") + (sold[r.id] ? `<span class="badge badge-sold">Sold $${Fmt.thousands(sold[r.id])}K</span> ` : ""),
+    badge: r => (r.pf ? `<span class="badge badge-pf">PF</span> ` : ""),
+    suffix: r => (sold[r.id] ? ` <span class="badge badge-sold">Sold $${Fmt.thousands(sold[r.id])}K</span>` : ""),
     rowClass: r => (sold[r.id] ? "pf-funded" : "") });
   function renderHoldings(after, pf) {
     Object.keys(sold).forEach(k => delete sold[k]);
