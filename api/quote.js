@@ -9,6 +9,14 @@ const MAX_SYMBOLS = 25;
 module.exports = async function handler(req, res) {
   if (req.method !== "GET") return send(res, 405, { ok: false, message: "Use GET." });
   const key = process.env.FINNHUB_API_KEY;
+
+  // TEMPORARY diagnostic: ?diag=1 reports whether the key is configured, never the key itself. Remove once verified.
+  const diag = String((req.query && req.query.diag) || new URL(req.url, "http://x").searchParams.get("diag") || "");
+  if (diag === "1") {
+    return send(res, 200, { has_key: !!key, key_length: key ? String(key).length : 0, vercel_env: process.env.VERCEL_ENV || null },
+                { "Cache-Control": "no-store" });
+  }
+
   if (!key) return send(res, 503, { ok: false, message: "Live prices are not configured." });
 
   const raw = String((req.query && req.query.symbols) || new URL(req.url, "http://x").searchParams.get("symbols") || "");
