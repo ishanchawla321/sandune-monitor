@@ -27,7 +27,9 @@
     r.income_itd = p.income_itd;
     r.div_ltm = p.by_type.dividend.ltm + p.by_type.distribution.ltm;
     r.div_yield = div(r.div_ltm, mv);
-    r.total_return = cost ? (r.pnl + p.income_itd) / cost : null;
+    // (unrealized P&L + realized P&L + income since inception) / total cost of every lot bought
+    r.invested_total = r.has_lots || r.has_calls ? p.invested : cost;
+    r.total_return = r.invested_total && r.pnl !== null ? (r.pnl + p.realized_pnl + p.income_itd) / r.invested_total : null;
     // Bonds
     r.coupon = blank(h.coupon) ? null : Number(h.coupon);
     r.maturity = h.maturity || null;
@@ -94,7 +96,8 @@
       newHolding: { asset_class: "public_equity", security_type: "common_stock", liquid: true },
       cols: [NAME, TICKER, SHARES, AVG_COST, PRICE("Last price"), MV, PNL, PNL_PCT,
              money("div_ltm", "Dividends (LTM)"), col("div_yield", "Dividend yield", { num: true, fmt: "pct2", total: rows => div(sum(rows, "div_ltm"), sum(rows, "mv")) }),
-             col("total_return", "Total return %", { num: true, fmt: "pct1", help: "P&L + dividends / cost", total: rows => div(sum(rows, "pnl") + sum(rows, "income_itd"), sum(rows, "cost")) }),
+             col("total_return", "Total return %", { num: true, fmt: "pct1", help: "(Unrealized P&L + realized P&L + income since inception) / total cost of all lots bought",
+                  total: rows => div(sum(rows, "pnl") + sum(rows, "realized") + sum(rows, "income_itd"), sum(rows, "invested_total")) }),
              REALIZED, PCT_NAV, MARK_SOURCE, MARK_DATE] },
     { key: "credit_etf", title: "Liquid credit: ETFs", match: h => h.asset_class === "credit" && h.security_type !== "bond",
       note: "Shares and average cost come from the blotter; distributions are the trailing 12 months. Dollar columns in $ thousands.",

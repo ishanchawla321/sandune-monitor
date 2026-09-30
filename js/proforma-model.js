@@ -125,7 +125,20 @@
     return { holdings, trades, warnings };
   }
 
-  const ProFormaModel = { apply, fundingSources, defaultSelection, addMonths };
+  // Selections for "Add theme": every investment linked to the theme at its default size, funded from cash.
+  // Returns { [investmentId]: selection } to merge into state.proforma.selections.
+  function themeSelections(state, themeId) {
+    const theme = (state.themes || []).find(t => t.id === themeId);
+    const out = {};
+    if (!theme) return out;
+    (theme.linked_investment_ids || []).forEach(id => {
+      const inv = state.investments.find(i => i.id === id);
+      if (inv) out[id] = Object.assign(defaultSelection(inv), { include: true, via_theme: theme.id });
+    });
+    return out;
+  }
+
+  const ProFormaModel = { apply, fundingSources, defaultSelection, themeSelections, addMonths };
   if (typeof module !== "undefined" && module.exports) module.exports = ProFormaModel;
   else root.ProFormaModel = ProFormaModel;
 })(typeof window !== "undefined" ? window : this);

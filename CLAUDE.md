@@ -3,7 +3,7 @@
 ## Status (as of Wed 2026-09-30)
 - Done: Stages 1-5, 6a (themes/investments), 6b visual pass, visual cleanup, and the v2 restructure (branch v2-restructure): two-level navigation, transaction blotter and positions engine, holdings by asset class.
 - Invariants (Seed mode) hold and are checked by `node tests/invariants.js`: NAV $49,748,585; dry powder $19,749,461; Pro Forma cases A-D dry powder 17.75 / 17.65 / 18.95 / 17.75 ($M) and illiquid incl. unfunded 52.89 / 52.89 / 50.88 / 52.89%; the seed blotter reconciles to the book for every holding.
-- Case definitions used by the test (reverse-engineered; the originals were not written down): A = car wash + RPA loan from cash; B = A plus BWAY and STIM; C = car wash funded by selling Apple; D = car wash + Legal AI from cash.
+- Case definitions (owner-confirmed): A = car wash + RPA loan from cash; B = A plus BWAY and STIM; C = car wash funded by selling Apple; D = the "AI and automation" theme added via the Add theme dropdown (Legal AI $1.0M at 100%, RPA loan $1.0M at 65%, both from cash). Largest sector is Technology at 20.38 / 20.38 / 17.07 / 22.39%. Case D goes through ProFormaModel.themeSelections(), the same path as the tab.
 - Next: review the v2 pull request; phone test on the live URL; add ANTHROPIC_API_KEY in Vercel by Thursday 2026-10-01 midday, test live extraction, replace samples/sample-om-extracted.json with a real response; final incognito/phone checks; submission paragraph and walkthrough script.
 - Open decisions: default table columns per asset-class card (revisit), model stays claude-sonnet-5, extract timeout 60s.
 
@@ -62,4 +62,4 @@ Settled choices. Do not change these without the owner's say-so.
 - Positions derive from the blotter; the book (holdings[]) stays the record Metrics reads, and the two are kept reconciled by posting (see Data model). The dry powder, illiquid, ladder, calls, concentration and liquidity score formulas and everything in /api are unchanged by the v2 restructure.
 - Liquid credit is two cards (ETFs, bonds) because the column sets differ; charts and the Pro Forma asset mix still report one "Liquid credit" class.
 - Bond and T-bill market value uses the clean price (unchanged formula); accrued interest is informational only.
-- Screenshots for pull requests live under docs/screenshots/ as JPEGs so they can be linked from the PR description.
+- Screenshots are not kept in the repo; they go in the pull request description only.

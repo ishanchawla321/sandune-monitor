@@ -29,11 +29,9 @@
 
   // Ticks every investment linked to the theme at its default size; each can then be edited or unticked.
   function addTheme(themeId) {
-    const theme = (ctx.state.themes || []).find(t => t.id === themeId);
-    if (!theme) return;
-    root.ThemesModel.linked(ctx.state, theme).forEach(inv => {
-      pfState().selections[inv.id] = Object.assign(Model.defaultSelection(inv), { include: true, via_theme: theme.id });
-    });
+    const picks = Model.themeSelections(ctx.state, themeId);
+    if (!Object.keys(picks).length) return;
+    Object.assign(pfState().selections, picks);
     save();
     renderSelector();
     renderThemePicker();
