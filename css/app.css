@@ -69,16 +69,25 @@ a { color: var(--accent); }
   margin: var(--s3) 0 0; padding: var(--s2) var(--s3); border-radius: var(--r-input);
   background: var(--warn-tint); color: var(--warn); font-weight: 600; font-size: var(--fs-small);
 }
-.tabs {
-  display: inline-flex; gap: 2px; margin: var(--s3) 0; padding: 3px;
+/* Navigation: top-level sections as a pill segmented control, sub-tabs underlined beneath. */
+.nav-top {
+  display: inline-flex; gap: 2px; margin: var(--s3) 0 var(--s2); padding: 3px;
   background: var(--subtle); border: 1px solid var(--line); border-radius: var(--r-pill);
 }
-.tabs [role=tab] {
+.nav-top [role=tab] {
   border: 0; background: none; padding: 6px var(--s4); border-radius: var(--r-pill); cursor: pointer;
   color: var(--muted); font-weight: 500; transition: background-color var(--ease), color var(--ease), box-shadow var(--ease);
 }
-.tabs [role=tab]:hover { color: var(--ink); }
-.tabs [role=tab][aria-selected=true] { background: var(--card); color: var(--accent); box-shadow: var(--shadow); font-weight: 600; }
+.nav-top [role=tab]:hover { color: var(--ink); }
+.nav-top [role=tab][aria-selected=true] { background: var(--card); color: var(--accent); box-shadow: var(--shadow); font-weight: 600; }
+.nav-sub { display: flex; gap: var(--s5); margin: 0; }
+.nav-sub[hidden] { display: none; }
+.nav-sub [role=tab] {
+  border: 0; background: none; padding: 6px 2px 10px; cursor: pointer; color: var(--muted); font-weight: 500;
+  border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color var(--ease), border-color var(--ease);
+}
+.nav-sub [role=tab]:hover { color: var(--ink); }
+.nav-sub [role=tab][aria-selected=true] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
 
 /* Segmented pill control (price source) */
 .price-toggle { display: flex; align-items: center; gap: 0; flex-wrap: wrap; font-size: var(--fs-small); }
@@ -115,6 +124,10 @@ figure.card figcaption { font-weight: 600; font-size: var(--fs-section); margin-
 .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn-primary:hover { color: #fff; background: #183049; }
 .btn-toggle[aria-pressed=true] { background: var(--accent-tint); border-color: var(--accent); color: var(--accent); }
+.btn-sm { padding: 3px 10px; font-size: var(--fs-small); }
+.fld-end { margin-left: auto; justify-content: flex-end; }
+table.grid th.col-act { text-align: right; }
+table.grid td.col-act { text-align: right; }
 .btn:disabled, .btn:disabled:hover { opacity: .45; cursor: not-allowed; border-color: var(--line-strong); color: var(--ink); }
 .btn-primary:disabled, .btn-primary:disabled:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
 .link { border: 0; background: none; padding: 0; cursor: pointer; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
@@ -371,8 +384,9 @@ table.grid tbody tr.pf-funded { background: var(--subtle); }
   .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); }
   .tile { padding: var(--s4); }
   .tile-value { font-size: var(--fs-hero); }
-  .tabs { display: flex; }
-  .tabs [role=tab] { flex: 1 1 0; padding: 6px var(--s2); }
+  .nav-top { display: flex; }
+  .nav-top [role=tab] { flex: 1 1 0; padding: 6px var(--s2); }
+  .nav-sub { gap: var(--s4); }
   .price-status { flex-basis: 100%; margin: var(--s1) 0 0; }
   table.grid th, table.grid td { padding: 10px var(--s3); }
   table.grid .col-name { min-width: 140px; max-width: 170px; }

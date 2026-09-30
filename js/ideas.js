@@ -1,4 +1,4 @@
-// Ideas tab: Themes (grid + card) and Investments (filterable table + card).
+// Opportunities section: Themes tab (grid + card) and Ideas tab (filterable investments table + card).
 // One card component serves both kinds: assumptions, lists, signals, status-with-reason and the
 // decision log work the same way; each kind adds its own sections.
 (function (root) {
@@ -36,7 +36,7 @@
   ];
 
   // Default (compact) pipeline columns; "All columns" shows everything.
-  const COMPACT = ["name", "theme", "type", "status", "score", "check_size", "funded_pct", "hold_months", "target_return", "next_step"];
+  const COMPACT = ["name", "theme", "type", "status", "score", "check_size", "funded_pct", "hold_months", "next_step"];
 
   // sel: { kind: "theme" | "investment", id }
   const ui = { sort: { key: null, dir: 1 }, status: new Set(), type: new Set(), sel: null,
@@ -66,6 +66,26 @@
   const closeBtn = `<button type="button" class="close-btn" data-close aria-label="Close">×</button>`;
 
   function save() { root.Store.save(ctx.state); }
+
+  // ---------------- Pro Forma picks (shared with the Pro Forma tab) ----------------
+  function pfSelections() {
+    if (!ctx.state.proforma) ctx.state.proforma = { selections: {} };
+    return ctx.state.proforma.selections;
+  }
+  const inProForma = i => !!(pfSelections()[i.id] || {}).include;
+  function pfButton(i, cls) {
+    const on = inProForma(i);
+    return `<button type="button" class="btn btn-sm btn-toggle ${cls || ""}" data-pf-toggle="${esc(i.id)}" aria-pressed="${on}" title="${on ? "Remove from the Pro Forma book" : "Add to the Pro Forma book at its default check size"}">${on ? "In Pro Forma" : "Add to Pro Forma"}</button>`;
+  }
+  function toggleProForma(id) {
+    const inv = ctx.state.investments.find(x => x.id === id);
+    if (!inv) return;
+    const sel = Object.assign(root.ProFormaModel.defaultSelection(inv), pfSelections()[id] || {});
+    sel.include = !sel.include;
+    if (!sel.include) delete sel.via_theme;
+    pfSelections()[id] = sel;
+    commit();
+  }
 
   // ---------------- Themes grid ----------------
   function renderThemeGrid() {
@@ -115,10 +135,11 @@
       const active = ui.sort.key === c.key;
       const aria = active ? (ui.sort.dir > 0 ? "ascending" : "descending") : "none";
       return `<th class="${c.num ? "num " : ""}${c.cls || ""}" aria-sort="${aria}"><button type="button" class="sort" data-sort="${c.key}">${esc(c.label)}${active ? (ui.sort.dir > 0 ? " ▲" : " ▼") : ""}</button></th>`;
-    }).join("");
+    }).join("") + `<th class="col-act">Pro Forma</th>`;
     const body = rows.map(i => `<tr class="idea-row${i.id === selId ? " selected" : ""}" data-inv="${esc(i.id)}" tabindex="0" aria-selected="${i.id === selId}">` +
-      cols.map(c => `<td class="${c.num ? "num " : ""}${c.cls || ""}${c.wrap ? " wrap" : ""}${c.wrapSm ? " wrap-sm" : ""}">${esc(colText(c, i))}</td>`).join("") + "</tr>").join("");
-    const empty = rows.length ? "" : `<tr><td class="col-name" colspan="${cols.length}">No investments match these filters.</td></tr>`;
+      cols.map(c => `<td class="${c.num ? "num " : ""}${c.cls || ""}${c.wrap ? " wrap" : ""}${c.wrapSm ? " wrap-sm" : ""}">${esc(colText(c, i))}</td>`).join("") +
+      `<td class="col-act">${pfButton(i)}</td></tr>`).join("");
+    const empty = rows.length ? "" : `<tr><td class="col-name" colspan="${cols.length + 1}">No investments match these filters.</td></tr>`;
     document.getElementById("id-table").innerHTML = `<thead><tr>${head}</tr></thead><tbody>${body}${empty}</tbody>`;
     const tog = document.getElementById("id-cols");
     tog.setAttribute("aria-pressed", String(ui.allCols));
@@ -303,6 +324,7 @@
         <div class="head-fields">
           ${field(i, "next_step", "text", "Next step", ' class="wide"')}
           ${field(i, "next_step_date", "date", "Next step date")}
+          <div class="fld fld-end">${pfButton(i, "btn-pf")}</div>
         </div>
       </header>
 
@@ -412,7 +434,9 @@
     if (same && toggle) return closeCard();
     if (!same) ui.pending = null;
     ui.sel = { kind, id };
-    ctx.onChange(false);
+    const panelId = kind === "theme" ? "tab-themes" : "tab-ideas";
+    if (document.getElementById(panelId).hidden && root.App) root.App.showTab(kind === "theme" ? "opportunities/themes" : "opportunities/ideas");
+    else ctx.onChange(false);
     const box = document.getElementById(kind === "theme" ? "th-card" : "id-card");
     if (box && box.scrollIntoView) box.scrollIntoView({ block: "start" });
   }
@@ -432,7 +456,7 @@
     ui.pending = null;
     ctx.onChange(false);
     const sel = kind === "theme" ? `[data-theme="${CSS.escape(id)}"]` : `tr[data-inv="${CSS.escape(id)}"]`;
-    const opener = document.querySelector("#tab-ideas " + sel);
+    const opener = document.querySelector("#sec-opportunities " + sel);
     if (opener) {
       opener.scrollIntoView({ block: "center" });
       opener.focus({ preventScroll: true });
@@ -442,11 +466,14 @@
   function bind() {
     if (ui.bound) return;
     ui.bound = true;
-    const panel = document.getElementById("tab-ideas");
+    const panel = document.getElementById("sec-opportunities");
+    const visible = () => !!panel.querySelector("section[role=tabpanel]:not([hidden])");
 
     panel.addEventListener("click", e => {
       const t = e.target;
       if (t.closest("#id-intake")) return; // the intake module handles its own clicks
+      const pfBtn = t.closest("[data-pf-toggle]");
+      if (pfBtn) return toggleProForma(pfBtn.dataset.pfToggle);
       const chip = t.closest("[data-chip]");
       if (chip) {
         const set = ui[chip.dataset.chip];
@@ -593,7 +620,7 @@
 
     // Esc closes the open card while the Ideas tab is showing (the document intake handles its own keys).
     document.addEventListener("keydown", e => {
-      if (e.key !== "Escape" || !ui.sel || panel.hidden) return;
+      if (e.key !== "Escape" || !ui.sel || !visible()) return;
       if (e.target.closest && e.target.closest("#id-intake")) return;
       e.preventDefault();
       closeCard();
@@ -623,7 +650,7 @@
     ctx.onChange(false);
   }
 
-  function render(state, onChange) {
+  function render(state, onChange, view) {
     if (ctx && ctx.state !== state) ui.pending = null; // state replaced (reset): drop any unsaved status change
     ctx = { state, onChange };
     bind();
