@@ -130,6 +130,21 @@ Object.entries(CASES).forEach(([name, c]) => {
   check("Legacy migration twice equals once", JSON.stringify(l2) === JSON.stringify(l1) ? 1 : 0, 1, 0);
 }
 
+// ---- Every transaction date is a real calendar date ----
+{
+  const valid = iso => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso));
+    if (!m) return false;
+    const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+    return d.getUTCFullYear() === +m[1] && d.getUTCMonth() === +m[2] - 1 && d.getUTCDate() === +m[3];
+  };
+  const bad = (state.transactions || []).filter(t => !valid(t.date)).map(t => `${t.id} ${t.date}`);
+  if (bad.length) console.log("     invalid dates: " + bad.join(", "));
+  check("Transactions with an invalid calendar date", bad.length, 0, 0);
+  const dated = state.investments.concat(state.themes || []).flatMap(x => (x.signals || []).map(s => s.date).concat((x.decision_log || []).map(d => d.date)));
+  check("Signal and decision-log dates that are invalid", dated.filter(d => !valid(d)).length, 0, 0);
+}
+
 // ---- Blotter reconciles to the book ----
 if (Positions && Array.isArray(state.transactions)) {
   const pos = Positions.compute(state.holdings, state.transactions, state.as_of);
