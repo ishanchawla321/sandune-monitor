@@ -159,7 +159,6 @@
     const ui = { sort: {}, allCols: {}, bound: false };
     let ctx = null; // { state, onChange, holdings (with values), nav, positions, container }
 
-    const visibleCols = c => (c.cols.filter(x => x.compact).length > MAX_COMPACT || ui.allCols[c.key] ? c.cols : c.cols.filter(x => x.compact));
     const hasToggle = c => c.cols.length > MAX_COMPACT;
     const compactCols = c => c.cols.filter(x => x.compact);
     const colsFor = c => (ui.allCols[c.key] || !hasToggle(c) ? c.cols : compactCols(c));
