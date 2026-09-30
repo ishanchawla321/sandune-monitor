@@ -620,7 +620,26 @@ section[role=tabpanel] > .asof { margin: 0 0 calc(var(--s4) - var(--s5)); }
 .theme-grid { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
 @media (max-width: 720px) { .theme-grid { grid-template-columns: 1fr; } }
 @media (max-width: 720px) {
-  .title-line .title-input { order: 1; }
-  .title-line .close-btn { order: 2; }
-  .title-line .status-select { order: 3; }
+  .title-line .title-input, .title-line .card-title { order: 1; flex-basis: 100%; }
+  .title-line .status-select { order: 2; }
+  .title-line .close-btn { order: 3; margin-left: auto; }
+
+  /* Comparison table: one block per metric so Current, Pro forma and Change stay on screen. */
+  table.grid.baf, table.grid.baf tbody { display: block; width: 100%; }
+  table.grid.baf thead { display: none; }
+  table.grid.baf tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px var(--s2); padding: var(--s2) var(--s3); border-bottom: 1px solid var(--line); }
+  table.grid.baf td { border: 0; padding: 0; background: transparent !important; white-space: normal; min-width: 0; text-align: left; }
+  table.grid.baf td.col-name { grid-column: 1 / -1; position: static; max-width: none; font-weight: 600; }
+  table.grid.baf td[data-label]::before { content: attr(data-label); display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  table.grid.baf td.lim:empty, table.grid.baf td.flagcell:empty { display: none; }
+  table.grid.baf td.lim { grid-column: 1 / 2; }
+  table.grid.baf td.flagcell { grid-column: 2 / 4; align-self: end; text-align: right; }
+  table.grid.baf td.flagcell .flag { white-space: normal; }
+  table.grid.baf .pfc { border-left: 0; }
+  table.grid.baf tr.group-row td, table.grid.baf tr.note-row td { grid-column: 1 / -1; }
+  table.grid.baf tr.group-row { background: var(--subtle); padding-top: 6px; padding-bottom: 6px; }
+  table.grid.baf tr.row-caused td:first-child, table.grid.baf tr.row-pre td:first-child { box-shadow: none; }
+  table.grid.baf tr.row-caused { box-shadow: inset 3px 0 0 var(--breach); }
+  table.grid.baf tr.row-pre { box-shadow: inset 3px 0 0 var(--warn); }
+  .table-wrap:has(> table.baf) { overflow-x: visible; }
 }

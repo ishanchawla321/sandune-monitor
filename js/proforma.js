@@ -127,9 +127,9 @@
 
     // Current / Pro Forma / Change table with a Threshold group (Limit, Flag).
     const row = (label, b, a, chg, chgCls, flag, limit) =>
-      `<tr class="${flag && flag.state !== "ok" ? "row-" + flag.state : ""}"><td class="col-name">${label}</td><td class="num">${b}</td>` +
-      `<td class="num pfc">${a}</td><td class="num ${chgCls}">${chg}</td>` +
-      `<td class="lim">${limit || ""}</td><td>${flag ? flagHtml(flag) : ""}</td></tr>`;
+      `<tr class="${flag && flag.state !== "ok" ? "row-" + flag.state : ""}"><td class="col-name">${label}</td><td class="num" data-label="Current">${b}</td>` +
+      `<td class="num pfc" data-label="Pro forma">${a}</td><td class="num ${chgCls}" data-label="Change">${chg}</td>` +
+      `<td class="lim" data-label="Limit">${limit || ""}</td><td class="flagcell">${flag ? flagHtml(flag) : ""}</td></tr>`;
     const money = (label, key, dir, flag, limit) => {
       const d = key(after) - key(before);
       return row(label, Fmt.millions(key(before), 2), Fmt.millions(key(after), 2), dM(d), chgClass(d, dir, EPS.m), flag, limit);
