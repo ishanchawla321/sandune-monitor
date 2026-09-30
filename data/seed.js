@@ -10,7 +10,7 @@
 // transactions[] is the blotter that today's book is derived from; see the note above that block.
 
 window.SEED = {
-  version: 8,
+  version: 9,
   as_of: "2026-09-28",
   sample_data: true,
 
@@ -336,8 +336,10 @@ window.SEED = {
 
   // Investments carry every Holding field plus pipeline fields. Amounts in dollars; funded_pct is a fraction.
   // theme_id links an investment to at most one theme; it mirrors themes[].linked_investment_ids.
-  // assumptions[]: { id, text, status: intact | at_risk | broken, changed }
-  // signals[]: price signals { id, kind: "price", date, ticker, price, source } and notes { id, kind: "note", date, text, assumption_id }
+  // key_notes[] and change_my_mind[]: plain strings, one bullet each.
+  // diligence_documents[] (documents to request, numbers that don't tie) and diligence_other[] (calls, analysis):
+  //   { id, text, done: null | "YYYY-MM-DD" }. Ticking an item sets done.
+  // signals[]: dated notes { id, kind: "note", date, text } and price signals { id, kind: "price", date, ticker, price, source }
   // decision_log[]: { date, from, to, reason }
   investments: [
     { id: "i-bway", asset_class: "public_equity", name: "BrainsWay (BWAY)", ticker_or_id: "BWAY",
@@ -346,18 +348,25 @@ window.SEED = {
       mark_source: "Yahoo Finance close", mark_date: "2026-09-28",
       status: "researching", type: "public", theme_id: "t-tms",
       thesis: "TMS device maker positioned to benefit if accelerated protocols lift clinic demand for systems.",
-      assumptions: [
-        { id: "i-bway-a1", text: "Accelerated-protocol demand lifts system placements", status: "intact", changed: "2026-09-28" },
-        { id: "i-bway-a2", text: "Growth is funded without a heavily dilutive equity raise", status: "at_risk", changed: "2026-09-28" }
+      key_notes: [
+        "Accelerated-protocol demand lifts system placements",
+        "Growth is funded without a heavily dilutive equity raise"
       ],
-      triggers: ["Quarterly system placements fall year over year"],
+      change_my_mind: ["Quarterly system placements fall year over year"],
+      diligence_documents: [
+        { id: "i-bway-dd1", text: "Latest 10-K and 10-Q", done: null },
+        { id: "i-bway-dd2", text: "Balance sheet runway and any ATM or shelf filings", done: null }
+      ],
+      diligence_other: [
+        { id: "i-bway-do1", text: "Payer coverage policies for accelerated protocols", done: null },
+        { id: "i-bway-do2", text: "Calls with two TMS clinic operators", done: null }
+      ],
       contacts: [],
       check_size: 250000, funded_pct: 1.0, hold_months: null, months_to_50pct_back: null, interim_cash: false,
       target_return: "", entry_costs: "Not applicable (public market purchase)", terms_notes: "",
       next_step: "Review latest quarterly placements and cash runway", next_step_date: "2026-10-09",
       tickers: ["BWAY"], signals: [],
-      decision_log: [{ date: "2026-09-28", from: null, to: "researching", reason: "Split out of the TMS theme" }],
-      doc_flags: [] },
+      decision_log: [{ date: "2026-09-28", from: null, to: "researching", reason: "Split out of the TMS theme" }] },
 
     { id: "i-stim", asset_class: "public_equity", name: "Neuronetics (STIM)", ticker_or_id: "STIM",
       security_type: "common_stock", sector: "Health Care", price_or_mark: 2.555, quantity: 250000 / 2.555, market_value: null, cost: null,
@@ -365,18 +374,25 @@ window.SEED = {
       mark_source: "Yahoo Finance close", mark_date: "2026-09-28",
       status: "researching", type: "public", theme_id: "t-tms",
       thesis: "TMS device maker with a clinic-facing model; upside if accelerated protocols expand treatment volume and its cash lasts.",
-      assumptions: [
-        { id: "i-stim-a1", text: "Clinic customers keep adding treatment capacity", status: "intact", changed: "2026-09-28" },
-        { id: "i-stim-a2", text: "Cash runway lasts to breakeven without a discounted raise", status: "at_risk", changed: "2026-09-28" }
+      key_notes: [
+        "Clinic customers keep adding treatment capacity",
+        "Cash runway lasts to breakeven without a discounted raise"
       ],
-      triggers: ["An equity raise priced at a discount to market"],
+      change_my_mind: ["An equity raise priced at a discount to market"],
+      diligence_documents: [
+        { id: "i-stim-dd1", text: "Latest 10-K and 10-Q", done: null },
+        { id: "i-stim-dd2", text: "Balance sheet runway and any ATM or shelf filings", done: null }
+      ],
+      diligence_other: [
+        { id: "i-stim-do1", text: "Payer coverage policies for accelerated protocols", done: null },
+        { id: "i-stim-do2", text: "Calls with two TMS clinic operators", done: null }
+      ],
       contacts: [],
       check_size: 250000, funded_pct: 1.0, hold_months: null, months_to_50pct_back: null, interim_cash: false,
       target_return: "", entry_costs: "Not applicable (public market purchase)", terms_notes: "",
       next_step: "Check cash runway and debt covenants", next_step_date: "2026-10-09",
       tickers: ["STIM"], signals: [],
-      decision_log: [{ date: "2026-09-28", from: null, to: "researching", reason: "Split out of the TMS theme" }],
-      doc_flags: [] },
+      decision_log: [{ date: "2026-09-28", from: null, to: "researching", reason: "Split out of the TMS theme" }] },
 
     { id: "i-carwash", asset_class: "direct", name: "Car wash SPV (Anchorage)", ticker_or_id: "SPV-CW",
       security_type: "preferred_equity", sector: "Consumer Discretionary", price_or_mark: null, quantity: null, market_value: null, cost: null,
@@ -384,15 +400,30 @@ window.SEED = {
       mark_source: null, mark_date: null,
       status: "IC", type: "private_equity", theme_id: null,
       thesis: "Preferred equity in a three-site express car wash platform in Anchorage. The flagship is open and ramping; two more sites are planned. Returns depend on the membership ramp and on the next two sites opening on time.",
-      assumptions: [
-        { id: "i-carwash-a1", text: "Flagship membership ramps from ~4,500 (April run-rate) toward the ~8,400 base case", status: "at_risk", changed: "2026-09-28" },
-        { id: "i-carwash-a2", text: "Sites 2 and 3 break ground and open on schedule", status: "intact", changed: "2026-09-28" },
-        { id: "i-carwash-a3", text: "An exit at 3.0x+ EBITDA is achievable, which is what the conservative case needs just to return capital plus the pref", status: "intact", changed: "2026-09-28" }
+      key_notes: [
+        "Flagship membership ramps from ~4,500 (April run-rate) toward the ~8,400 base case",
+        "Sites 2 and 3 break ground and open on schedule",
+        "An exit at 3.0x+ EBITDA is achievable, which is what the conservative case needs just to return capital plus the pref"
       ],
-      triggers: [
+      change_my_mind: [
         "Monthly members below ramp for two quarters",
         "Site 2 construction slips past its start window",
         "Sale-leaseback not executed"
+      ],
+      diligence_documents: [
+        { id: "i-carwash-dd1", text: "Conservative-case exit multiples: text says 2.8x/3.7x, table says 3.0x/4.0x. Math supports the table ($20.0M / $6.7M = 3.0x; $27.1M / $6.7M = 4.0x).", done: null },
+        { id: "i-carwash-dd2", text: "Hold: headline is 3 years, capital-recovery footnote refers to a 5-year period.", done: null },
+        { id: "i-carwash-dd3", text: "Flagship EBITDA must go from $0.68M April run-rate to $5.3M base case, a ~7.8x ramp.", done: null },
+        { id: "i-carwash-dd4", text: "Entry fee % not in the deck; confirm in offering documents.", done: null },
+        { id: "i-carwash-dd5", text: "Offering documents confirming the upfront fee % and the 8%/yr catch-up mechanics", done: null },
+        { id: "i-carwash-dd6", text: "Monthly membership counts since the flagship opened", done: null },
+        { id: "i-carwash-dd7", text: "Permits, construction budgets and timelines for sites 2 and 3", done: null },
+        { id: "i-carwash-dd8", text: "Sale-leaseback LOI or term sheet", done: null }
+      ],
+      diligence_other: [
+        { id: "i-carwash-do1", text: "Map competing express washes in Anchorage", done: null },
+        { id: "i-carwash-do2", text: "Sponsor reference calls", done: null },
+        { id: "i-carwash-do3", text: "Underwrite the membership ramp against comparable openings", done: null }
       ],
       contacts: ["Sponsor deal lead"],
       check_size: 1000000, funded_pct: 1.0, hold_months: 36, months_to_50pct_back: 36, interim_cash: false,
@@ -401,13 +432,7 @@ window.SEED = {
       terms_notes: "1.0x liquidation preference plus 8% cumulative dividend, paid at exit.",
       next_step: "IC vote", next_step_date: "2026-10-06",
       tickers: [], signals: [],
-      decision_log: [{ date: "2026-09-10", from: "researching", to: "IC", reason: "Moved to IC" }],
-      doc_flags: [
-        "Conservative-case exit multiples: text says 2.8x/3.7x, table says 3.0x/4.0x. Math supports the table ($20.0M / $6.7M = 3.0x; $27.1M / $6.7M = 4.0x).",
-        "Hold: headline is 3 years, capital-recovery footnote refers to a 5-year period.",
-        "Flagship EBITDA must go from $0.68M April run-rate to $5.3M base case, a ~7.8x ramp.",
-        "Entry fee % not in the deck; confirm in offering documents."
-      ] },
+      decision_log: [{ date: "2026-09-10", from: "researching", to: "IC", reason: "Moved to IC" }] },
 
     { id: "i-rpa", asset_class: "private_credit", name: "RPA services first-lien loan", ticker_or_id: "LN-RPA",
       security_type: "first_lien_loan", sector: "Technology", price_or_mark: null, quantity: null, market_value: null, cost: null,
@@ -415,15 +440,32 @@ window.SEED = {
       mark_source: null, mark_date: null,
       status: "researching", type: "private_credit", theme_id: "t-ai",
       thesis: "First-lien amortizing term loan to an RPA implementation services firm, with warrants. Cash yield covers most of the return; warrants add upside with a floor and a cap.",
-      assumptions: [
-        { id: "i-rpa-a1", text: "The primary software partner relationship renews on the same terms (agreement expires in ~2 years)", status: "intact", changed: "2026-09-28" },
-        { id: "i-rpa-a2", text: "Recurring revenue stays at or above $20M, the ARR covenant floor", status: "intact", changed: "2026-09-28" },
-        { id: "i-rpa-a3", text: "Adjusted EBITDA quality holds: $4.3M adjusted vs $3.6M book", status: "at_risk", changed: "2026-09-28" }
+      key_notes: [
+        "The primary software partner relationship renews on the same terms (agreement expires in ~2 years)",
+        "Recurring revenue stays at or above $20M, the ARR covenant floor",
+        "Adjusted EBITDA quality holds: $4.3M adjusted vs $3.6M book"
       ],
-      triggers: [
+      change_my_mind: [
         "Partner renewal delayed or on worse terms",
         "ARR below $22M",
         "Add-backs above 20% of adjusted EBITDA"
+      ],
+      diligence_documents: [
+        { id: "i-rpa-dd1", text: "50% of capital back in 24 months is tranche 1 only; a full draw returns 45%.", done: null },
+        { id: "i-rpa-dd2", text: "Warrant valuation uses $5.0M EBITDA; the rest of the memo uses $4.3M.", done: null },
+        { id: "i-rpa-dd3", text: "Service-line revenue doesn't tie between the company overview and the P&L.", done: null },
+        { id: "i-rpa-dd4", text: "Upside net MOIC shown as both 1.75x and 1.74x.", done: null },
+        { id: "i-rpa-dd5", text: "Downside case (29% IRR, 2.5x) is higher than the base case because it assumes a cash sweep and taking control of the company; treat it as an enforcement scenario, not downside protection.", done: null },
+        { id: "i-rpa-dd6", text: "Software partner agreement and renewal terms", done: null },
+        { id: "i-rpa-dd7", text: "Quality of earnings report", done: null },
+        { id: "i-rpa-dd8", text: "Top 10 customer contracts", done: null },
+        { id: "i-rpa-dd9", text: "ARR bridge by service line", done: null },
+        { id: "i-rpa-dd10", text: "Credit agreement covenant definitions", done: null }
+      ],
+      diligence_other: [
+        { id: "i-rpa-do1", text: "Customer calls", done: null },
+        { id: "i-rpa-do2", text: "View on whether agentic AI replaces or extends RPA workflows", done: null },
+        { id: "i-rpa-do3", text: "Downside case rebuilt without the enforcement assumptions", done: null }
       ],
       contacts: ["Lender deal lead"],
       check_size: 1000000, funded_pct: 0.65, hold_months: 48, months_to_50pct_back: 24, interim_cash: true,
@@ -432,14 +474,7 @@ window.SEED = {
       terms_notes: "SOFR + 825 bps, 4% SOFR floor (~12.25% cash). 2.5% origination fee. 20% warrant coverage. 48-month maturity: 16 months interest-only, then straight-line amortization.",
       next_step: "Review credit agreement", next_step_date: "2026-10-14",
       tickers: [], signals: [],
-      decision_log: [{ date: "2026-09-20", from: null, to: "researching", reason: "Term sheet received" }],
-      doc_flags: [
-        "50% of capital back in 24 months is tranche 1 only; a full draw returns 45%.",
-        "Warrant valuation uses $5.0M EBITDA; the rest of the memo uses $4.3M.",
-        "Service-line revenue doesn't tie between the company overview and the P&L.",
-        "Upside net MOIC shown as both 1.75x and 1.74x.",
-        "Downside case (29% IRR, 2.5x) is higher than the base case because it assumes a cash sweep and taking control of the company; treat it as an enforcement scenario, not downside protection."
-      ] },
+      decision_log: [{ date: "2026-09-20", from: null, to: "researching", reason: "Term sheet received" }] },
 
     { id: "i-legalai", asset_class: "direct", name: "Legal AI late-stage equity", ticker_or_id: "PE-LAI",
       security_type: "preferred_equity", sector: "Technology", price_or_mark: 37.00, quantity: 27027, market_value: null, cost: null,
@@ -447,14 +482,25 @@ window.SEED = {
       mark_source: "Round price", mark_date: null,
       status: "watching", type: "venture", theme_id: "t-ai",
       thesis: "Late-stage equity in a legal AI software company at $37/share. The last round valued it at ~$15.5B (Sept 2026) with reported ARR above $400M. No IPO announced.",
-      assumptions: [
-        { id: "i-legalai-a1", text: "ARR growth continues at a pace that justifies the entry multiple", status: "intact", changed: "2026-09-28" },
-        { id: "i-legalai-a2", text: "AI application-software multiples hold through exit", status: "at_risk", changed: "2026-09-28" }
+      key_notes: [
+        "ARR growth continues at a pace that justifies the entry multiple",
+        "AI application-software multiples hold through exit"
       ],
-      triggers: [
+      change_my_mind: [
         "Growth decelerates below 50%",
         "A down round at a peer",
         "Secondary prices below $37"
+      ],
+      diligence_documents: [
+        { id: "i-legalai-dd1", text: "Round size, valuation and ARR come from public reports, not company documents. Unverified.", done: null },
+        { id: "i-legalai-dd2", text: "ARR by cohort and net retention", done: null },
+        { id: "i-legalai-dd3", text: "Cap table and preference stack", done: null },
+        { id: "i-legalai-dd4", text: "Recent secondary trade prices", done: null },
+        { id: "i-legalai-dd5", text: "Confirm round size and valuation against company documents", done: null }
+      ],
+      diligence_other: [
+        { id: "i-legalai-do1", text: "Reference calls with law-firm customers", done: null },
+        { id: "i-legalai-do2", text: "Competitive map of legal AI vendors", done: null }
       ],
       contacts: ["Placement agent"],
       check_size: 1000000, funded_pct: 1.0, hold_months: 36, months_to_50pct_back: 36, interim_cash: false,
@@ -463,14 +509,12 @@ window.SEED = {
       terms_notes: "$37.00 per share; 27,027 shares for $1.0M.",
       next_step: "Request data room access", next_step_date: "2026-10-16",
       tickers: [], signals: [],
-      decision_log: [{ date: "2026-09-22", from: null, to: "watching", reason: "Allocation offered" }],
-      doc_flags: [
-        "Round size, valuation and ARR come from public reports, not company documents. Unverified."
-      ] }
+      decision_log: [{ date: "2026-09-22", from: null, to: "watching", reason: "Allocation offered" }] }
   ],
 
   // Themes group investments under a shared thesis. No check size or target return on a theme.
   // value_chain[]: { segment, who_captures_value }. linked_investment_ids mirrors investments[].theme_id.
+  // key_notes[] and change_my_mind[] are plain strings.
   themes: [
     { id: "t-tms", name: "TMS / interventional psychiatry", status: "exploring",
       thesis: "Accelerated TMS protocols could expand clinic capacity and adoption. Reimbursement and clinic economics decide who captures the value: device makers, clinic operators or payers.",
@@ -480,13 +524,13 @@ window.SEED = {
         { segment: "Clinic operators", who_captures_value: "Capture volume if reimbursement holds" },
         { segment: "Payers", who_captures_value: "Decide whether accelerated protocols get paid" }
       ],
-      assumptions: [
-        { id: "t-tms-a1", text: "Payers cover accelerated protocols", status: "intact", changed: "2026-09-28" },
-        { id: "t-tms-a2", text: "CMS utilization of CPT 90867/90868 keeps rising", status: "intact", changed: "2026-09-28" },
-        { id: "t-tms-a3", text: "New device clearances expand the market, including a subscription-model device cleared for depression in Feb 2025", status: "intact", changed: "2026-09-28" },
-        { id: "t-tms-a4", text: "PE capital keeps entering clinic chains", status: "at_risk", changed: "2026-09-28" }
+      key_notes: [
+        "Payers cover accelerated protocols",
+        "CMS utilization of CPT 90867/90868 keeps rising",
+        "New device clearances expand the market, including a subscription-model device cleared for depression in Feb 2025",
+        "PE capital keeps entering clinic chains"
       ],
-      triggers: [
+      change_my_mind: [
         "A major payer denies accelerated-protocol coverage",
         "90867/90868 volume flattens",
         "A device maker raises equity at a discount"
@@ -509,12 +553,12 @@ window.SEED = {
         { segment: "Application software (Legal AI)", who_captures_value: "Captures value if it owns the workflow and the client data; at risk if models commoditize the feature." },
         { segment: "Implementation services (RPA loan)", who_captures_value: "Earns services margin during adoption; at risk of being automated away as agentic tools mature." }
       ],
-      assumptions: [
-        { id: "t-ai-a1", text: "Enterprise AI budgets keep growing", status: "intact", changed: "2026-09-28" },
-        { id: "t-ai-a2", text: "Agentic AI complements rather than replaces RPA workflows", status: "at_risk", changed: "2026-09-28" },
-        { id: "t-ai-a3", text: "AI application multiples hold", status: "at_risk", changed: "2026-09-28" }
+      key_notes: [
+        "Enterprise AI budgets keep growing",
+        "Agentic AI complements rather than replaces RPA workflows",
+        "AI application multiples hold"
       ],
-      triggers: [
+      change_my_mind: [
         "Large-customer churn at the RPA borrower",
         "Peer down rounds in AI applications"
       ],

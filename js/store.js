@@ -7,7 +7,7 @@
   const KEY = "sandune-monitor.state.v" + root.SEED.version;
 
   function fromSeed() {
-    return JSON.parse(JSON.stringify(root.SEED));
+    return root.Migrate.state(JSON.parse(JSON.stringify(root.SEED)));
   }
 
   function load() {
@@ -15,7 +15,7 @@
       const raw = root.localStorage.getItem(KEY);
       if (raw) {
         const state = JSON.parse(raw);
-        if (state && state.version === root.SEED.version && Array.isArray(state.holdings) && Array.isArray(state.investments)) return state;
+        if (state && state.version === root.SEED.version && Array.isArray(state.holdings) && Array.isArray(state.investments)) return root.Migrate.state(state);
       }
     } catch (e) { /* storage blocked or corrupt: fall through to the seed */ }
     return fromSeed();
