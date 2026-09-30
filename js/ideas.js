@@ -92,7 +92,7 @@
           <span class="stat"><span class="stat-label">Total check</span><span class="stat-value">${esc(k(s.check))}</span></span>
           <span class="stat"><span class="stat-label">Blended liquidity</span><span class="stat-value">${s.blended === null ? "n/a" : esc(s.blended.toFixed(0))}</span></span>
         </span>
-        <span class="tt-meta"><span><span class="stat-label">Last signal</span> ${esc(s.lastSignal || "none")}</span><span><span class="stat-label">Next step</span> ${esc(s.nextStep || "none")}</span></span></button>`;
+        <span class="tt-meta"><span><span class="stat-label">Last signal</span> ${esc(s.lastSignal || "none")}</span><span class="tt-sep" aria-hidden="true">·</span><span><span class="stat-label">Next step</span> ${esc(s.nextStep || "none")}</span></span></button>`;
     }).join("") : `<p class="muted">No themes yet.</p>`;
   }
 
@@ -165,7 +165,7 @@
   function section(key, title, o) {
     const editing = ui.editing === key;
     const cnt = o.count !== undefined ? ` <span class="sec-count">(${esc(String(o.count))})</span>` : "";
-    const editBtn = o.editable === false || editing ? "" :
+    const editBtn = o.editable === false || editing || !o.body ? "" :
       `<button type="button" class="edit-link" data-edit-sec="${key}" aria-label="${esc(o.editLabel || "Edit " + title)}">${PENCIL}<span>${esc(o.editText || "Edit")}</span></button>`;
     let content;
     if (editing) {
@@ -311,7 +311,7 @@
           ${fld("Sector", input("sector", "text", i.sector))}
           ${fld("Theme", `<select data-f="theme_id" data-kind="select"><option value="">None</option>${(ctx.state.themes || []).map(t => opt(t.id, t.name, i.theme_id || "")).join("")}</select>`)}
         </div><div class="sec-actions"><button type="button" class="btn btn-primary" data-save-sec="profile">Save</button><button type="button" class="btn" data-cancel-sec>Cancel</button></div>`
-      : `<div class="chips">${chip(L.type[i.type] || i.type)}${chip(L.asset_class[i.asset_class] || i.asset_class)}${chip(L.security_type[i.security_type] || i.security_type)}${chip(i.sector)}${i.theme_id ? chip(themeName(i.theme_id), "chip-link", ` data-open-theme="${esc(i.theme_id)}" title="Open theme"`) : ""}
+      : `<div class="chips">${Array.from(new Set([L.type[i.type] || i.type, L.asset_class[i.asset_class] || i.asset_class, L.security_type[i.security_type] || i.security_type, i.sector].filter(Boolean))).map(t => chip(t)).join("")}${i.theme_id ? chip(themeName(i.theme_id), "chip-link", ` data-open-theme="${esc(i.theme_id)}" title="Open theme"`) : ""}
           <button type="button" class="edit-link" data-edit-sec="profile" aria-label="Edit name, type, asset class, security type, sector and theme">${PENCIL}<span>Edit</span></button></div>`;
     const title = editingProfile
       ? `<label class="sr-only" for="id-card-name">Investment name</label><input type="text" id="id-card-name" class="title-input" data-f="name" data-kind="text" value="${esc(i.name)}">`

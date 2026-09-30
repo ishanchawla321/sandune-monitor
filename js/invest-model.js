@@ -43,7 +43,7 @@
   function fundingEntry(h, inv, date, amount) {
     const call = h.commitment !== null && h.commitment > amount;
     const t = { date, holding_id: h.id, type: call ? "capital_call" : "buy", quantity: null, price: null, amount: r2(amount),
-                note: `${call ? "First capital call" : "Funded"} from ${inv.name} (Ideas)` };
+                note: `${call ? "First capital call" : "Purchase"}: marked as funded in Opportunities > Ideas` };
     if (Metrics.isPriced(h) && h.security_type !== "basket") {
       const unit = h.security_type === "bond" || h.security_type === "t_bill" ? h.price_or_mark / 100 : h.price_or_mark;
       t.quantity = amount / unit; t.price = h.price_or_mark;

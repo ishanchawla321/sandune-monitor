@@ -133,6 +133,7 @@
         <div><b>Review extracted fields</b>${r.source === "cached" ? ` <span class="tag tag-cached">Cached example</span>` : ""}
           <div class="note">${ui.fileName ? esc(ui.fileName) + ". " : ""}Accept or edit every field that has a value. Highlighted rows are low confidence or not found.</div></div>
         <div class="rv-save"><span class="muted">${total - left.length} of ${total} reviewed</span>
+          ${left.length ? `<button type="button" class="btn" data-rv-accept-all title="Accept every field that has a value; you can still edit any of them">Accept all</button>` : ""}
           <button type="button" class="btn btn-primary" data-rv-commit${left.length || ui.editing ? " disabled" : ""}>Save as investment</button>
           <button type="button" class="btn" data-rv-discard>Discard</button></div>
       </div>
@@ -306,6 +307,7 @@
       const f = k => FIELDS.find(x => x.key === k);
       const acc = t.closest("[data-rv-accept]");
       if (acc) { ui.review[acc.dataset.rvAccept] = "accepted"; return render(); }
+      if (t.closest("[data-rv-accept-all]")) { pending().forEach(fd => { ui.review[fd.key] = "accepted"; }); ui.editing = null; return render(); }
       const ed = t.closest("[data-rv-edit]");
       if (ed) { ui.editing = ed.dataset.rvEdit; render(); const el = document.getElementById("rv-edit-" + ui.editing); if (el) el.focus(); return; }
       const sv = t.closest("[data-rv-save]");
