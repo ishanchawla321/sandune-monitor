@@ -365,6 +365,7 @@
     const panel = document.getElementById("tab-portfolio");
     panel.addEventListener("click", e => {
       const t = e.target;
+      if (t.closest("#pf-blotter")) return; // the blotter module handles its own clicks
       if (t.closest("#pf-dp-tile")) { ui.dpOpen = !ui.dpOpen; return ctx.onChange(false); }
       const sortBtn = t.closest("[data-sort]");
       if (sortBtn) {
@@ -408,6 +409,7 @@
     tog.setAttribute("aria-pressed", String(ui.allCols));
     tog.textContent = ui.allCols ? "Compact view" : "All columns";
     renderTable(m);
+    root.Blotter.render(state, onChange);
     return m;
   }
 

@@ -108,6 +108,21 @@
         <table class="grid" id="pf-table"></table>
       </div>
     </section>
+
+    <section class="card" aria-labelledby="bl-h" id="pf-blotter">
+      <div class="card-header">
+        <h2 id="bl-h">Blotter <span class="h-count muted" id="bl-count"></span></h2>
+        <div class="card-actions">
+          <button type="button" class="btn" id="bl-csv">Download CSV</button>
+        </div>
+      </div>
+      <p class="note">Every buy, sell, capital call, distribution and income item behind the book. A new entry posts to its holding and to operating cash straight away and saves in this browser. Sample data.</p>
+      <div id="bl-form"></div>
+      <div class="filters" id="bl-filters"></div>
+      <div class="table-wrap">
+        <table class="grid blotter" id="bl-table"></table>
+      </div>
+    </section>
   </section>
 
   <section id="tab-proforma" role="tabpanel" aria-labelledby="tabbtn-proforma" hidden>
@@ -171,6 +186,7 @@
 <script src="js/store.js"></script>
 <script src="js/api.js"></script>
 <script src="js/prices.js"></script>
+<script src="js/blotter.js"></script>
 <script src="js/portfolio.js"></script>
 <script src="samples/sample-om-extracted.js"></script>
 <script src="js/themes-model.js"></script>
