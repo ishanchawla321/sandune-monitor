@@ -405,7 +405,8 @@ table.grid.vc td.wrap { max-width: none; min-width: 200px; }
 table.grid tbody tr.is-highlight { background: var(--accent-tint); }
 table.grid tbody tr.is-highlight td.col-name { box-shadow: inset 3px 0 0 var(--accent); }
 table.grid.baf tr.note-row td, #pf2-selector tr.note-row td { color: var(--muted); font-size: var(--fs-small); font-style: italic; padding-top: 6px; padding-bottom: 6px; }
-.sel-inc { margin-right: var(--s1); }
+.sel-row { display: flex; align-items: flex-start; gap: var(--s2); }
+.sel-row input { margin: 4px 0 0; flex: 0 0 auto; }
 @media (max-width: 720px) {
   .stat-row.cols-6 { --cols: 2; }
   .dl { grid-template-columns: 1fr; gap: var(--s1); }
@@ -522,6 +523,7 @@ table.grid tbody tr.pf-funded { background: var(--subtle); }
   .edit-list li.assume .list-input { flex-basis: 100%; order: 3; }
   .theme-pick, .theme-pick select { min-width: 0; width: 100%; }
   .hc .card-header h2 .h-count { flex-basis: 100%; margin-left: 0; }
+  .card-header h2 .h-count { display: block; margin-left: 0; }
   .fund-form .fld, .fund-form .fld input, .fund-form .fld select { width: 100%; max-width: none; }
   .bl-form .fld, .bl-form .fld input, .bl-form .fld select, .bl-form .fld-holding select { width: 100%; min-width: 0; }
   .bl-form .fld { flex: 1 1 calc(50% - var(--s4)); }

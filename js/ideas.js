@@ -178,7 +178,7 @@
     return `<section class="card-sec${o.cls ? " " + o.cls : ""}" data-sec="${key}"><div class="sec-head"><h3>${esc(title)}${cnt}</h3>${editBtn}</div>${content}</section>`;
   }
   const bullets = list => ((list || []).length ? `<ul class="bullets">${list.map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : "");
-  const lines = (field, list, rows, placeholder) => `<textarea data-f="${field}" data-kind="lines" rows="${rows || Math.max(3, (list || []).length + 1)}" placeholder="${esc(placeholder || "One per line")}" aria-label="${esc(placeholder || field)}">${esc((list || []).join("\n"))}</textarea><p class="note">One item per line. Enter starts a new bullet; pasted lines become bullets.</p>`;
+  const lines = (field, list, rows, placeholder) => `<textarea data-f="${field}" data-kind="lines" rows="${Math.min(14, Math.max(rows || 3, (list || []).length + 1))}" placeholder="${esc(placeholder || "One per line")}" aria-label="${esc(placeholder || field)}">${esc((list || []).join("\n"))}</textarea><p class="note">One item per line. Enter starts a new bullet; pasted lines become bullets.</p>`;
   const fld = (label, inner) => `<label class="fld"><span>${esc(label)}</span>${inner}</label>`;
   const input = (field, kind, value, extra) => `<input type="${kind === "date" ? "date" : "text"}"${["k", "pct", "int", "num"].includes(kind) ? ' inputmode="decimal"' : ""} data-f="${field}" data-kind="${kind}" value="${esc(blank(value) ? "" : value)}"${extra || ""}>`;
   const textarea = (field, value, rows) => `<textarea data-f="${field}" data-kind="text" rows="${rows || 3}">${esc(value || "")}</textarea>`;
@@ -362,7 +362,7 @@
         ${dlRow("Entry costs", esc(i.entry_costs))}
         ${dlRow("Funding", fundingLine)}
         ${!pub && !blank(i.commitment) ? dlRow("Commitment", esc(k(i.commitment))) : ""}
-        ${!blank(i.price_or_mark) ? dlRow(pub ? "Price" : "Price per unit", esc(Fmt.number(i.price_or_mark, 2)) + (blank(i.quantity) ? "" : ` · ${esc(Fmt.number(i.quantity, 0))} ${pub ? "shares" : "units"}`)) : ""}
+        ${!blank(i.price_or_mark) ? dlRow("Price", "$" + esc(Fmt.number(i.price_or_mark, 2)) + (blank(i.quantity) ? "" : ` · ${esc(Fmt.number(i.quantity, 0))} ${pub ? "shares" : "units"}`)) : ""}
       </dl>`;
     const termsEdit = `${fld("Structure and terms", textarea("terms_notes", i.terms_notes, 2))}
         ${fld("Entry costs", textarea("entry_costs", i.entry_costs, 2))}

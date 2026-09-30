@@ -29,7 +29,7 @@
       const srcOpts = [`<option value="cash"${s.source === "cash" ? " selected" : ""}>Cash</option>`].concat(sources.map(h =>
         `<option value="${esc(h.id)}"${s.source === h.id ? " selected" : ""}>${esc(h.name)} ($${Fmt.thousands(Metrics.marketValue(h))}K)</option>`)).join("");
       return `<tr data-sel="${esc(i.id)}" class="${s.include ? "sel-on" : ""}">
-        <td class="col-name"><label class="sel-inc"><input type="checkbox" data-sel-field="include"${s.include ? " checked" : ""} aria-label="Model ${esc(i.name)}"></label> <button type="button" class="link name-link" data-open-investment="${esc(i.id)}" title="Open the investment one-pager">${esc(i.name)}</button></td>
+        <td class="col-name"><span class="sel-row"><input type="checkbox" data-sel-field="include"${s.include ? " checked" : ""} aria-label="Model ${esc(i.name)}"> <button type="button" class="link name-link" data-open-investment="${esc(i.id)}" title="Open the investment one-pager">${esc(i.name)}</button></span></td>
         <td class="wrap-sm">${esc(L.type[i.type] || i.type)}</td>
         <td>${esc(L.status[i.status] || i.status)}</td>
         <td class="num"><input class="num-input" inputmode="decimal" data-sel-field="check" value="${esc(+(Number(s.check) / 1000).toFixed(3))}" aria-label="Check size in $K for ${esc(i.name)}"></td>
