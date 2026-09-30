@@ -1,13 +1,14 @@
 # Sandune Monitor: project brief
 
-## Status (as of Tue 2026-09-29)
-- Done: Stages 1-5, 6a (themes/investments), 6b visual pass, visual cleanup (background, close buttons, type scale).
-- Hand-checked Pro Forma cases A-D (Seed mode): dry powder 17.75 / 17.65 / 18.95 / 17.75; illiquid incl. unfunded 52.89 / 52.89 / 50.88 / 52.89%.
-- Next: review visual pass screenshots; phone test on the live URL; add ANTHROPIC_API_KEY in Vercel by Thursday 2026-10-01 midday, test live extraction, replace samples/sample-om-extracted.json with a real response; final incognito/phone checks; submission paragraph and walkthrough script.
-- Open decisions: default table columns (revisit), model stays claude-sonnet-5, extract timeout 60s.
+## Status (as of Wed 2026-09-30)
+- Done: Stages 1-5, 6a (themes/investments), 6b visual pass, visual cleanup, and the v2 restructure (branch v2-restructure): two-level navigation, transaction blotter and positions engine, holdings by asset class.
+- Invariants (Seed mode) hold and are checked by `node tests/invariants.js`: NAV $49,748,585; dry powder $19,749,461; Pro Forma cases A-D dry powder 17.75 / 17.65 / 18.95 / 17.75 ($M) and illiquid incl. unfunded 52.89 / 52.89 / 50.88 / 52.89%; the seed blotter reconciles to the book for every holding.
+- Case definitions used by the test (reverse-engineered; the originals were not written down): A = car wash + RPA loan from cash; B = A plus BWAY and STIM; C = car wash funded by selling Apple; D = car wash + Legal AI from cash.
+- Next: review the v2 pull request; phone test on the live URL; add ANTHROPIC_API_KEY in Vercel by Thursday 2026-10-01 midday, test live extraction, replace samples/sample-om-extracted.json with a real response; final incognito/phone checks; submission paragraph and walkthrough script.
+- Open decisions: default table columns per asset-class card (revisit), model stays claude-sonnet-5, extract timeout 60s.
 
 ## What this is
-A family office portfolio and pipeline monitor. Three tabs: Portfolio, Ideas, Pro Forma. Public demo for a job case study, due Fri Oct 2, 2026 10:00am ET. Every holding and figure is SAMPLE DATA and must be labeled as such on every tab.
+A family office portfolio and pipeline monitor. Two sections, each with two tabs: Opportunities (Themes | Ideas) and Portfolio (Current | Pro Forma). The top level is a pill segmented control; the sub-tabs are underlined beneath it. The last tab is remembered per viewer (localStorage `sandune-monitor.tab.v2`). Public demo for a job case study, due Fri Oct 2, 2026 10:00am ET. Every holding and figure is SAMPLE DATA and must be labeled as such on every tab.
 
 ## Hard rules
 - Plain HTML, CSS and JavaScript. No framework, no build step, no npm packages in the front end. Chart.js saved as a local file in /vendor, not loaded from a CDN.
@@ -19,15 +20,22 @@ A family office portfolio and pipeline monitor. Three tabs: Portfolio, Ideas, Pr
 - Type scale (CSS tokens --fs-*; every element uses one): section heading 16px/600; card title 18px/600; stat label 12px uppercase, letter-spacing .04em, muted; stat value 16px/600 tabular; body 14px; small/help text 12px muted. Only the Portfolio summary tiles use large 28px values (--fs-hero); no other large numbers anywhere.
 - Stat rows (card headers, theme tiles) are a CSS grid of equal-width columns (.stat-row .stat): label on top, value underneath, all top-aligned. No subtitles under values; qualifiers go in the label, e.g. "Blended liquidity (check-weighted)".
 - Detail cards (investment, theme): title line = name, status as a pill-shaped select, and an × close button (32px, aria-label "Close") at the far right. ×, Esc, or clicking the opening row again closes the card and scrolls back to that row. Theme tiles share one fixed layout (title + status pill, 2-line thesis, 3-column stat grid, at-risk counts as small amber pills) so every tile has the same height.
-- Layout: must work at 375px phone width and fit a 1366px laptop; wide tables scroll inside their own container with the name column pinned. The page itself never scrolls sideways.
+- Layout: must work at 375px phone width and fit a 1366px laptop; wide tables scroll inside their own container with the name column pinned. The page itself never scrolls sideways. Holdings cards must not scroll sideways at 1366px in their default column set.
+- Holdings (Portfolio > Current) are one card per asset class, each with its own columns, a subtotal row, inline edit, sort, an "All columns" toggle where there are more than ten columns, CSV export and an add row, followed by a Total card whose subtotals equal NAV. Pro Forma shows the same cards read-only with PF and Sold badges (js/holdings.js).
+- Every idea row and idea card has an "Add to Pro Forma" button that toggles to "In Pro Forma". It writes the same `proforma.selections` the Pro Forma selector reads.
 - Never store or bundle source PDFs. Deal names are shown generically.
 - Build one stage at a time. Stop after each stage and summarize what changed.
 
 ## Data model
-Holding: id, asset_class (public_equity, credit, private_fund, direct, real_estate, cash), name, ticker_or_id, security_type, sector, price_or_mark, quantity, market_value, cost, commitment, unfunded, call_schedule, liquidity_bucket (liquid_now, 1_3y, 3y_plus), liquidity_date, mark_source, mark_date.
+Holding: id, asset_class (public_equity, credit, private_credit, private_fund, direct, real_estate, cash), name, ticker_or_id, security_type, sector, price_or_mark, quantity, market_value, cost, commitment, unfunded, call_schedule, liquidity_bucket (liquid_now, 1_3y, 3y_plus), liquidity_date, mark_source, mark_date.
 Market value: public equity = price x shares; bonds = price x face / 100; funds and privates = mark; cash = balance.
 Investment (formerly "Idea"; the array is investments[]): all Holding fields plus status (watching, researching, IC, invested, passed), type (public, private_equity, private_credit, venture), theme_id (optional), thesis, assumptions[] (text, status intact/at_risk/broken), triggers[], contacts[], check_size, funded_pct, hold_months, months_to_50pct_back, interim_cash (bool), target_return, next_step, next_step_date, tickers[], signals[], decision_log[], doc_flags[].
 Theme (themes[]): id, name, status (exploring, active, retired), thesis, why_now, value_chain[] ({segment, who_captures_value}), assumptions[], triggers[], contacts[], watch_public[] (tickers), watch_private[] (names), signals[], linked_investment_ids[], decision_log[]. No check size or target return. An investment belongs to at most one theme; investment.theme_id and theme.linked_investment_ids are kept in sync both ways (js/themes-model.js).
+
+Transaction (transactions[]; the blotter): id, date, holding_id, type (buy, sell, dividend, coupon, interest, capital_call, distribution, fee), quantity (shares, or face for bonds and T-bills), price (per share, or per 100 of face), amount (dollars; null means quantity x price, x 1/100 for bonds and T-bills), note.
+Position (derived by js/positions.js, never stored): quantity, avg_cost (weighted; per 100 for bonds and T-bills), cost_basis, realized_pnl, proceeds, invested, paid_in, calls_itd, income_itd, income_ltm, by_type[dividend|coupon|interest|distribution].{itd, ltm}, fees_itd, fees_ltm, first_date, last_date, last_income_date, lots[].
+Book vs blotter: holdings[] stays the book of record that Metrics reads (quantity, cost, unfunded, cash balance). The seed blotter reconciles to the seed book exactly. Positions.post()/unpost() keep them reconciled: a new entry appends to the blotter and applies its change to the holding (quantity, cost basis, paid-in, unfunded) and to operating cash; income already in the book is never added to cash again. Book fields the blotter drives (shares, average cost, cost basis, paid-in, unfunded) are not inline-editable once a holding has lots or calls; a holding added by hand with no history can still be typed in.
+Extra holding fields: bonds carry coupon (annual rate), maturity, coupon_freq; the clean price is price_or_mark, accrued interest (30/360 since the last coupon) is computed and shown "not in NAV"; YTM is solved from the clean price. Private funds carry vintage. Cash carries yield; T-bills carry maturity (bond-equivalent yield from the price).
 
 ## Formulas ($M; limits, reserve and haircuts are user-set)
 - NAV = sum of market value including cash
@@ -50,3 +58,8 @@ Settled choices. Do not change these without the owner's say-so.
 - Model: keep `claude-sonnet-5` (set in api/_lib.js). Do not switch to `claude-sonnet-5-5` or any other model. To be revisited when the Anthropic key is added.
 - Never edit files through PowerShell. Use the file edit tools and save as UTF-8 without BOM. (A PowerShell edit corrupted js/prices.js: it added a BOM and mangled "·" into "Â·".)
 - /api/extract timeout: keep `maxDuration: 60` in vercel.json. This is our choice, not a plan limit: Vercel Hobby functions can run up to 300 seconds. vercel.json is strict JSON and can't hold comments, so the reasoning lives here.
+- Invariant checks live in tests/invariants.js and run with `node tests/invariants.js` (plain Node, no packages). Expected values are never adjusted to match the code; a change that breaks one is fixed or reverted.
+- Positions derive from the blotter; the book (holdings[]) stays the record Metrics reads, and the two are kept reconciled by posting (see Data model). The dry powder, illiquid, ladder, calls, concentration and liquidity score formulas and everything in /api are unchanged by the v2 restructure.
+- Liquid credit is two cards (ETFs, bonds) because the column sets differ; charts and the Pro Forma asset mix still report one "Liquid credit" class.
+- Bond and T-bill market value uses the clean price (unchanged formula); accrued interest is informational only.
+- Screenshots for pull requests live under docs/screenshots/ as JPEGs so they can be linked from the PR description.
