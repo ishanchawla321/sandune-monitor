@@ -82,6 +82,54 @@ Object.entries(CASES).forEach(([name, c]) => {
   check("Reversed: funding record cleared", carwash.funding ? 1 : 0, 0, 0);
 }
 
+// ---- Funding any prospective investment matches Pro Forma with only that investment ticked (Seed mode) ----
+// For every prospective investment and two funding sources: mark it funded at its default amount and compare
+// Portfolio > Current with Pro Forma on the seed book, then reverse and confirm the seed figures.
+{
+  const cashOf = st => st.holdings.find(h => h.id === "h-cash").price_or_mark;
+  const summarize = (hs, st) => Metrics.summary(hs, st.settings, st.as_of);
+  const same = (label, a, b, tol) => check(label, a, b, tol === undefined ? 0.5 : tol);
+  const prospective = PFM.prospective(state);
+  check("Prospective investments to fund", prospective.length, 5, 0);
+  prospective.forEach(inv => ["cash", "h-aapl"].forEach(source => {
+    const tag = `${inv.name} from ${source === "cash" ? "cash" : "Apple"}`;
+    const s2 = JSON.parse(JSON.stringify(state));
+    const i2 = s2.investments.find(x => x.id === inv.id);
+    Invest.execute(s2, i2, { date: s2.as_of, amount: Invest.defaultAmount(i2), source });
+    const cur = summarize(s2.holdings, s2);
+    const pfHoldings = PFM.apply(state, { [inv.id]: { include: true, source } }).holdings;
+    const pf = summarize(pfHoldings, state);
+    same(`Fund ${tag}: cash`, cashOf(s2), pfHoldings.find(h => h.security_type === "cash").price_or_mark);
+    same(`Fund ${tag}: unfunded`, cur.unfunded, pf.unfunded);
+    same(`Fund ${tag}: dry powder`, cur.dry_powder.total, pf.dry_powder.total);
+    same(`Fund ${tag}: illiquid %`, cur.illiquid.pct, pf.illiquid.pct, 1e-9);
+    same(`Fund ${tag}: illiquid % incl. unfunded`, cur.illiquid.pct_incl_unfunded, pf.illiquid.pct_incl_unfunded, 1e-9);
+    const lpOk = cur.largest_position.holding.name === pf.largest_position.holding.name ? 1 : 0;
+    check(`Fund ${tag}: largest position name (${cur.largest_position.holding.name})`, lpOk, 1, 0);
+    same(`Fund ${tag}: largest position %`, cur.largest_position.pct, pf.largest_position.pct, 1e-9);
+    check(`Fund ${tag}: largest sector name (${cur.largest_sector.sector})`, cur.largest_sector.sector === pf.largest_sector.sector ? 1 : 0, 1, 0);
+    same(`Fund ${tag}: largest sector %`, cur.largest_sector.pct, pf.largest_sector.pct, 1e-9);
+    same(`Fund ${tag}: year-1 capital calls`, cur.ladder[1].calls, pf.ladder[1].calls);
+    Invest.reverse(s2, i2);
+    const back = summarize(s2.holdings, s2);
+    check(`Reverse ${tag}: NAV`, Math.round(back.nav), 49748585, 0);
+    check(`Reverse ${tag}: dry powder`, Math.round(back.dry_powder.total), 19749461, 0);
+  }));
+}
+
+// ---- Migration is idempotent ----
+{
+  const Migrate = require(path.join(repo, "js/migrate.js"));
+  const once = Migrate.state(JSON.parse(JSON.stringify(ctx.window.SEED)));
+  const twice = Migrate.state(JSON.parse(JSON.stringify(once)));
+  check("Migration twice equals once", JSON.stringify(twice) === JSON.stringify(once) ? 1 : 0, 1, 0);
+  const legacy = { investments: [{ id: "x", assumptions: [{ text: "A", status: "intact" }], triggers: ["B"], doc_flags: ["C"], signals: [] }], themes: [{ id: "t", assumptions: [{ text: "D" }], triggers: ["E"] }] };
+  const l1 = Migrate.state(JSON.parse(JSON.stringify(legacy)));
+  const l2 = Migrate.state(JSON.parse(JSON.stringify(l1)));
+  check("Legacy migration keeps text", l1.investments[0].key_notes[0] === "A" && l1.investments[0].change_my_mind[0] === "B" && l1.investments[0].diligence_documents[0].text === "C" && l1.themes[0].key_notes[0] === "D" ? 1 : 0, 1, 0);
+  check("Legacy migration twice equals once", JSON.stringify(l2) === JSON.stringify(l1) ? 1 : 0, 1, 0);
+}
+
 // ---- Blotter reconciles to the book ----
 if (Positions && Array.isArray(state.transactions)) {
   const pos = Positions.compute(state.holdings, state.transactions, state.as_of);

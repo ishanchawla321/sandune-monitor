@@ -25,7 +25,8 @@
     dividend: h => h.asset_class === "public_equity" || h.security_type === "etf" || h.asset_class === "direct",
     coupon: h => h.security_type === "bond",
     interest: h => h.security_type === "cash" || h.asset_class === "private_credit" || h.security_type === "first_lien_loan" || h.security_type === "t_bill",
-    capital_call: h => h.commitment !== null && h.commitment !== undefined,
+    capital_call: h => h.commitment !== null && h.commitment !== undefined && h.asset_class !== "private_credit" && h.security_type !== "first_lien_loan",
+    loan_draw: h => h.asset_class === "private_credit" || h.security_type === "first_lien_loan",
     distribution: h => h.asset_class === "private_fund" || h.asset_class === "real_estate" || h.security_type === "etf" || h.asset_class === "direct",
     fee: () => true
   };
@@ -40,9 +41,11 @@
   const unitType = h => !!h && Metrics.isPriced(h);
 
   function rows() {
+    const pos = P.compute(ctx.state.holdings, ctx.state.transactions || [], ctx.state.as_of);
     const txs = (ctx.state.transactions || []).map(t => {
       const h = holdingOf(t.holding_id);
-      return Object.assign({}, t, { holding: holdingName(t.holding_id), amount: P.amountOf(t, h), cash: P.cashEffect(t, h) });
+      const sale = t.type === "sell" && pos[t.holding_id] ? pos[t.holding_id].sales[t.id] : null;
+      return Object.assign({}, t, { holding: holdingName(t.holding_id), amount: P.amountOf(t, h), cash: P.cashEffect(t, h), sale });
     });
     let list = txs.filter(t => (!ui.types.size || ui.types.has(t.type)) && (!ui.holding || t.holding_id === ui.holding));
     const k = ui.sort.key;
@@ -81,6 +84,7 @@
       coupon: "Coupon received on a bond. Adds to income and to operating cash.",
       interest: "Interest received. Adds to income and to operating cash.",
       capital_call: "Amount called by the fund. Raises paid-in, lowers unfunded and operating cash.",
+      loan_draw: "Amount drawn on a private-credit loan (initial or delayed draw). Raises the amount invested, lowers unfunded and operating cash.",
       distribution: "Cash distributed by a fund, ETF, co-invest or property. Adds to income and to operating cash.",
       fee: "Fee paid from operating cash. Does not change the position."
     }[f.type];
@@ -151,6 +155,11 @@
       if (c.key === "price") return t.price === null || t.price === undefined ? "" : esc(Fmt.number(t.price, perHundred(h) ? 3 : 2));
       if (c.key === "amount") return esc(Fmt.dollars(t.amount));
       if (c.key === "cash") return `<span class="${t.cash < 0 ? "chg-bad" : "chg-good"}">${esc((t.cash < 0 ? "−" : "+") + Fmt.dollars(Math.abs(t.cash)))}</span>`;
+      if (c.key === "note" && t.sale) {
+        const r = t.sale.realized;
+        const detail = `${t.sale.avg_cost === null ? "" : "Avg cost " + Fmt.number(t.sale.avg_cost, 2) + " · "}realized ${r < 0 ? "−" : "+"}$${Fmt.thousands(Math.abs(r))}K`;
+        return `${esc(t.note || "")}${t.note ? "<br>" : ""}<span class="sale-detail">${esc(detail)}</span>`;
+      }
       return esc(t[c.key] === null || t[c.key] === undefined ? "" : String(t[c.key]));
     };
     const body = shown.map(t => `<tr>` + COLS.map(c => `<td class="${c.num ? "num " : ""}${c.cls || ""}${c.wrap ? " wrap" : ""}">${cell(c, t)}</td>`).join("") +
@@ -167,7 +176,8 @@
     const q = v => { const s = v === null || v === undefined ? "" : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
     const lines = [q("Sample data. All holdings, ideas and figures are illustrative. Amounts in USD."),
       ["Date", "Holding", "Holding ID", "Type", "Quantity", "Price", "Amount", "Cash effect", "Note"].map(q).join(",")]
-      .concat(list.map(t => [t.date, t.holding, t.holding_id, P.LABELS[t.type] || t.type, t.quantity, t.price, +t.amount.toFixed(2), +t.cash.toFixed(2), t.note].map(q).join(",")));
+      .concat(list.map(t => [t.date, t.holding, t.holding_id, P.LABELS[t.type] || t.type, t.quantity, t.price, +t.amount.toFixed(2), +t.cash.toFixed(2),
+        t.sale ? `${t.note ? t.note + ". " : ""}Avg cost ${t.sale.avg_cost === null ? "n/a" : t.sale.avg_cost.toFixed(2)}, realized ${t.sale.realized.toFixed(2)}` : t.note].map(q).join(",")));
     const blob = new Blob([lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);

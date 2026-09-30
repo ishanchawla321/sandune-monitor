@@ -2,7 +2,8 @@
 // entries to the book. Pure functions, no DOM. Works in the browser (window.Positions) and in Node.
 //
 // A transaction: { id, date, holding_id, type, quantity, price, amount, note }
-//   type: buy, sell, dividend, coupon, interest, capital_call, distribution, fee
+//   type: buy, sell, dividend, coupon, interest, capital_call, loan_draw, distribution, fee
+//   (loan_draw is a private-credit draw, initial or delayed; it books like a capital call)
 //   quantity is shares, or face for bonds and T-bills; price is per share, or per 100 of face.
 //   amount is dollars; when null it is quantity x price (x 1/100 for bonds and T-bills).
 //
@@ -14,11 +15,11 @@
 
   const Metrics = root.Metrics || (typeof require !== "undefined" ? require("./metrics.js") : null);
 
-  const TYPES = ["buy", "sell", "dividend", "coupon", "interest", "capital_call", "distribution", "fee"];
+  const TYPES = ["buy", "sell", "dividend", "coupon", "interest", "capital_call", "loan_draw", "distribution", "fee"];
   const LABELS = { buy: "Buy", sell: "Sell", dividend: "Dividend", coupon: "Coupon", interest: "Interest",
-                   capital_call: "Capital call", distribution: "Distribution", fee: "Fee" };
+                   capital_call: "Capital call", loan_draw: "Loan draw", distribution: "Distribution", fee: "Fee" };
   const INCOME = ["dividend", "coupon", "interest", "distribution"];
-  const OUTFLOW = ["buy", "capital_call", "fee"];
+  const OUTFLOW = ["buy", "capital_call", "loan_draw", "fee"];
 
   const num = v => (v === null || v === undefined || v === "" || !isFinite(v) ? 0 : Number(v));
   const r2 = v => Math.round(v * 100) / 100;
@@ -51,7 +52,7 @@
     INCOME.forEach(k => { by[k] = { itd: 0, ltm: 0 }; });
     return { holding_id: h.id, n_tx: 0, quantity: 0, cost_basis: 0, avg_cost: null, realized_pnl: 0, proceeds: 0,
              invested: 0, paid_in: 0, calls_itd: 0, income_itd: 0, income_ltm: 0, by_type: by, fees_itd: 0, fees_ltm: 0,
-             first_date: null, last_date: null, last_income_date: null, lots: [] };
+             first_date: null, last_date: null, last_income_date: null, lots: [], sales: {} };
   }
 
   const order = (a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : String(a.id) < String(b.id) ? -1 : String(a.id) > String(b.id) ? 1 : 0);
@@ -77,9 +78,9 @@
         p.invested += a;
         p.lots.push({ id: t.id, date: t.date, quantity: q, price: t.price, amount: a });
       } else if (t.type === "sell") {
-        let basis;
+        let basis, avg = null;
         if (isUnit(h)) {
-          const avg = p.quantity > 0 ? p.cost_basis / p.quantity : (num(h.quantity) ? num(h.cost) / num(h.quantity) : 0);
+          avg = p.quantity > 0 ? p.cost_basis / p.quantity : (num(h.quantity) ? num(h.cost) / num(h.quantity) : 0);
           basis = q * avg;
           p.quantity -= q;
         } else {
@@ -88,7 +89,9 @@
         p.cost_basis -= basis;
         p.realized_pnl += a - basis;
         p.proceeds += a;
-      } else if (t.type === "capital_call") {
+        // Per-sale detail for the blotter: average cost used (per unit; per 100 for bonds and T-bills) and realized P&L.
+        p.sales[t.id] = { avg_cost: avg === null ? null : (perHundred(h) ? avg * 100 : avg), realized: a - basis, basis };
+      } else if (t.type === "capital_call" || t.type === "loan_draw") {
         p.cost_basis += a; p.paid_in += a; p.calls_itd += a; p.invested += a;
       } else if (t.type === "fee") {
         p.fees_itd += a;

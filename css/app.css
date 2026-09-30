@@ -446,6 +446,7 @@ details.passed > .note { margin-top: var(--s3); }
 .tag-dividend, .tag-coupon, .tag-interest, .tag-distribution { background: var(--ok-tint); color: var(--ok); }
 .tag-fee { background: var(--subtle); color: var(--muted); }
 table.grid.blotter td.wrap { max-width: 300px; }
+.sale-detail { color: var(--muted); font-size: var(--fs-small); white-space: nowrap; }
 table.grid.blotter .col-name { min-width: 160px; }
 
 /* ---------- Pro Forma ---------- */

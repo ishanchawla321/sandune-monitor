@@ -458,12 +458,16 @@
     return `<div class="notice" role="status"><span>${esc(n.text)}</span>${n.holding_id ? ` <button type="button" class="link" data-view-holding="${esc(n.holding_id)}">View in Portfolio</button>` : ""}<button type="button" class="close-btn close-sm" data-notice-close aria-label="Dismiss">×</button></div>`;
   }
 
+  // The investment pane sits directly under the list its row is in (prospective, completed or passed).
   function renderCard() {
     const cur = current();
-    const thBox = document.getElementById("th-card"), invBox = document.getElementById("id-card");
-    thBox.innerHTML = cur && isTheme() ? themeCard(cur) : "";
-    invBox.innerHTML = noticeHtml() + (cur && !isTheme() ? investmentCard(cur)
-      : `<p class="placeholder">Select an investment in a table above to open its one-pager.</p>`);
+    document.getElementById("th-card").innerHTML = cur && isTheme() ? themeCard(cur) : "";
+    const slots = { prospective: "id-card", completed: "id-card-completed", passed: "id-card-passed" };
+    const where = cur && !isTheme() ? (cur.status === "invested" ? "completed" : cur.status === "passed" ? "passed" : "prospective") : null;
+    Object.entries(slots).forEach(([k, id]) => {
+      const el = document.getElementById(id);
+      el.innerHTML = k === where ? noticeHtml() + investmentCard(cur) : "";
+    });
   }
 
   function renderAll() {
@@ -573,11 +577,9 @@
     const panelId = kind === "theme" ? "tab-themes" : "tab-ideas";
     if (document.getElementById(panelId).hidden && root.App) root.App.showTab(kind === "theme" ? "opportunities/themes" : "opportunities/ideas");
     else ctx.onChange(false);
-    const box = document.getElementById(kind === "theme" ? "th-card" : "id-card");
-    if (box && box.scrollIntoView) box.scrollIntoView({ block: "start" });
   }
 
-  // Close the open card (×, Esc, or re-clicking its row) and return to the row or tile that opened it.
+  // Close the open card (×, Esc, or re-clicking its row). Focus returns to the row or tile without scrolling.
   function closeCard() {
     if (!ui.sel) return;
     const { kind, id } = ui.sel;
@@ -588,10 +590,7 @@
     ctx.onChange(false);
     const sel = kind === "theme" ? `[data-theme="${CSS.escape(id)}"]` : `tr[data-inv="${CSS.escape(id)}"]`;
     const opener = document.querySelector("#sec-opportunities " + sel);
-    if (opener) {
-      opener.scrollIntoView({ block: "center" });
-      opener.focus({ preventScroll: true });
-    }
+    if (opener) opener.focus({ preventScroll: true });
   }
 
   function bind() {

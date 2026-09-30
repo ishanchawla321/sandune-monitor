@@ -11,6 +11,7 @@
   const num = (v, d) => (v === null || v === undefined || v === "" || !isFinite(v) ? d : Number(v));
   const r2 = v => Math.round(v * 100) / 100;
   const isPublic = inv => inv.asset_class === "public_equity" || inv.type === "public";
+  const isLoan = x => x.asset_class === "private_credit" || x.security_type === "first_lien_loan";
 
   // Default funded amount for the form: check size x funded %.
   function defaultAmount(inv) {
@@ -34,16 +35,21 @@
       liquidity_date: pub ? date : PFM.addMonths(date, num(inv.hold_months, 60)),
       mark_source: "Funded at cost", mark_date: date
     };
-    if (Metrics.isPriced(h) && num(inv.price_or_mark, 0) > 0) h.price_or_mark = inv.price_or_mark;
-    else if (Metrics.isPriced(h)) h.security_type = "basket"; // no unit price: carried at the funded amount
+    if (Metrics.isPriced(h) && num(inv.price_or_mark, 0) > 0) {
+      // Buy at the displayed price: the live quote when Live mode has one, else the stored price.
+      h.price_or_mark = Metrics.effective(Object.assign({}, h, { price_or_mark: inv.price_or_mark })).price_or_mark;
+    } else if (Metrics.isPriced(h)) h.security_type = "basket"; // no unit price: carried at the funded amount
     return h;
   }
 
-  // Buy or capital call for the new holding, in blotter form.
+  // Buy, capital call or loan draw for the new holding, in blotter form. Private credit always funds by loan draw
+  // (initial draw now, delayed draws later); funds and equity SPVs with an undrawn balance fund by capital call.
   function fundingEntry(h, inv, date, amount) {
-    const call = h.commitment !== null && h.commitment > amount;
-    const t = { date, holding_id: h.id, type: call ? "capital_call" : "buy", quantity: null, price: null, amount: r2(amount),
-                note: `${call ? "First capital call" : "Purchase"}: marked as funded in Opportunities > Ideas` };
+    const partial = h.commitment !== null && h.commitment > amount;
+    const type = isLoan(h) ? "loan_draw" : partial ? "capital_call" : "buy";
+    const label = { loan_draw: "Initial loan draw", capital_call: "First capital call", buy: "Purchase" }[type];
+    const t = { date, holding_id: h.id, type, quantity: null, price: null, amount: r2(amount),
+                note: `${label}: marked as funded in Opportunities > Ideas` };
     if (Metrics.isPriced(h) && h.security_type !== "basket") {
       const unit = h.security_type === "bond" || h.security_type === "t_bill" ? h.price_or_mark / 100 : h.price_or_mark;
       t.quantity = amount / unit; t.price = h.price_or_mark;
@@ -95,7 +101,7 @@
       sourceName = src.name;
     }
     inv.holding_id = h.id;
-    inv.funding = { date, amount: r2(amount), source, source_name: sourceName, holding_id: h.id, created, tx_ids: ids };
+    inv.funding = { date, amount: r2(amount), source, source_name: sourceName, holding_id: h.id, created, tx_ids: ids, kind: buy.type };
     return inv.funding;
   }
 
@@ -123,7 +129,8 @@
 
   // One line for the decision log.
   function describe(f) {
-    return `Funded $${Math.round(f.amount / 1000).toLocaleString("en-US")}K from ${f.source === "cash" ? "cash" : f.source_name} on ${f.date}.`;
+    const verb = f.kind === "loan_draw" ? "Loan draw of" : f.kind === "capital_call" ? "Capital call of" : "Funded";
+    return `${verb} $${Math.round(f.amount / 1000).toLocaleString("en-US")}K from ${f.source === "cash" ? "cash" : f.source_name} on ${f.date}.`;
   }
 
   const InvestModel = { defaultAmount, newHolding, validate, execute, reverse, describe };
