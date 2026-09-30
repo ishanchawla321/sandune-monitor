@@ -75,7 +75,7 @@
   const inProForma = i => !!(pfSelections()[i.id] || {}).include;
   function pfButton(i, cls) {
     const on = inProForma(i);
-    return `<button type="button" class="btn btn-sm btn-toggle ${cls || ""}" data-pf-toggle="${esc(i.id)}" aria-pressed="${on}" title="${on ? "Remove from the Pro Forma book" : "Add to the Pro Forma book at its default check size"}">${on ? "In Pro Forma" : "Add to Pro Forma"}</button>`;
+    return `<button type="button" class="btn ${cls === "btn-pf" ? "" : "btn-sm "}btn-toggle ${cls || ""}" data-pf-toggle="${esc(i.id)}" aria-pressed="${on}" title="${on ? "Remove from the Pro Forma book" : "Add to the Pro Forma book at its default check size"}">${on ? "In Pro Forma" : "Add to Pro Forma"}</button>`;
   }
   function toggleProForma(id) {
     const inv = ctx.state.investments.find(x => x.id === id);

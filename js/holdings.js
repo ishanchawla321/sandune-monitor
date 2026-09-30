@@ -93,8 +93,8 @@
       note: "Shares, average cost and dividends come from the blotter. Price is per share; market value is price x shares. Dollar columns in $ thousands.",
       newHolding: { asset_class: "public_equity", security_type: "common_stock", liquid: true },
       cols: [NAME, TICKER, SHARES, AVG_COST, PRICE("Last price"), MV, PNL, PNL_PCT,
-             money("div_ltm", "Dividends (LTM)"), col("div_yield", "Dividend yield", { num: true, fmt: "pct2", compact: false, total: rows => div(sum(rows, "div_ltm"), sum(rows, "mv")) }),
-             col("total_return", "Total return %", { num: true, fmt: "pct1", compact: false, total: rows => div(sum(rows, "pnl") + sum(rows, "income_itd"), sum(rows, "cost")) }),
+             money("div_ltm", "Dividends (LTM)"), col("div_yield", "Dividend yield", { num: true, fmt: "pct2", total: rows => div(sum(rows, "div_ltm"), sum(rows, "mv")) }),
+             col("total_return", "Total return %", { num: true, fmt: "pct1", help: "P&L + dividends / cost", total: rows => div(sum(rows, "pnl") + sum(rows, "income_itd"), sum(rows, "cost")) }),
              REALIZED, PCT_NAV, MARK_SOURCE, MARK_DATE] },
     { key: "credit_etf", title: "Liquid credit: ETFs", match: h => h.asset_class === "credit" && h.security_type !== "bond",
       note: "Shares and average cost come from the blotter; distributions are the trailing 12 months. Dollar columns in $ thousands.",
@@ -107,8 +107,8 @@
              col("maturity", "Maturity", { edit: "date", field: "maturity", nullable: true }),
              money("qty", "Face", { edit: "number", field: "quantity", scale: () => 1000, editable: noLots, derivedNote: "From the blotter" }),
              col("avg_cost", "Avg price", { num: true, fmt: "n2", compact: false, edit: "number", field: "cost", scale: r => (r.qty ? r.qty / 100 : 1), editable: noLots, derivedNote: "Weighted average from the blotter" }),
-             PRICE("Clean price"), money("mv", "Market value (clean)"),
-             money("accrued", "Accrued interest", { help: "not in NAV" }), money("coupons_ltm", "Coupons (LTM)"),
+             PRICE("Clean price"), money("mv", "Market value (clean)", { cls: "col-w" }),
+             money("accrued", "Accrued interest", { help: "not in NAV", cls: "col-w" }), money("coupons_ltm", "Coupons (LTM)"),
              col("ytm", "YTM", { num: true, fmt: "pct2", total: rows => div(rows.reduce((s, r) => s + (blank(r.ytm) ? 0 : r.ytm * r.mv), 0), sum(rows.filter(r => !blank(r.ytm)), "mv")) }),
              col("next_coupon", "Next coupon", { compact: false }), PNL, PCT_NAV, MARK_SOURCE, MARK_DATE] },
     { key: "private_fund", title: "Private funds", match: h => h.asset_class === "private_fund",
@@ -198,8 +198,8 @@
       const head = cols.map(c => {
         const active = s && s.key === c.key;
         const aria = active ? (s.dir > 0 ? "ascending" : "descending") : "none";
-        const label = esc(c.label) + (c.unit ? ` <span class="unit-hint">(${c.unit})</span>` : "") + (c.help ? ` <span class="unit-hint">(${esc(c.help)})</span>` : "");
-        return `<th class="${c.num ? "num " : ""}${c.cls || ""}" aria-sort="${aria}"><button type="button" class="sort" data-hsort="${card.key}:${c.key}">${label}${active ? (s.dir > 0 ? " ▲" : " ▼") : ""}</button></th>`;
+        const label = esc(c.label) + (c.unit ? ` <span class="unit-hint">(${c.unit})</span>` : "") + (c.help && c.help.length <= 12 ? ` <span class="unit-hint">(${esc(c.help)})</span>` : "");
+        return `<th class="${c.num ? "num " : ""}${c.cls || ""}" aria-sort="${aria}"${c.help && c.help.length > 12 ? ` title="${esc(c.help)}"` : ""}><button type="button" class="sort" data-hsort="${card.key}:${c.key}">${label}${active ? (s.dir > 0 ? " ▲" : " ▼") : ""}</button></th>`;
       }).join("") + (o.editable ? `<th class="col-act"><span class="sr-only">Actions</span></th>` : "");
       const body = rows.map(r => `<tr data-id="${esc(r.id)}" class="${r.pf ? "pf-new" : ""}${o.rowClass ? " " + o.rowClass(r) : ""}">` + cols.map(c => {
         const editable = canEdit(c, r);

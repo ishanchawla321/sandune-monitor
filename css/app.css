@@ -332,6 +332,8 @@ td.derived { color: var(--ink); cursor: help; }
 table.grid.hold td.col-name { min-width: 150px; max-width: 220px; }
 table.grid.hold th, table.grid.hold td { padding-left: var(--s3); padding-right: var(--s3); }
 table.grid.hold th.col-name, table.grid.hold td.col-name { padding-left: var(--s4); }
+table.grid.hold th.col-w { min-width: 104px; }
+.hc .card-header h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s1) var(--s2); }
 table.grid.hold-total td.col-name, table.grid.hold-total th.col-name { min-width: 160px; }
 table.grid.hold-total { width: auto; min-width: 480px; }
 @media (max-width: 720px) {
@@ -433,6 +435,9 @@ table.grid tbody tr.pf-funded { background: var(--subtle); }
   .edit-list li { flex-wrap: wrap; }
   .edit-list li.assume .list-input { flex-basis: 100%; order: 3; }
   .theme-pick, .theme-pick select { min-width: 0; width: 100%; }
+  .hc .card-header h2 .h-count { flex-basis: 100%; margin-left: 0; }
+  .fld-end { margin-left: 0; flex-basis: 100%; }
+  .fld-end .btn-pf { width: 100%; }
   .bl-form .fld, .bl-form .fld input, .bl-form .fld select, .bl-form .fld-holding select { width: 100%; min-width: 0; }
   .bl-form .fld { flex: 1 1 calc(50% - var(--s4)); }
   .bl-form .fld-holding, .bl-form .fld-note, .bl-form .fld-submit { flex-basis: 100%; }
