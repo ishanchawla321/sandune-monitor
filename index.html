@@ -95,19 +95,7 @@
       </figure>
     </div>
 
-    <section class="card" aria-labelledby="pf-holdings-h">
-      <div class="card-header">
-        <h2 id="pf-holdings-h">Holdings</h2>
-        <div class="card-actions">
-          <button type="button" class="btn btn-toggle" id="pf-cols" aria-pressed="false">All columns</button>
-          <button type="button" class="btn" id="pf-csv">Download CSV</button>
-        </div>
-      </div>
-      <p class="note">Click a cell to edit. Dollar columns are in $ thousands. Price is shown only for priced securities: per share for stocks and ETFs, per 100 face for bonds and T-bills; their market value is price x quantity. Funds, directs, real estate and cash have no unit price: Market value is the mark or balance, and you edit it there.</p>
-      <div class="table-wrap">
-        <table class="grid" id="pf-table"></table>
-      </div>
-    </section>
+    <div id="pf-holdings" class="hc-stack" aria-label="Holdings by asset class"></div>
 
     <section class="card" aria-labelledby="bl-h" id="pf-blotter">
       <div class="card-header">
@@ -163,17 +151,9 @@
       <div class="chart-box chart-calls"><canvas id="pf2-chart-calls" role="img" aria-label="Bar chart of after-trade projected capital calls, years 1 to 5, aligned with the ladder above."></canvas></div>
     </figure>
 
-    <section class="card" aria-labelledby="pf2-hold-h">
-      <div class="card-header">
-        <h2 id="pf2-hold-h">Pro forma holdings</h2>
-        <div class="card-actions">
-          <button type="button" class="btn btn-toggle" id="pf2-cols" aria-pressed="false">All columns</button>
-        </div>
-      </div>
-      <p class="note">New investment rows are marked PF. Holdings sold to fund a trade show their reduced value. Dollar columns are in $ thousands.</p>
-      <div class="table-wrap">
-        <table class="grid" id="pf2-holdings"></table>
-      </div>
+    <section aria-labelledby="pf2-hold-h" class="hc-group">
+      <h2 id="pf2-hold-h" class="group-title">Pro forma holdings <span class="h-count muted">new rows marked PF; holdings sold to fund a trade show their reduced value</span></h2>
+      <div id="pf2-holdings" class="hc-stack"></div>
     </section>
   </section>
 </main>
@@ -186,6 +166,7 @@
 <script src="js/store.js"></script>
 <script src="js/api.js"></script>
 <script src="js/prices.js"></script>
+<script src="js/holdings.js"></script>
 <script src="js/blotter.js"></script>
 <script src="js/portfolio.js"></script>
 <script src="samples/sample-om-extracted.js"></script>

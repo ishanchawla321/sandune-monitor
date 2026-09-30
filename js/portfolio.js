@@ -1,64 +1,16 @@
-// Portfolio tab: tiles, charts and the editable holdings table.
+// Portfolio > Current: tiles, charts, holdings by asset class (js/holdings.js) and the blotter (js/blotter.js).
 (function (root) {
   "use strict";
 
   const Fmt = root.Fmt, Metrics = root.Metrics;
   const L = Fmt.LABELS;
   const CLASS_ORDER = Object.keys(L.asset_class);
-  const BUCKETS = ["liquid_now", "1_3y", "3y_plus"];
-  const LIQUID_CLASSES = ["public_equity", "credit", "cash"];
 
   const ACCENT = "#1f3a5f", MUTED = "#a3adb8", GRID = "#e6e8ec", INK = "#1a2230", INK2 = "#5b6470";
 
-  // ---- Column definitions. `scale` converts the typed value to stored dollars ($K fields = 1000). ----
-  const COLS = [
-    { key: "name", label: "Name", edit: "text", cls: "col-name" },
-    { key: "asset_class", label: "Asset class", wrap: true, edit: "select", options: CLASS_ORDER, show: h => L.asset_class[h.asset_class] || h.asset_class },
-    { key: "ticker_or_id", label: "Ticker/ID", edit: "text" },
-    { key: "security_type", label: "Security type", edit: "select", options: Object.keys(L.security_type),
-      show: h => L.security_type[h.security_type] || h.security_type },
-    { key: "sector", label: "Sector", wrap: true, edit: "text" },
-    // Unit price for priced securities only; funds, directs, real estate and cash carry their mark in Market value.
-    { key: "price_or_mark", label: "Price", num: true, edit: "number", editable: h => Metrics.isPriced(h),
-      show: h => (Metrics.isPriced(h) ? Fmt.number(h.price_or_mark, 2) : "") },
-    { key: "quantity", label: "Quantity", num: true, edit: "number", editable: h => Metrics.isPriced(h),
-      show: h => (Metrics.isPriced(h) ? Fmt.number(h.quantity, 0) : "") },
-    // Computed for priced securities; for everything else it is the mark (or balance) and edits write price_or_mark.
-    { key: "market_value", label: "Market value", num: true, k: true, edit: "number", field: "price_or_mark",
-      scale: () => 1000, editable: h => !Metrics.isPriced(h) },
-    { key: "cost", label: "Cost", num: true, k: true, edit: "number", scale: () => 1000, nullable: true },
-    { key: "pnl", label: "Unrealized P&L", num: true, k: true },
-    { key: "commitment", label: "Commitment", num: true, k: true, edit: "number", scale: () => 1000, nullable: true },
-    { key: "unfunded", label: "Unfunded", num: true, k: true, edit: "number", scale: () => 1000 },
-    { key: "pct_nav", label: "% NAV", num: true, show: h => Fmt.pct(h.pct_nav) },
-    { key: "liquidity_bucket", label: "Liquidity", edit: "select", options: BUCKETS, show: h => L.liquidity_bucket[h.liquidity_bucket] || h.liquidity_bucket },
-    { key: "liquidity_date", label: "Liquidity date", edit: "date" },
-    { key: "mark_source", label: "Mark source", edit: "text" },
-    { key: "mark_date", label: "Mark date", edit: "date" }
-  ];
-
-  // Default (compact) column set; "All columns" shows every column in COLS order.
-  const COMPACT = ["name", "asset_class", "sector", "price_or_mark", "quantity", "market_value", "pct_nav", "pnl", "unfunded", "liquidity_bucket"];
-  const visibleCols = all => (all ? COLS : COMPACT.map(k => COLS.find(c => c.key === k)));
-
-  const ui = { sort: { key: null, dir: 1 }, dpOpen: false, charts: {}, bound: false, addClass: "public_equity", allCols: false };
+  const ui = { dpOpen: false, charts: {}, bound: false };
+  const holdings = root.Holdings.create({ prefix: "pf", editable: true });
   let ctx = null; // { state, onChange }
-
-  const today = () => Fmt.today();
-  const scaleOf = (col, h) => (col.scale ? col.scale(h) : 1);
-
-  function rowsWithDerived(m) {
-    return m.holdings.map(h => Object.assign({}, h, {
-      pnl: h.cost === null || h.cost === undefined || h.cost === "" ? null : h.market_value - h.cost,
-      pct_nav: m.nav ? h.market_value / m.nav : null
-    }));
-  }
-
-  function cellText(col, h) {
-    if (col.show) return col.show(h);
-    if (col.k) return Fmt.thousands(h[col.key]);
-    return h[col.key] === null || h[col.key] === undefined ? "" : String(h[col.key]);
-  }
 
   // ---------------- Tiles ----------------
   function renderTiles(m, s) {
@@ -175,225 +127,11 @@
     ui.charts[key] = new root.Chart(document.getElementById(canvasId), { type, data, options: opts });
   }
 
-  // ---------------- Holdings table ----------------
-  function renderTable(m) {
-    const rows = rowsWithDerived(m);
-    const cols = visibleCols(ui.allCols);
-    const sortCol = COLS.find(c => c.key === ui.sort.key);
-    const sortVal = h => {
-      if (!sortCol.num) return String(cellText(sortCol, h)).toLowerCase();
-      const v = h[sortCol.key];
-      return v === null || v === undefined || v === "" ? -Infinity : Number(v);
-    };
-
-    const head = cols.map(c => {
-      const active = ui.sort.key === c.key;
-      const aria = active ? (ui.sort.dir > 0 ? "ascending" : "descending") : "none";
-      const mark = active ? (ui.sort.dir > 0 ? " ▲" : " ▼") : "";
-      return `<th class="${c.num ? "num " : ""}${c.cls || ""}" aria-sort="${aria}">
-        <button type="button" class="sort" data-sort="${c.key}">${Fmt.esc(c.label)}${c.k ? " ($K)" : ""}${mark}</button></th>`;
-    }).join("") + `<th class="col-act"><span class="sr-only">Actions</span></th>`;
-
-    const sumK = (list, key) => list.reduce((s, h) => s + (Number(h[key]) || 0), 0);
-    const totalRow = (label, list, cls) => {
-      const mv = sumK(list, "market_value");
-      const withCost = list.filter(h => h.pnl !== null);
-      const hasCommitments = list.some(h => (h.commitment !== null && h.commitment !== undefined) || Number(h.unfunded) > 0);
-      return `<tr class="${cls}">` + cols.map(c => {
-        let v = "";
-        if (c.key === "name") v = Fmt.esc(label);
-        else if (c.key === "market_value") v = Fmt.thousands(mv);
-        else if (c.key === "cost") v = Fmt.thousands(sumK(list, "cost"));
-        else if (c.key === "pnl") v = withCost.length ? Fmt.thousands(sumK(withCost, "pnl")) : "";
-        else if (c.key === "commitment" && hasCommitments) v = Fmt.thousands(sumK(list, "commitment"));
-        else if (c.key === "unfunded" && hasCommitments) v = Fmt.thousands(sumK(list, "unfunded"));
-        else if (c.key === "pct_nav") v = Fmt.pct(m.nav ? mv / m.nav : null);
-        return `<td class="${c.num ? "num " : ""}${c.cls || ""}">${v}</td>`;
-      }).join("") + `<td class="col-act"></td></tr>`;
-    };
-
-    let body = "";
-    const known = CLASS_ORDER.concat(rows.map(h => h.asset_class).filter(k => !CLASS_ORDER.includes(k)));
-    Array.from(new Set(known)).forEach(cls => {
-      let group = rows.filter(h => h.asset_class === cls);
-      if (!group.length) return;
-      if (sortCol) group = group.slice().sort((a, b) => (sortVal(a) > sortVal(b) ? 1 : sortVal(a) < sortVal(b) ? -1 : 0) * ui.sort.dir);
-      body += group.map(h => `<tr data-id="${Fmt.esc(h.id)}">` + cols.map(c => {
-        const editable = c.edit && (!c.editable || c.editable(h));
-        const attrs = editable ? ` data-edit="${c.key}" tabindex="0" title="Click to edit${c.scale && c.scale(h) === 1000 ? " ($K)" : ""}"` : "";
-        return `<td class="${c.num ? "num " : ""}${c.cls || ""}${c.wrap ? " wrap-sm" : ""}${editable ? " editable" : ""}"${attrs}>${Fmt.esc(cellText(c, h))}</td>`;
-      }).join("") + `<td class="col-act"><button type="button" class="link danger" data-delete="${Fmt.esc(h.id)}" aria-label="Delete ${Fmt.esc(h.name)}">Delete</button></td></tr>`).join("");
-      body += totalRow((L.asset_class[cls] || cls) + " subtotal", group, "subtotal");
-    });
-    body += totalRow("Total (NAV)", rows, "grandtotal");
-
-    const addRow = `<tr class="addrow"><td colspan="${cols.length + 1}"><div class="addrow-inner">
-        <label for="pf-add-class">Add holding to</label>
-        <select id="pf-add-class">${CLASS_ORDER.map(k => `<option value="${k}"${k === ui.addClass ? " selected" : ""}>${L.asset_class[k]}</option>`).join("")}</select>
-        <button type="button" class="btn" id="pf-add">Add holding</button></div></td></tr>`;
-
-    document.getElementById("pf-table").innerHTML = `<thead><tr>${head}</tr></thead><tbody>${body}</tbody><tfoot>${addRow}</tfoot>`;
-  }
-
-  // ---------------- Editing ----------------
-  function parseNumber(text) {
-    const t = String(text).trim().replace(/[$,\s]/g, "");
-    if (t === "") return "";
-    const neg = /^\(.*\)$/.test(t);
-    const n = Number(t.replace(/[()]/g, ""));
-    return isFinite(n) ? (neg ? -n : n) : NaN;
-  }
-
-  function startEdit(td) {
-    const id = td.parentElement.dataset.id, key = td.dataset.edit;
-    // Committing a previous edit re-renders the table, so the clicked cell may be stale: find its replacement.
-    if (!td.isConnected) {
-      td = Array.from(document.querySelectorAll("#pf-table tr[data-id]")).filter(tr => tr.dataset.id === id)
-        .map(tr => tr.querySelector(`td[data-edit="${key}"]`))[0];
-      if (!td) return;
-    }
-    if (td.querySelector("input, select")) return;
-    const h = ctx.state.holdings.find(x => x.id === id);
-    const col = COLS.find(c => c.key === key);
-    if (!h || !col) return;
-    const field = col.field || col.key;
-
-    let input;
-    if (col.edit === "select") {
-      input = document.createElement("select");
-      const options = col.options.includes(h[field]) || !h[field] ? col.options : col.options.concat(h[field]);
-      options.forEach(o => {
-        const opt = document.createElement("option");
-        opt.value = o;
-        opt.textContent = (L[key] && L[key][o]) || o;
-        if (h[field] === o) opt.selected = true;
-        input.appendChild(opt);
-      });
-    } else {
-      input = document.createElement("input");
-      input.type = col.edit === "date" ? "date" : "text";
-      if (col.edit === "number") {
-        input.inputMode = "decimal";
-        const v = h[field];
-        input.value = v === null || v === undefined ? "" : String(+(v / scaleOf(col, h)).toFixed(6));
-      } else {
-        input.value = h[field] === null || h[field] === undefined ? "" : h[field];
-      }
-    }
-    input.className = "cell-input";
-    input.setAttribute("aria-label", col.label);
-
-    let done = false;
-    const finish = commit => {
-      if (done) return;
-      done = true;
-      if (commit) applyEdit(h, col, input.value);
-      else ctx.onChange(false);
-    };
-    input.addEventListener("keydown", e => {
-      if (e.key === "Enter") { e.preventDefault(); finish(true); }
-      if (e.key === "Escape") { e.preventDefault(); finish(false); }
-    });
-    input.addEventListener("blur", () => finish(true));
-    if (col.edit === "select") input.addEventListener("change", () => finish(true));
-
-    td.textContent = "";
-    td.appendChild(input);
-    input.focus();
-    if (input.select) input.select();
-  }
-
-  function applyEdit(h, col, raw) {
-    let value = raw;
-    if (col.edit === "number") {
-      const n = parseNumber(raw);
-      if (n === "") value = col.nullable ? null : 0;
-      else if (isNaN(n)) return ctx.onChange(false); // not a number: keep the old value
-      else value = n * scaleOf(col, h);
-    } else if (col.edit === "text" || col.edit === "date") {
-      value = String(raw).trim() || (col.key === "name" ? h.name : null);
-    }
-    const field = col.field || col.key;
-    if (h[field] === value) return ctx.onChange(false);
-    h[field] = value;
-    if (field === "price_or_mark") { h.mark_source = "Manual edit"; h.mark_date = today(); }
-    ctx.onChange(true);
-  }
-
-  function addHolding(cls) {
-    const liquid = LIQUID_CLASSES.includes(cls);
-    ctx.state.holdings.push({
-      id: "h-" + Date.now().toString(36), asset_class: cls, name: "New holding", ticker_or_id: "",
-      security_type: { public_equity: "common_stock", credit: "bond", private_credit: "first_lien_loan", private_fund: "lp_interest",
-                       direct: "common_equity", real_estate: "jv_equity", cash: "cash" }[cls] || "",
-      sector: cls === "cash" ? "Cash" : "", price_or_mark: 0, quantity: 0, market_value: null, cost: null,
-      commitment: null, unfunded: 0, call_schedule: null,
-      liquidity_bucket: liquid ? "liquid_now" : "3y_plus", liquidity_date: liquid ? today() : null,
-      mark_source: "Manual entry", mark_date: today()
-    });
-    ctx.onChange(true);
-  }
-
-  function downloadCsv() {
-    const m = Metrics.summary(ctx.state.holdings, ctx.state.settings, ctx.state.as_of);
-    const rows = rowsWithDerived(m);
-    const keys = COLS.map(c => c.key);
-    const q = v => {
-      const s = v === null || v === undefined ? "" : String(v);
-      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-    };
-    const lines = [
-      q("Sample data. All holdings, ideas and figures are illustrative. Amounts in USD."),
-      COLS.map(c => q(c.label)).join(","),
-      ...rows.map(h => keys.map(k => {
-        const v = h[k];
-        return q(typeof v === "number" ? +v.toFixed(k === "pct_nav" ? 6 : 2) : v);
-      }).join(","))
-    ];
-    const blob = new Blob([lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `sandune-holdings-sample-${ctx.state.as_of}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
-  }
-
   function bind() {
     if (ui.bound) return;
     ui.bound = true;
-    const panel = document.getElementById("tab-portfolio");
-    panel.addEventListener("click", e => {
-      const t = e.target;
-      if (t.closest("#pf-blotter")) return; // the blotter module handles its own clicks
-      if (t.closest("#pf-dp-tile")) { ui.dpOpen = !ui.dpOpen; return ctx.onChange(false); }
-      const sortBtn = t.closest("[data-sort]");
-      if (sortBtn) {
-        const key = sortBtn.dataset.sort;
-        ui.sort = ui.sort.key === key ? { key, dir: -ui.sort.dir } : { key, dir: 1 };
-        return ctx.onChange(false);
-      }
-      const del = t.closest("[data-delete]");
-      if (del) {
-        const h = ctx.state.holdings.find(x => x.id === del.dataset.delete);
-        if (h && root.confirm(`Delete "${h.name}"?`)) {
-          ctx.state.holdings = ctx.state.holdings.filter(x => x !== h);
-          ctx.onChange(true);
-        }
-        return;
-      }
-      if (t.closest("#pf-add")) return addHolding(document.getElementById("pf-add-class").value);
-      if (t.closest("#pf-csv")) return downloadCsv();
-      if (t.closest("#pf-cols")) { ui.allCols = !ui.allCols; return ctx.onChange(false); }
-      const td = t.closest("td[data-edit]");
-      if (td) startEdit(td);
-    });
-    panel.addEventListener("keydown", e => {
-      const td = e.target.closest && e.target.closest("td[data-edit]");
-      if (td && e.target === td && e.key === "Enter") { e.preventDefault(); startEdit(td); }
-    });
-    panel.addEventListener("change", e => {
-      if (e.target.id === "pf-add-class") ui.addClass = e.target.value;
+    document.getElementById("pf-tiles").addEventListener("click", e => {
+      if (e.target.closest("#pf-dp-tile")) { ui.dpOpen = !ui.dpOpen; ctx.onChange(false); }
     });
   }
 
@@ -402,17 +140,13 @@
     bind();
     const m = Metrics.summary(state.holdings, state.settings, state.as_of);
     document.getElementById("pf-asof").textContent =
-      `As of ${state.as_of}. Public prices are Yahoo Finance closes; bond and T-bill prices are sample prices; private marks are the latest GP or sponsor statements.`;
+      `As of ${state.as_of}. Public prices are Yahoo Finance closes; bond and T-bill prices are sample prices; private marks are the latest GP or sponsor statements. Positions, cost and income come from the blotter below.`;
     renderTiles(m, state.settings);
     renderCharts(m);
-    const tog = document.getElementById("pf-cols");
-    tog.setAttribute("aria-pressed", String(ui.allCols));
-    tog.textContent = ui.allCols ? "Compact view" : "All columns";
-    renderTable(m);
+    holdings.render(document.getElementById("pf-holdings"), state, m.holdings, m.nav, onChange);
     root.Blotter.render(state, onChange);
     return m;
   }
 
-  // Columns and cell text are shared with the Pro Forma holdings table.
-  root.Portfolio = { render, COLS, COMPACT, visibleCols, cellText, rowsWithDerived };
+  root.Portfolio = { render };
 })(window);

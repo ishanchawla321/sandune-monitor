@@ -8,7 +8,7 @@
   const ACCENT = "#1f3a5f", MUTED = "#a3adb8", GRID = "#e6e8ec", INK = "#1a2230", INK2 = "#5b6470";
   const Y_AXIS_WIDTH = 64;
 
-  const ui = { bound: false, charts: {}, allCols: false };
+  const ui = { bound: false, charts: {} };
   let ctx = null; // { state, onChange }
 
   function pfState() {
@@ -234,49 +234,15 @@
     ui.charts.calls = new root.Chart(document.getElementById("pf2-chart-calls"), { type: "bar", data: callsData, options: baseOpts(true) });
   }
 
-  // ---------------- Pro forma holdings ----------------
+  // ---------------- Pro forma holdings (same cards as Portfolio > Current, read-only) ----------------
+  const sold = {};
+  const holdings = root.Holdings.create({ prefix: "pf2", editable: false,
+    badge: r => (r.pf ? `<span class="badge badge-pf">PF</span> ` : "") + (sold[r.id] ? `<span class="badge badge-sold">Sold $${Fmt.thousands(sold[r.id])}K</span> ` : ""),
+    rowClass: r => (sold[r.id] ? "pf-funded" : "") });
   function renderHoldings(after, pf) {
-    const P = root.Portfolio;
-    const cols = P.visibleCols(ui.allCols);
-    const tog = document.getElementById("pf2-cols");
-    tog.setAttribute("aria-pressed", String(!!ui.allCols));
-    tog.textContent = ui.allCols ? "Compact view" : "All columns";
-    const rows = P.rowsWithDerived(after);
-    const sold = {};
+    Object.keys(sold).forEach(k => delete sold[k]);
     pf.trades.forEach(t => { if (t.from_holding > 0) sold[t.source] = (sold[t.source] || 0) + t.from_holding; });
-    const sumK = (list, key) => list.reduce((s, h) => s + (Number(h[key]) || 0), 0);
-
-    const head = cols.map(c => `<th class="${c.num ? "num " : ""}${c.cls || ""}">${esc(c.label)}${c.k ? " ($K)" : ""}</th>`).join("");
-    const cell = (c, h) => {
-      let t = esc(P.cellText(c, h));
-      if (c.key === "name" && h.pf) t = `<span class="badge badge-pf">PF</span> ` + t;
-      if (c.key === "name" && sold[h.id]) t += ` <span class="badge badge-sold">Sold $${Fmt.thousands(sold[h.id])}K</span>`;
-      return `<td class="${c.num ? "num " : ""}${c.cls || ""}${c.wrap ? " wrap-sm" : ""}">${t}</td>`;
-    };
-    const total = (label, list, cls) => {
-      const hasCommit = list.some(h => (h.commitment !== null && h.commitment !== undefined) || Number(h.unfunded) > 0);
-      const withCost = list.filter(h => h.pnl !== null);
-      const mv = sumK(list, "market_value");
-      return `<tr class="${cls}">` + cols.map(c => {
-        let v = "";
-        if (c.key === "name") v = esc(label);
-        else if (c.key === "market_value") v = Fmt.thousands(mv);
-        else if (c.key === "cost") v = Fmt.thousands(sumK(list, "cost"));
-        else if (c.key === "pnl") v = withCost.length ? Fmt.thousands(sumK(withCost, "pnl")) : "";
-        else if ((c.key === "commitment" || c.key === "unfunded") && hasCommit) v = Fmt.thousands(sumK(list, c.key));
-        else if (c.key === "pct_nav") v = Fmt.pct(after.nav ? mv / after.nav : null);
-        return `<td class="${c.num ? "num " : ""}${c.cls || ""}">${v}</td>`;
-      }).join("") + "</tr>";
-    };
-    let body = "";
-    CLASS_ORDER.forEach(k => {
-      const g = rows.filter(h => h.asset_class === k);
-      if (!g.length) return;
-      body += g.map(h => `<tr class="${h.pf ? "pf-new" : sold[h.id] ? "pf-funded" : ""}">${cols.map(c => cell(c, h)).join("")}</tr>`).join("");
-      body += total(L.asset_class[k] + " subtotal", g, "subtotal");
-    });
-    body += total("Total (NAV)", rows, "grandtotal");
-    document.getElementById("pf2-holdings").innerHTML = `<thead><tr>${head}</tr></thead><tbody>${body}</tbody>`;
+    holdings.render(document.getElementById("pf2-holdings"), ctx.state, after.holdings, after.nav, () => renderOutputs());
   }
 
   // ---------------- Limits panel (shared settings) ----------------
@@ -320,9 +286,6 @@
     if (ui.bound) return;
     ui.bound = true;
     const panel = document.getElementById("tab-proforma");
-    panel.addEventListener("click", e => {
-      if (e.target.closest("#pf2-cols")) { ui.allCols = !ui.allCols; renderOutputs(); }
-    });
     panel.addEventListener("change", e => {
       if (e.target.id === "pf2-theme-pick") { const v = e.target.value; e.target.value = ""; return v ? addTheme(v) : undefined; }
       if (e.target.matches("[data-sel-field]")) return onSelectorChange(e.target);
