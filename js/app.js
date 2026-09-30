@@ -108,7 +108,19 @@
   root.Prices.init(state);
   paintPriceToggle();
 
-  root.App = { showTab, active: () => active };
+  // Cross-tab links: open an investment's card, or show a holding row in Portfolio > Current.
+  function openInvestment(id) {
+    lastInSection[sectionOf(active)] = active;
+    showTab("opportunities/ideas");
+    root.Ideas.open(id);
+  }
+  function viewHolding(id) {
+    lastInSection[sectionOf(active)] = active;
+    showTab("portfolio/current");
+    root.Portfolio.highlight(id);
+  }
+
+  root.App = { showTab, openInvestment, viewHolding, active: () => active };
 
   let start = TABS[0];
   try {

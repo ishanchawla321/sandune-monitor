@@ -208,6 +208,7 @@
         const derived = c.derivedNote && c.editable && !c.editable(r);
         const title = editable ? `Click to edit${c.unit === "$K" ? " ($K)" : ""}` : derived ? c.derivedNote : "";
         let text = esc(show(c, r));
+        if (c.key === "name" && r.h.from_investment) text = `<button type="button" class="link name-link" data-open-investment="${esc(r.h.from_investment)}" title="Open the investment one-pager">${text}</button>`;
         if (c.key === "name" && o.badge) text = o.badge(r) + text;
         if (c.key === "name" && o.suffix) text += o.suffix(r);
         return `<td class="${c.num ? "num " : ""}${c.cls || ""}${c.wrap ? " wrap-sm" : ""}${editable ? " editable" : ""}${derived ? " derived" : ""}"${editable ? ` data-edit="${c.key}" data-card="${card.key}" tabindex="0"` : ""}${title ? ` title="${esc(title)}"` : ""}>${text}</td>`;
@@ -364,6 +365,8 @@
       ui.bound = true;
       container.addEventListener("click", e => {
         const t = e.target;
+        const oi = t.closest("[data-open-investment]");
+        if (oi) return root.App.openInvestment(oi.dataset.openInvestment);
         const s = t.closest("[data-hsort]");
         if (s) {
           const [cardKey, key] = s.dataset.hsort.split(":");

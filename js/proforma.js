@@ -8,7 +8,7 @@
   const ACCENT = "#1f3a5f", MUTED = "#a3adb8", GRID = "#e6e8ec", INK = "#1a2230", INK2 = "#5b6470";
   const Y_AXIS_WIDTH = 64;
 
-  const ui = { bound: false, charts: {} };
+  const ui = { bound: false, charts: {}, funded_note: null };
   let ctx = null; // { state, onChange }
 
   function pfState() {
@@ -29,7 +29,7 @@
       const srcOpts = [`<option value="cash"${s.source === "cash" ? " selected" : ""}>Cash</option>`].concat(sources.map(h =>
         `<option value="${esc(h.id)}"${s.source === h.id ? " selected" : ""}>${esc(h.name)} ($${Fmt.thousands(Metrics.marketValue(h))}K)</option>`)).join("");
       return `<tr data-sel="${esc(i.id)}" class="${s.include ? "sel-on" : ""}">
-        <td class="col-name"><label class="sel-inc"><input type="checkbox" data-sel-field="include"${s.include ? " checked" : ""} aria-label="Model ${esc(i.name)}"> ${esc(i.name)}</label></td>
+        <td class="col-name"><label class="sel-inc"><input type="checkbox" data-sel-field="include"${s.include ? " checked" : ""} aria-label="Model ${esc(i.name)}"></label> <button type="button" class="link name-link" data-open-investment="${esc(i.id)}" title="Open the investment one-pager">${esc(i.name)}</button></td>
         <td class="wrap-sm">${esc(L.type[i.type] || i.type)}</td>
         <td>${esc(L.status[i.status] || i.status)}</td>
         <td class="num"><input class="num-input" inputmode="decimal" data-sel-field="check" value="${esc(+(Number(s.check) / 1000).toFixed(3))}" aria-label="Check size in $K for ${esc(i.name)}"></td>
@@ -37,11 +37,20 @@
         <td class="num"><input class="num-input" inputmode="decimal" data-sel-field="fee_pct" value="${esc(+(Number(s.fee_pct) * 100).toFixed(2))}" aria-label="Upfront fee percent for ${esc(i.name)}"></td>
         <td><select data-sel-field="source" aria-label="Funding source for ${esc(i.name)}">${srcOpts}</select></td></tr>`;
     }).join("");
-    const empty = list.length ? "" : `<tr><td class="col-name muted" colspan="7">No prospective investments. Ideas with status Watching, Researching or IC appear here.</td></tr>`;
+    const empty = list.length ? "" : `<tr><td class="col-name muted" colspan="7">No prospective investments. Investments with status Watching, Researching or IC appear here.</td></tr>`;
+    // Investments funded while ticked are no longer prospective: drop their selection and say so once.
+    const gone = Object.keys(pfState().selections).filter(id => pfState().selections[id].include && !list.some(i => i.id === id))
+      .map(id => ctx.state.investments.find(i => i.id === id)).filter(i => i && i.status === "invested");
+    if (gone.length) {
+      ui.funded_note = gone.map(i => i.name);
+      gone.forEach(i => { delete pfState().selections[i.id]; });
+      save();
+    }
+    const note = ui.funded_note && ui.funded_note.length ? `<tr class="note-row"><td colspan="7">${esc(ui.funded_note.join(", "))} ${ui.funded_note.length === 1 ? "is" : "are"} now in Portfolio &gt; Current and no longer modelled here.</td></tr>` : "";
     document.getElementById("pf2-selector").innerHTML = `<thead><tr>
         <th class="col-name">Investment</th><th>Type</th><th>Status</th><th class="num">Check ($K)</th><th class="num">Funded %</th>
         <th class="num">Upfront fee %</th><th>Funding source</th>
-      </tr></thead><tbody>${rows}${empty}</tbody>`;
+      </tr></thead><tbody>${note}${rows}${empty}</tbody>`;
     document.getElementById("pf2-sel-count").textContent = `${list.filter(i => selection(i).include).length} of ${list.length} selected`;
   }
 
@@ -262,8 +271,12 @@
     if (ui.bound) return;
     ui.bound = true;
     const panel = document.getElementById("tab-proforma");
+    panel.addEventListener("click", e => {
+      const oi = e.target.closest("[data-open-investment]");
+      if (oi) return root.App.openInvestment(oi.dataset.openInvestment);
+    });
     panel.addEventListener("change", e => {
-      if (e.target.matches("[data-sel-field]")) return onSelectorChange(e.target);
+      if (e.target.matches("[data-sel-field]")) { ui.funded_note = null; return onSelectorChange(e.target); }
       if (e.target.matches("[data-setting]")) return onSettingChange(e.target);
     });
     panel.addEventListener("keydown", e => {

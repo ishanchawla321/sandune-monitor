@@ -148,5 +148,15 @@
     return m;
   }
 
-  root.Portfolio = { render };
+  // Scroll a holding row into view and mark it for a few seconds (used by "View in Portfolio").
+  function highlight(id) {
+    const row = document.querySelector(`#pf-holdings tr[data-id="${CSS.escape(id)}"]`);
+    if (!row) return;
+    document.querySelectorAll("#pf-holdings tr.is-highlight").forEach(r => r.classList.remove("is-highlight"));
+    row.classList.add("is-highlight");
+    row.scrollIntoView({ block: "center" });
+    setTimeout(() => row.classList.remove("is-highlight"), 4000);
+  }
+
+  root.Portfolio = { render, highlight };
 })(window);

@@ -340,6 +340,79 @@ table.grid.hold-total { width: 100%; }
   table.grid.hold-total { min-width: 0; width: 100%; }
 }
 
+/* ---------- Investment and theme one-pagers: read mode, section edit ---------- */
+.card-title { font-size: var(--fs-card-title); font-weight: 600; flex: 1 1 auto; min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.chips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); margin-top: var(--s3); }
+.chip-static { display: inline-block; background: var(--subtle); color: var(--muted); font-size: var(--fs-small); font-weight: 500; padding: 2px 10px; border-radius: var(--r-pill); border: 0; white-space: nowrap; }
+.chip-link { cursor: pointer; color: var(--accent); background: var(--accent-tint); transition: background-color var(--ease); }
+.chip-link:hover { background: #e2e9f5; }
+.chip-edit { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--s3); margin-top: var(--s3); }
+.sec-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); margin-bottom: var(--s2); }
+.sec-head h3 { margin: 0; }
+.sec-count { color: var(--muted); font-weight: 500; }
+.edit-link {
+  display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; padding: 2px 6px; margin-left: auto; border-radius: var(--r-input);
+  color: var(--muted); font-size: var(--fs-small); cursor: pointer; transition: color var(--ease), background-color var(--ease);
+}
+.edit-link:hover { color: var(--accent); background: var(--accent-tint); }
+.chips .edit-link { margin-left: auto; }
+.empty-line { border: 0; background: none; padding: 0; color: var(--muted); font: inherit; cursor: pointer; text-align: left; }
+.empty-line::before { content: "+ "; }
+.empty-line:hover { color: var(--accent); }
+.reading { margin: 0; color: var(--ink); font-weight: 400; white-space: pre-line; }
+.bullets { margin: 0; padding-left: 20px; }
+.bullets li { margin: 2px 0; }
+.sec-edit .fld { margin-bottom: var(--s3); }
+.sec-edit textarea, .sec-edit input[type=text], .sec-edit input[type=date], .sec-edit select { width: 100%; }
+.sec-edit .terms input, .sec-edit .terms select { width: 100%; }
+.sec-edit .note { margin: var(--s1) 0 0; }
+.sec-actions { display: flex; gap: var(--s2); margin-top: var(--s3); }
+.is-bad { border-color: var(--breach) !important; }
+.key-stats .stat-value { font-size: var(--fs-value); white-space: normal; overflow-wrap: anywhere; }
+.stat-hint { text-transform: none; letter-spacing: 0; }
+.stat-date { color: var(--muted); font-weight: 400; font-size: var(--fs-small); }
+.stat-row.cols-6 { --cols: 6; }
+.dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--s2) var(--s5); margin: 0; }
+.dl .dl-row { display: contents; }
+.dl dt { color: var(--muted); font-size: var(--fs-small); text-transform: uppercase; letter-spacing: .04em; padding-top: 3px; }
+.dl dd { margin: 0; overflow-wrap: anywhere; }
+.primary-action { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; margin-top: var(--s4); padding-top: var(--s3); border-top: 1px dashed var(--line); }
+.primary-action.funded { color: var(--ink); font-weight: 500; }
+.dil-list + .dil-list { margin-top: var(--s3); }
+.dil-list h4 { margin: 0 0 var(--s1); font-size: var(--fs-small); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
+.dil-items { list-style: none; margin: 0; padding: 0; }
+.dil-items li { padding: 3px 0; }
+.dil-items label { display: flex; gap: var(--s2); align-items: baseline; cursor: pointer; }
+.dil-items input { margin: 0; position: relative; top: 2px; flex: 0 0 auto; }
+.dil.done .dil-text { text-decoration: line-through; color: var(--muted); }
+.dil-date { color: var(--muted); font-size: var(--fs-small); white-space: nowrap; }
+.dil-edit .fld { margin-bottom: var(--s3); }
+details.log > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: var(--s2); }
+details.log > summary::-webkit-details-marker { display: none; }
+details.log > summary::before { content: ""; width: 0; height: 0; border-left: 6px solid var(--muted); border-top: 5px solid transparent; border-bottom: 5px solid transparent; transition: transform var(--ease); }
+details.log[open] > summary::before { transform: rotate(90deg); }
+details.log > summary h3 { margin: 0; }
+details.log[open] > summary { margin-bottom: var(--s2); }
+.price-line .sig-body b { margin-right: 2px; }
+.card-sec h4 { margin: var(--s2) 0 var(--s1); font-size: var(--fs-small); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
+.card-sec h4:first-child { margin-top: 0; }
+table.grid.vc td.wrap { max-width: none; min-width: 200px; }
+.notice { display: flex; align-items: center; gap: var(--s3); margin-bottom: var(--s4); padding: var(--s3) var(--s4); border-radius: var(--r-input); background: var(--ok-tint); color: var(--ok); font-weight: 500; }
+.notice .link { color: var(--ok); font-weight: 600; }
+.close-sm { width: 24px; height: 24px; font-size: 18px; color: var(--ok); }
+.name-link { color: var(--ink); text-decoration: none; font: inherit; text-align: left; }
+.name-link:hover { color: var(--accent); text-decoration: underline; }
+table.grid tbody tr.is-highlight { background: var(--accent-tint); }
+table.grid tbody tr.is-highlight td.col-name { box-shadow: inset 3px 0 0 var(--accent); }
+table.grid.baf tr.note-row td, #pf2-selector tr.note-row td { color: var(--muted); font-size: var(--fs-small); font-style: italic; padding-top: 6px; padding-bottom: 6px; }
+.sel-inc { margin-right: var(--s1); }
+@media (max-width: 720px) {
+  .stat-row.cols-6 { --cols: 2; }
+  .dl { grid-template-columns: 1fr; gap: var(--s1); }
+  .dl dd { margin-bottom: var(--s2); }
+  .chip-edit { grid-template-columns: 1fr; }
+}
+
 /* ---------- Ideas: passed list, funding form ---------- */
 details.passed > summary { cursor: pointer; font-weight: 600; font-size: var(--fs-section); list-style: none; display: flex; align-items: center; gap: var(--s2); }
 details.passed > summary::before { content: ""; width: 0; height: 0; border-left: 6px solid var(--muted); border-top: 5px solid transparent; border-bottom: 5px solid transparent; transition: transform var(--ease); }
