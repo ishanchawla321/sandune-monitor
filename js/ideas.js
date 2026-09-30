@@ -12,6 +12,8 @@
   const TYPES = Object.keys(L.type);
   const CYCLE = { intact: "at_risk", at_risk: "broken", broken: "intact" };
   const CLASSES = Object.keys(L.asset_class);
+  const PROSPECTIVE = ["watching", "researching", "IC"];
+  const isProspective = i => PROSPECTIVE.includes(i.status);
 
   const themeName = id => { const t = (ctx.state.themes || []).find(x => x.id === id); return t ? t.name : ""; };
 
@@ -32,8 +34,13 @@
     { key: "security_type", label: "Security type", show: i => L.security_type[i.security_type] || i.security_type },
     { key: "sector", label: "Sector" },
     { key: "price_or_mark", label: "Price", num: true, show: i => Fmt.number(i.price_or_mark, 2) },
-    { key: "quantity", label: "Quantity", num: true, show: i => Fmt.number(i.quantity, 0) }
+    { key: "quantity", label: "Quantity", num: true, show: i => Fmt.number(i.quantity, 0) },
+    // Funding, set when an investment is marked Invested
+    { key: "funded_date", label: "Funded on", value: i => (i.funding ? i.funding.date : "") },
+    { key: "funded_amount", label: "Funded ($K)", num: true, value: i => (i.funding ? i.funding.amount : null), show: i => (i.funding ? Fmt.thousands(i.funding.amount) : "") },
+    { key: "funding_source", label: "Funded from", value: i => (i.funding ? (i.funding.source === "cash" ? "Cash" : i.funding.source_name) : ""), wrapSm: true }
   ];
+  const COMPLETED = ["name", "theme", "type", "funded_date", "funded_amount", "funding_source", "hold_months", "target_return"];
 
   // Default (compact) pipeline columns; "All columns" shows everything.
   const COMPACT = ["name", "theme", "type", "status", "score", "check_size", "funded_pct", "hold_months", "next_step"];
@@ -67,26 +74,6 @@
 
   function save() { root.Store.save(ctx.state); }
 
-  // ---------------- Pro Forma picks (shared with the Pro Forma tab) ----------------
-  function pfSelections() {
-    if (!ctx.state.proforma) ctx.state.proforma = { selections: {} };
-    return ctx.state.proforma.selections;
-  }
-  const inProForma = i => !!(pfSelections()[i.id] || {}).include;
-  function pfButton(i, cls) {
-    const on = inProForma(i);
-    return `<button type="button" class="btn ${cls === "btn-pf" ? "" : "btn-sm "}btn-toggle ${cls || ""}" data-pf-toggle="${esc(i.id)}" aria-pressed="${on}" title="${on ? "Remove from the Pro Forma book" : "Add to the Pro Forma book at its default check size"}">${on ? "In Pro Forma" : "Add to Pro Forma"}</button>`;
-  }
-  function toggleProForma(id) {
-    const inv = ctx.state.investments.find(x => x.id === id);
-    if (!inv) return;
-    const sel = Object.assign(root.ProFormaModel.defaultSelection(inv), pfSelections()[id] || {});
-    sel.include = !sel.include;
-    if (!sel.include) delete sel.via_theme;
-    pfSelections()[id] = sel;
-    commit();
-  }
-
   // ---------------- Themes grid ----------------
   function renderThemeGrid() {
     const themes = ctx.state.themes || [];
@@ -113,13 +100,28 @@
     }).join("");
     const any = ui.status.size || ui.type.size;
     document.getElementById("id-filters").innerHTML = `
-      <div class="chip-row" role="group" aria-label="Filter by status"><span class="chip-label">Status</span>${chips("status", STATUSES, ui.status, L.status)}</div>
+      <div class="chip-row" role="group" aria-label="Filter by status"><span class="chip-label">Status</span>${chips("status", PROSPECTIVE, ui.status, L.status)}</div>
       <div class="chip-row" role="group" aria-label="Filter by type"><span class="chip-label">Type</span>${chips("type", TYPES, ui.type, L.type)}
         ${any ? `<button type="button" class="link" data-chip-clear>Clear filters</button>` : ""}</div>`;
   }
 
-  function renderTable() {
-    let rows = ctx.state.investments.filter(i => (!ui.status.size || ui.status.has(i.status)) && (!ui.type.size || ui.type.has(i.type)));
+  const headCell = (c, sortable) => {
+    const active = sortable && ui.sort.key === c.key;
+    const aria = active ? (ui.sort.dir > 0 ? "ascending" : "descending") : "none";
+    const label = esc(c.label) + (active ? (ui.sort.dir > 0 ? " ▲" : " ▼") : "");
+    return `<th class="${c.num ? "num " : ""}${c.cls || ""}" aria-sort="${aria}">${sortable ? `<button type="button" class="sort" data-sort="${c.key}">${label}</button>` : label}</th>`;
+  };
+  const rowHtml = (i, cols, selId) => `<tr class="idea-row${i.id === selId ? " selected" : ""}" data-inv="${esc(i.id)}" tabindex="0" aria-selected="${i.id === selId}">` +
+    cols.map(c => `<td class="${c.num ? "num " : ""}${c.cls || ""}${c.wrap ? " wrap" : ""}${c.wrapSm ? " wrap-sm" : ""}">${esc(colText(c, i))}</td>`).join("") + "</tr>";
+  const count = (id, n, noun) => { document.getElementById(id).textContent = `${n} ${n === 1 ? noun : noun + "s"}`; };
+
+  function renderTables() {
+    const selId = ui.sel && ui.sel.kind === "investment" ? ui.sel.id : null;
+    const all = ctx.state.investments;
+
+    // Prospective: Watching, Researching, IC. Filters and sorting apply here.
+    const prospective = all.filter(isProspective);
+    let rows = prospective.filter(i => (!ui.status.size || ui.status.has(i.status)) && (!ui.type.size || ui.type.has(i.type)));
     const sc = COLS.find(c => c.key === ui.sort.key);
     if (sc) {
       const v = i => {
@@ -129,21 +131,32 @@
       };
       rows = rows.slice().sort((a, b) => (v(a) > v(b) ? 1 : v(a) < v(b) ? -1 : 0) * ui.sort.dir);
     }
-    const selId = ui.sel && ui.sel.kind === "investment" ? ui.sel.id : null;
-    const cols = ui.allCols ? COLS : COMPACT.map(k => COLS.find(c => c.key === k));
-    const head = cols.map(c => {
-      const active = ui.sort.key === c.key;
-      const aria = active ? (ui.sort.dir > 0 ? "ascending" : "descending") : "none";
-      return `<th class="${c.num ? "num " : ""}${c.cls || ""}" aria-sort="${aria}"><button type="button" class="sort" data-sort="${c.key}">${esc(c.label)}${active ? (ui.sort.dir > 0 ? " ▲" : " ▼") : ""}</button></th>`;
-    }).join("") + `<th class="col-act">Pro Forma</th>`;
-    const body = rows.map(i => `<tr class="idea-row${i.id === selId ? " selected" : ""}" data-inv="${esc(i.id)}" tabindex="0" aria-selected="${i.id === selId}">` +
-      cols.map(c => `<td class="${c.num ? "num " : ""}${c.cls || ""}${c.wrap ? " wrap" : ""}${c.wrapSm ? " wrap-sm" : ""}">${esc(colText(c, i))}</td>`).join("") +
-      `<td class="col-act">${pfButton(i)}</td></tr>`).join("");
-    const empty = rows.length ? "" : `<tr><td class="col-name" colspan="${cols.length + 1}">No investments match these filters.</td></tr>`;
-    document.getElementById("id-table").innerHTML = `<thead><tr>${head}</tr></thead><tbody>${body}${empty}</tbody>`;
+    const cols = ui.allCols ? COLS.filter(c => !["funded_date", "funded_amount", "funding_source"].includes(c.key)) : COMPACT.map(k => COLS.find(c => c.key === k));
+    const empty = rows.length ? "" : `<tr><td class="col-name muted" colspan="${cols.length}">${prospective.length ? "No prospective investments match these filters." : "No prospective investments yet."}</td></tr>`;
+    document.getElementById("id-table").innerHTML = `<thead><tr>${cols.map(c => headCell(c, true)).join("")}</tr></thead><tbody>${rows.map(i => rowHtml(i, cols, selId)).join("")}${empty}</tbody>`;
+    count("id-prospective-count", prospective.length, "investment");
     const tog = document.getElementById("id-cols");
     tog.setAttribute("aria-pressed", String(ui.allCols));
     tog.textContent = ui.allCols ? "Compact view" : "All columns";
+
+    // Completed: Invested.
+    const done = all.filter(i => i.status === "invested");
+    const dcols = COMPLETED.map(k => COLS.find(c => c.key === k));
+    document.getElementById("id-completed").innerHTML = done.length
+      ? `<div class="table-wrap"><table class="grid ideas"><thead><tr>${dcols.map(c => headCell(c, false)).join("")}</tr></thead><tbody>${done.map(i => rowHtml(i, dcols, selId)).join("")}</tbody></table></div>`
+      : `<p class="placeholder">Investments move here when marked Invested.</p>`;
+    count("id-completed-count", done.length, "investment");
+
+    // Passed: collapsed list with the date and reason from the decision log.
+    const passed = all.filter(i => i.status === "passed");
+    const lastPass = i => (i.decision_log || []).filter(d => d.to === "passed").sort((a, b) => (a.date < b.date ? 1 : -1))[0] || {};
+    document.getElementById("id-passed-list").innerHTML = passed.length
+      ? `<div class="table-wrap"><table class="grid ideas"><thead><tr><th class="col-name">Name</th><th>Type</th><th>Passed on</th><th>Reason</th></tr></thead><tbody>${passed.map(i => {
+          const d = lastPass(i);
+          return `<tr class="idea-row${i.id === selId ? " selected" : ""}" data-inv="${esc(i.id)}" tabindex="0" aria-selected="${i.id === selId}"><td class="col-name">${esc(i.name)}</td><td>${esc(L.type[i.type] || i.type)}</td><td>${esc(d.date || "")}</td><td class="wrap">${esc(d.reason || "")}</td></tr>`;
+        }).join("")}</tbody></table></div>`
+      : `<p class="muted">None passed yet.</p>`;
+    count("id-passed-count", passed.length, "investment");
   }
 
   // ---------------- Card pieces (shared) ----------------
@@ -175,8 +188,23 @@
     const tone = { watching: "is-muted", researching: "is-accent", IC: "is-warn", invested: "is-ok", passed: "is-muted",
                    exploring: "is-accent", active: "is-ok", retired: "is-muted" }[shown] || "is-muted";
     const select = `<label class="sr-only" for="id-status">Status</label><select id="id-status" class="status-select ${tone}" data-status-select>${statuses.map(s => opt(s, labels[s], shown)).join("")}</select>`;
+    let fund = "";
+    if (p && p.to === "invested" && p.from !== "invested") {
+      const f = p.fund;
+      const sources = root.ProFormaModel.fundingSources(ctx.state.holdings);
+      fund = `<div class="fund-form" role="group" aria-label="Funding">
+          <label class="fld"><span>Funding date</span><input type="date" id="id-fund-date" value="${esc(f.date)}"></label>
+          <label class="fld"><span>Funded amount ($K)</span><input type="text" inputmode="decimal" id="id-fund-amount" value="${esc(f.amount)}"></label>
+          <label class="fld"><span>Funding source</span><select id="id-fund-source"><option value="cash"${f.source === "cash" ? " selected" : ""}>Cash</option>
+            ${sources.map(h => `<option value="${esc(h.id)}"${f.source === h.id ? " selected" : ""}>${esc(h.name)} ($${Fmt.thousands(Metrics.marketValue(h))}K)</option>`).join("")}</select></label>
+        </div>
+        <p class="note">Saving posts the buy or capital call to the blotter, creates the holding in Portfolio &gt; Current and reduces the funding source.</p>`;
+    } else if (p && p.from === "invested" && p.to !== "invested" && i.funding) {
+      fund = `<p class="note">Saving reverses the funding: ${esc(root.InvestModel.describe(i.funding))} The holding and blotter entries are removed and cash is restored. You will be asked to confirm.</p>`;
+    }
     const reason = p ? `<div class="reason" role="group" aria-label="Reason for status change">
         <label for="id-reason">Reason for moving from ${esc(statusLabel(p.from))} to ${esc(statusLabel(p.to))} (required)</label>
+        ${fund}
         <div class="add-line"><input type="text" id="id-reason" value="${esc(p.reason || "")}" placeholder="One line">
         <button type="button" class="btn btn-primary" data-status-save>Save status</button>
         <button type="button" class="btn" data-status-cancel>Cancel</button></div>
@@ -324,8 +352,8 @@
         <div class="head-fields">
           ${field(i, "next_step", "text", "Next step", ' class="wide"')}
           ${field(i, "next_step_date", "date", "Next step date")}
-          <div class="fld fld-end">${pfButton(i, "btn-pf")}</div>
         </div>
+        ${i.funding ? `<p class="note funded-line">${esc(root.InvestModel.describe(i.funding))} The holding sits in Portfolio &gt; Current${i.funding.created ? "" : " (existing holding)"}.</p>` : ""}
       </header>
 
       <section class="card-sec"><h3>Thesis</h3>
@@ -371,7 +399,7 @@
   function renderAll() {
     renderThemeGrid();
     renderFilters();
-    renderTable();
+    renderTables();
     renderCard();
   }
 
@@ -400,7 +428,7 @@
     save();
     renderThemeGrid();
     renderFilters();
-    renderTable();
+    renderTables();
     const score = document.getElementById("id-score");
     if (score && !isTheme()) {
       score.textContent = Metrics.liquidityScore(i).toFixed(0);
@@ -421,8 +449,21 @@
       document.getElementById("id-reason").focus();
       return;
     }
+    let line = reason;
+    if (!isTheme() && p.to === "invested" && p.from !== "invested") {
+      const n = Number(String(p.fund.amount).replace(/[$,\s]/g, ""));
+      const f = { date: p.fund.date, amount: isFinite(n) ? n * 1000 : 0, source: p.fund.source };
+      const err = root.InvestModel.validate(ctx.state, i, f);
+      if (err) { p.error = err; renderCard(); return; }
+      root.InvestModel.execute(ctx.state, i, f);
+      line += " " + root.InvestModel.describe(i.funding);
+    } else if (!isTheme() && p.from === "invested" && p.to !== "invested" && i.funding) {
+      if (!root.confirm(`Reverse the funding of ${i.name}? ${root.InvestModel.describe(i.funding)} The holding and its blotter entries are removed and the funding source is restored.`)) return;
+      line += " Funding reversed.";
+      root.InvestModel.reverse(ctx.state, i);
+    }
     i.decision_log = i.decision_log || [];
-    i.decision_log.push({ date: today(), from: p.from, to: p.to, reason });
+    i.decision_log.push({ date: today(), from: p.from, to: p.to, reason: line });
     i.status = p.to;
     ui.pending = null;
     commit();
@@ -472,8 +513,6 @@
     panel.addEventListener("click", e => {
       const t = e.target;
       if (t.closest("#id-intake")) return; // the intake module handles its own clicks
-      const pfBtn = t.closest("[data-pf-toggle]");
-      if (pfBtn) return toggleProForma(pfBtn.dataset.pfToggle);
       const chip = t.closest("[data-chip]");
       if (chip) {
         const set = ui[chip.dataset.chip];
@@ -575,7 +614,8 @@
       const i = current();
       if (!i) return;
       if (el.matches("[data-status-select]")) {
-        ui.pending = el.value === i.status ? null : { id: i.id, from: i.status, to: el.value, reason: "" };
+        ui.pending = el.value === i.status ? null : { id: i.id, from: i.status, to: el.value, reason: "",
+          fund: { date: today(), amount: +(root.InvestModel.defaultAmount(i) / 1000).toFixed(3), source: "cash" } };
         ctx.onChange(false);
         const r = document.getElementById("id-reason");
         if (r) r.focus();
@@ -611,6 +651,7 @@
       if (e.key === "Enter" && el.matches("tr[data-open-inv]")) { e.preventDefault(); return select("investment", el.dataset.openInv); }
       if (e.key !== "Enter") return;
       if (el.id === "id-reason") { e.preventDefault(); if (ui.pending) ui.pending.reason = el.value; return saveStatus(); }
+      if (el.id === "id-fund-amount") { e.preventDefault(); return document.getElementById("id-reason").focus(); }
       if (el.id === "id-new-assume") { e.preventDefault(); return panel.querySelector("[data-assume-add]").click(); }
       if (el.id === "id-note-text") { e.preventDefault(); return panel.querySelector("[data-note-add]").click(); }
       if (el.id === "id-vc-seg" || el.id === "id-vc-who") { e.preventDefault(); return panel.querySelector("[data-vc-add]").click(); }
@@ -627,7 +668,15 @@
     });
 
     panel.addEventListener("input", e => {
-      if (e.target.id === "id-reason" && ui.pending) ui.pending.reason = e.target.value;
+      if (!ui.pending) return;
+      if (e.target.id === "id-reason") ui.pending.reason = e.target.value;
+      if (e.target.id === "id-fund-date") ui.pending.fund.date = e.target.value;
+      if (e.target.id === "id-fund-amount") ui.pending.fund.amount = e.target.value;
+    });
+    panel.addEventListener("change", e => {
+      if (!ui.pending) return;
+      if (e.target.id === "id-fund-source") ui.pending.fund.source = e.target.value;
+      if (e.target.id === "id-fund-date") ui.pending.fund.date = e.target.value;
     });
   }
 

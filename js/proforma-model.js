@@ -6,6 +6,9 @@
   const Metrics = root.Metrics || (typeof require !== "undefined" ? require("./metrics.js") : null);
 
   const clone = x => JSON.parse(JSON.stringify(x));
+  // Only prospective investments can be modelled. Invested ones are already in the book; passed ones are closed.
+  const PROSPECTIVE = ["watching", "researching", "IC"];
+  const prospective = state => state.investments.filter(i => PROSPECTIVE.includes(i.status));
   const num = (v, d) => (v === null || v === undefined || v === "" || !isFinite(v) ? d : Number(v));
 
   function addMonths(iso, n) {
@@ -81,7 +84,7 @@
       holdings.push(cash);
     }
 
-    state.investments.forEach(inv => {
+    prospective(state).forEach(inv => {
       const sel = Object.assign(defaultSelection(inv), (selections || {})[inv.id] || {});
       if (!sel.include) return;
       const check = Math.max(0, num(sel.check, 0));
@@ -125,20 +128,7 @@
     return { holdings, trades, warnings };
   }
 
-  // Selections for "Add theme": every investment linked to the theme at its default size, funded from cash.
-  // Returns { [investmentId]: selection } to merge into state.proforma.selections.
-  function themeSelections(state, themeId) {
-    const theme = (state.themes || []).find(t => t.id === themeId);
-    const out = {};
-    if (!theme) return out;
-    (theme.linked_investment_ids || []).forEach(id => {
-      const inv = state.investments.find(i => i.id === id);
-      if (inv) out[id] = Object.assign(defaultSelection(inv), { include: true, via_theme: theme.id });
-    });
-    return out;
-  }
-
-  const ProFormaModel = { apply, fundingSources, defaultSelection, themeSelections, addMonths };
+  const ProFormaModel = { apply, fundingSources, defaultSelection, prospective, PROSPECTIVE, addMonths };
   if (typeof module !== "undefined" && module.exports) module.exports = ProFormaModel;
   else root.ProFormaModel = ProFormaModel;
 })(typeof window !== "undefined" ? window : this);

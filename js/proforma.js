@@ -20,49 +20,29 @@
   }
   function save() { root.Store.save(ctx.state); }
 
-  // ---------------- Selector ----------------
-  function renderThemePicker() {
-    const themes = (ctx.state.themes || []).filter(t => (t.linked_investment_ids || []).length);
-    document.getElementById("pf2-theme-pick").innerHTML = `<option value="">Add theme…</option>` +
-      themes.map(t => `<option value="${esc(t.id)}">${esc(t.name)} (${t.linked_investment_ids.length} investments)</option>`).join("");
-  }
-
-  // Ticks every investment linked to the theme at its default size; each can then be edited or unticked.
-  function addTheme(themeId) {
-    const picks = Model.themeSelections(ctx.state, themeId);
-    if (!Object.keys(picks).length) return;
-    Object.assign(pfState().selections, picks);
-    save();
-    renderSelector();
-    renderThemePicker();
-    renderOutputs();
-  }
-
+  // ---------------- Checklist of prospective investments ----------------
   function renderSelector() {
     const sources = Model.fundingSources(ctx.state.holdings);
-    const themeName = id => ((ctx.state.themes || []).find(t => t.id === id) || {}).name;
-    const rows = ctx.state.investments.map(i => {
+    const list = Model.prospective(ctx.state);
+    const rows = list.map(i => {
       const s = selection(i);
-      const funded = (Number(s.check) || 0) * (Number(s.funded_pct) || 0);
-      const fee = (Number(s.check) || 0) * (Number(s.fee_pct) || 0);
       const srcOpts = [`<option value="cash"${s.source === "cash" ? " selected" : ""}>Cash</option>`].concat(sources.map(h =>
         `<option value="${esc(h.id)}"${s.source === h.id ? " selected" : ""}>${esc(h.name)} ($${Fmt.thousands(Metrics.marketValue(h))}K)</option>`)).join("");
-      const tag = s.include && s.via_theme && themeName(s.via_theme) ? ` <span class="tag">${esc(themeName(s.via_theme))}</span>` : "";
       return `<tr data-sel="${esc(i.id)}" class="${s.include ? "sel-on" : ""}">
-        <td class="col-name"><label class="sel-inc"><input type="checkbox" data-sel-field="include"${s.include ? " checked" : ""}> ${esc(i.name)}</label>${tag}</td>
-        <td>${esc(L.type[i.type] || i.type)}</td>
+        <td class="col-name"><label class="sel-inc"><input type="checkbox" data-sel-field="include"${s.include ? " checked" : ""} aria-label="Model ${esc(i.name)}"> ${esc(i.name)}</label></td>
+        <td class="wrap-sm">${esc(L.type[i.type] || i.type)}</td>
+        <td>${esc(L.status[i.status] || i.status)}</td>
         <td class="num"><input class="num-input" inputmode="decimal" data-sel-field="check" value="${esc(+(Number(s.check) / 1000).toFixed(3))}" aria-label="Check size in $K for ${esc(i.name)}"></td>
         <td class="num"><input class="num-input" inputmode="decimal" data-sel-field="funded_pct" value="${esc(+(Number(s.funded_pct) * 100).toFixed(2))}" aria-label="Funded percent for ${esc(i.name)}"></td>
         <td class="num"><input class="num-input" inputmode="decimal" data-sel-field="fee_pct" value="${esc(+(Number(s.fee_pct) * 100).toFixed(2))}" aria-label="Upfront fee percent for ${esc(i.name)}"></td>
-        <td><select data-sel-field="source" aria-label="Funding source for ${esc(i.name)}">${srcOpts}</select></td>
-        <td class="num" data-out="funded">${Fmt.thousands(funded)}</td>
-        <td class="num" data-out="unfunded">${Fmt.thousands((Number(s.check) || 0) - funded)}</td>
-        <td class="num" data-out="fee">${Fmt.thousands(fee)}</td></tr>`;
+        <td><select data-sel-field="source" aria-label="Funding source for ${esc(i.name)}">${srcOpts}</select></td></tr>`;
     }).join("");
+    const empty = list.length ? "" : `<tr><td class="col-name muted" colspan="7">No prospective investments. Ideas with status Watching, Researching or IC appear here.</td></tr>`;
     document.getElementById("pf2-selector").innerHTML = `<thead><tr>
-        <th class="col-name">Include investment</th><th>Type</th><th class="num">Check ($K)</th><th class="num">Funded %</th>
-        <th class="num">Upfront fee %</th><th>Funding source</th><th class="num">Funded ($K)</th><th class="num">Unfunded ($K)</th><th class="num">Fee ($K)</th>
-      </tr></thead><tbody>${rows}</tbody>`;
+        <th class="col-name">Investment</th><th>Type</th><th>Status</th><th class="num">Check ($K)</th><th class="num">Funded %</th>
+        <th class="num">Upfront fee %</th><th>Funding source</th>
+      </tr></thead><tbody>${rows}${empty}</tbody>`;
+    document.getElementById("pf2-sel-count").textContent = `${list.filter(i => selection(i).include).length} of ${list.length} selected`;
   }
 
   function onSelectorChange(el) {
@@ -70,7 +50,7 @@
     const inv = ctx.state.investments.find(i => i.id === tr.dataset.sel);
     const s = selection(inv);
     const f = el.dataset.selField;
-    if (f === "include") { s.include = el.checked; if (!s.include) delete s.via_theme; }
+    if (f === "include") s.include = el.checked;
     else if (f === "source") s.source = el.value;
     else {
       const n = Number(String(el.value).replace(/[$,%\s]/g, ""));
@@ -84,12 +64,9 @@
     }
     pfState().selections[inv.id] = s;
     save();
-    if (f === "include") renderSelector(); // refresh the theme tag
-    else tr.classList.toggle("sel-on", !!s.include);
-    const funded = (Number(s.check) || 0) * s.funded_pct;
-    tr.querySelector('[data-out="funded"]').textContent = Fmt.thousands(funded);
-    tr.querySelector('[data-out="unfunded"]').textContent = Fmt.thousands((Number(s.check) || 0) - funded);
-    tr.querySelector('[data-out="fee"]').textContent = Fmt.thousands((Number(s.check) || 0) * s.fee_pct);
+    tr.classList.toggle("sel-on", !!s.include);
+    const list = Model.prospective(ctx.state);
+    document.getElementById("pf2-sel-count").textContent = `${list.filter(i => selection(i).include).length} of ${list.length} selected`;
     renderOutputs();
   }
 
@@ -135,7 +112,7 @@
           (t.unfunded > 0 ? `, unfunded $${Fmt.thousands(t.unfunded)}K called in year 1` : "") +
           `; from ${t.from_holding > 0 ? `${esc(t.source_name)} $${Fmt.thousands(t.from_holding)}K` : ""}${t.from_holding > 0 && t.from_cash > 0.5 ? " + " : ""}${t.from_cash > 0.5 || t.from_holding <= 0 ? `cash $${Fmt.thousands(t.from_cash)}K` : ""}` +
           (t.fee > 0 ? `; fee $${Fmt.thousands(t.fee)}K paid from cash` : "") + `</li>`).join("")
-      : `<li class="muted">No investments selected. Tick one above, or add a theme, to see its effect.</li>`;
+      : `<li class="muted">Nothing selected. Tick a prospective investment above to see its effect on the book.</li>`;
     document.getElementById("pf2-trades").innerHTML = `<ul class="trades">${tradeText}</ul>` +
       (pf.warnings.length ? `<div class="warn" role="alert">${pf.warnings.map(w => `<p>${esc(w)}</p>`).join("")}</div>` : "");
 
@@ -286,7 +263,6 @@
     ui.bound = true;
     const panel = document.getElementById("tab-proforma");
     panel.addEventListener("change", e => {
-      if (e.target.id === "pf2-theme-pick") { const v = e.target.value; e.target.value = ""; return v ? addTheme(v) : undefined; }
       if (e.target.matches("[data-sel-field]")) return onSelectorChange(e.target);
       if (e.target.matches("[data-setting]")) return onSettingChange(e.target);
     });
@@ -301,7 +277,6 @@
   function render(state, onChange) {
     ctx = { state, onChange };
     bind();
-    renderThemePicker();
     renderSelector();
     renderLimits();
     renderOutputs();

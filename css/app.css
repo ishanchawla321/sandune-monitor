@@ -125,7 +125,6 @@ figure.card figcaption { font-weight: 600; font-size: var(--fs-section); margin-
 .btn-primary:hover { color: #fff; background: #183049; }
 .btn-toggle[aria-pressed=true] { background: var(--accent-tint); border-color: var(--accent); color: var(--accent); }
 .btn-sm { padding: 3px 10px; font-size: var(--fs-small); }
-.fld-end { margin-left: auto; justify-content: flex-end; }
 table.grid th.col-act { text-align: right; }
 table.grid td.col-act { text-align: right; }
 .btn:disabled, .btn:disabled:hover { opacity: .45; cursor: not-allowed; border-color: var(--line-strong); color: var(--ink); }
@@ -341,6 +340,18 @@ table.grid.hold-total { width: 100%; }
   table.grid.hold-total { min-width: 0; width: 100%; }
 }
 
+/* ---------- Ideas: passed list, funding form ---------- */
+details.passed > summary { cursor: pointer; font-weight: 600; font-size: var(--fs-section); list-style: none; display: flex; align-items: center; gap: var(--s2); }
+details.passed > summary::before { content: ""; width: 0; height: 0; border-left: 6px solid var(--muted); border-top: 5px solid transparent; border-bottom: 5px solid transparent; transition: transform var(--ease); }
+details.passed[open] > summary::before { transform: rotate(90deg); }
+details.passed > summary::-webkit-details-marker { display: none; }
+details.passed > .note { margin-top: var(--s3); }
+.fund-form { display: flex; flex-wrap: wrap; gap: var(--s3) var(--s4); align-items: flex-end; margin: var(--s3) 0; }
+.fund-form .fld input, .fund-form .fld select { background: var(--card); }
+.fund-form .fld input[inputmode] { width: 120px; text-align: right; }
+.fund-form .fld select { max-width: 320px; }
+.card-head .funded-line { margin: var(--s3) 0 0; }
+
 /* ---------- Blotter ---------- */
 .h-count { font-size: var(--fs-small); font-weight: 500; margin-left: var(--s2); }
 .bl-form { display: flex; flex-wrap: wrap; gap: var(--s3) var(--s4); align-items: flex-end; padding: var(--s4); border: 1px solid var(--line); border-radius: var(--r-input); background: var(--subtle); margin-bottom: var(--s2); }
@@ -436,8 +447,7 @@ table.grid tbody tr.pf-funded { background: var(--subtle); }
   .edit-list li.assume .list-input { flex-basis: 100%; order: 3; }
   .theme-pick, .theme-pick select { min-width: 0; width: 100%; }
   .hc .card-header h2 .h-count { flex-basis: 100%; margin-left: 0; }
-  .fld-end { margin-left: 0; flex-basis: 100%; }
-  .fld-end .btn-pf { width: 100%; }
+  .fund-form .fld, .fund-form .fld input, .fund-form .fld select { width: 100%; max-width: none; }
   .bl-form .fld, .bl-form .fld input, .bl-form .fld select, .bl-form .fld-holding select { width: 100%; min-width: 0; }
   .bl-form .fld { flex: 1 1 calc(50% - var(--s4)); }
   .bl-form .fld-holding, .bl-form .fld-note, .bl-form .fld-submit { flex-basis: 100%; }
@@ -482,6 +492,8 @@ section[role=tabpanel] > .asof { margin: 0 0 calc(var(--s4) - var(--s5)); }
 .stat-row.cols-3 { --cols: 3; }
 .stat-row.cols-4 { --cols: 4; }
 .stat-value select { max-width: 100%; border: 1px solid var(--line-strong); border-radius: var(--r-input); padding: 4px var(--s2); background: var(--card); }
+.stat-value > select { min-width: 0; width: 100%; flex: 1 1 0; }
+.stat-row > .stat > .stat-value { min-width: 0; }
 .card-head .stat-row { margin-top: var(--s4); }
 .card-head .head-fields { margin-top: var(--s4); }
 
