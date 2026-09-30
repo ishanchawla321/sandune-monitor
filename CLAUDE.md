@@ -1,10 +1,11 @@
 # Sandune Monitor: project brief
 
 ## Status (as of Wed 2026-09-30)
-- Done: Stages 1-5, 6a (themes/investments), 6b visual pass, visual cleanup, and the v2 restructure (branch v2-restructure): two-level navigation, transaction blotter and positions engine, holdings by asset class, investment and theme one-pagers in read mode with per-section edit, diligence lists, the Mark as funded flow, and cross-app links.
+- Done: v2 merged to main (Opportunities: Themes | Ideas; Portfolio: Current | Pro Forma), blotter and positions engine, holdings by asset class, investment one-pager with diligence, funding flow, 198-check test suite passing. FINNHUB_API_KEY set in Vercel; live prices working.
 - Invariants (Seed mode) hold and are checked by `node tests/invariants.js`: NAV $49,748,585; dry powder $19,749,461; Pro Forma cases A-D dry powder 17.75 / 17.65 / 18.95 / 17.75 ($M) and illiquid incl. unfunded 52.89 / 52.89 / 50.88 / 52.89%; the seed blotter reconciles to the book for every holding.
-- Case definitions (owner-confirmed): A = car wash + RPA loan from cash; B = A plus BWAY and STIM; C = car wash funded by selling Apple; D = Legal AI $1.0M (100%) + RPA loan $1.0M (65%) ticked in the Pro Forma checklist, both from cash. Largest sector is Technology at 20.38 / 20.38 / 17.07 / 22.39%. A further test marks the car wash Invested at $1.0M from cash (cash down $1.0M, NAV unchanged, holding in Directs / co-invests, matching Case A's car wash leg) and reverses it back to the seed book.
-- Next: review the v2 pull request; phone test on the live URL; add ANTHROPIC_API_KEY in Vercel by Thursday 2026-10-01 midday, test live extraction, replace samples/sample-om-extracted.json with a real response; final incognito/phone checks; submission paragraph and walkthrough script.
+- Case definitions (owner-confirmed): A = car wash + RPA loan from cash; B = A plus BWAY and STIM; C = car wash funded by selling Apple; D = Legal AI $1.0M (100%) + RPA loan $1.0M (65%) ticked in the Pro Forma checklist, both from cash. Largest sector is Technology at 20.38 / 20.38 / 17.07 / 22.39%. Further tests fund every prospective investment from cash and from Apple, compare Current with Pro Forma, and reverse back to the seed book.
+- Next: add ANTHROPIC_API_KEY in Vercel by Thursday midday, test live extraction, replace samples/sample-om-extracted.json with a real response; final incognito and phone checks; submission paragraph and walkthrough script.
+- Demo note: use Seed (9/28) mode when showing hand-checked numbers (NAV $49,748,585, dry powder $19,749,461).
 - Open decisions: default table columns per asset-class card (revisit), model stays claude-sonnet-5, extract timeout 60s.
 
 ## What this is
