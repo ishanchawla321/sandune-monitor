@@ -21,15 +21,71 @@
     </div>
   </div>
   <p class="banner" role="note">Sample data. All holdings, ideas and figures are illustrative.</p>
-  <nav class="tabs" role="tablist" aria-label="Sections">
-    <button type="button" role="tab" id="tabbtn-portfolio" aria-controls="tab-portfolio" aria-selected="true">Portfolio</button>
-    <button type="button" role="tab" id="tabbtn-ideas" aria-controls="tab-ideas" aria-selected="false" tabindex="-1">Ideas</button>
-    <button type="button" role="tab" id="tabbtn-proforma" aria-controls="tab-proforma" aria-selected="false" tabindex="-1">Pro Forma</button>
+  <nav class="nav-top" role="tablist" aria-label="Sections">
+    <button type="button" role="tab" id="secbtn-opportunities" data-section="opportunities" aria-selected="true">Opportunities</button>
+    <button type="button" role="tab" id="secbtn-portfolio" data-section="portfolio" aria-selected="false" tabindex="-1">Portfolio</button>
+  </nav>
+  <nav class="nav-sub" role="tablist" aria-label="Opportunities views" data-section="opportunities">
+    <button type="button" role="tab" id="tabbtn-themes" data-tab="opportunities/themes" aria-controls="tab-themes" aria-selected="true">Themes</button>
+    <button type="button" role="tab" id="tabbtn-ideas" data-tab="opportunities/ideas" aria-controls="tab-ideas" aria-selected="false" tabindex="-1">Ideas</button>
+  </nav>
+  <nav class="nav-sub" role="tablist" aria-label="Portfolio views" data-section="portfolio" hidden>
+    <button type="button" role="tab" id="tabbtn-portfolio" data-tab="portfolio/current" aria-controls="tab-portfolio" aria-selected="true">Current</button>
+    <button type="button" role="tab" id="tabbtn-proforma" data-tab="portfolio/proforma" aria-controls="tab-proforma" aria-selected="false" tabindex="-1">Pro Forma</button>
   </nav>
 </header>
 
 <main>
-  <section id="tab-portfolio" role="tabpanel" aria-labelledby="tabbtn-portfolio">
+  <div id="sec-opportunities">
+  <section id="tab-themes" role="tabpanel" aria-labelledby="tabbtn-themes" hidden>
+    <p class="asof">Themes group the investments that express one thesis. Figures are sample data; edits save in this browser.</p>
+
+    <section class="card" aria-labelledby="th-h">
+      <div class="card-header"><h2 id="th-h">Themes</h2></div>
+      <p class="note">Click a theme to open its card.</p>
+      <div id="th-grid" class="theme-grid"></div>
+    </section>
+    <div id="th-card" class="card-slot"></div>
+  </section>
+
+  <section id="tab-ideas" role="tabpanel" aria-labelledby="tabbtn-ideas" hidden>
+    <p class="asof">Investments in the pipeline, from first look to funding. Figures are sample data; edits save in this browser.</p>
+
+    <section class="card" aria-labelledby="inv-h">
+      <div class="card-header">
+        <h2 id="inv-h">Prospective investments <span class="h-count muted" id="id-prospective-count"></span></h2>
+        <div class="card-actions">
+          <button type="button" class="btn btn-toggle" id="id-cols" aria-pressed="false">All columns</button>
+        </div>
+      </div>
+      <div id="id-intake"></div>
+      <div class="filters" id="id-filters"></div>
+      <p class="note">Watching, Researching and IC. Click a row to open its one-pager; changing the status on it moves the investment between sections.</p>
+      <div class="table-wrap">
+        <table class="grid ideas" id="id-table"></table>
+      </div>
+    </section>
+    <div id="id-card" class="card-slot"></div>
+
+    <section class="card" aria-labelledby="done-h">
+      <div class="card-header">
+        <h2 id="done-h">Completed investments <span class="h-count muted" id="id-completed-count"></span></h2>
+      </div>
+      <p class="note">Marked Invested. Their funding is posted to the blotter and the holding sits in Portfolio &gt; Current.</p>
+      <div id="id-completed"></div>
+    </section>
+    <div id="id-card-completed" class="card-slot"></div>
+
+    <details class="card passed" id="id-passed">
+      <summary>Passed <span class="h-count muted" id="id-passed-count"></span></summary>
+      <p class="note">Kept for the decision log. Click a row to open its one-pager.</p>
+      <div id="id-passed-list"></div>
+    </details>
+    <div id="id-card-passed" class="card-slot"></div>
+  </section>
+  </div>
+
+  <section id="tab-portfolio" role="tabpanel" aria-labelledby="tabbtn-portfolio" hidden>
     <p class="asof" id="pf-asof"></p>
 
     <div class="tiles" id="pf-tiles"></div>
@@ -55,57 +111,30 @@
       </figure>
     </div>
 
-    <section class="card" aria-labelledby="pf-holdings-h">
+    <div id="pf-holdings" class="hc-stack" aria-label="Holdings by asset class"></div>
+
+    <section class="card" aria-labelledby="bl-h" id="pf-blotter">
       <div class="card-header">
-        <h2 id="pf-holdings-h">Holdings</h2>
+        <h2 id="bl-h">Blotter <span class="h-count muted" id="bl-count"></span></h2>
         <div class="card-actions">
-          <button type="button" class="btn btn-toggle" id="pf-cols" aria-pressed="false">All columns</button>
-          <button type="button" class="btn" id="pf-csv">Download CSV</button>
+          <button type="button" class="btn" id="bl-csv">Download CSV</button>
         </div>
       </div>
-      <p class="note">Click a cell to edit. Dollar columns are in $ thousands. Price is shown only for priced securities: per share for stocks and ETFs, per 100 face for bonds and T-bills; their market value is price x quantity. Funds, directs, real estate and cash have no unit price: Market value is the mark or balance, and you edit it there.</p>
+      <p class="note">Every buy, sell, capital call, distribution and income item behind the book. A new entry posts to its holding and to operating cash straight away and saves in this browser. Sample data.</p>
+      <div id="bl-form"></div>
+      <div class="filters" id="bl-filters"></div>
       <div class="table-wrap">
-        <table class="grid" id="pf-table"></table>
+        <table class="grid blotter" id="bl-table"></table>
       </div>
     </section>
-  </section>
-
-  <section id="tab-ideas" role="tabpanel" aria-labelledby="tabbtn-ideas" hidden>
-    <p class="asof">Themes and the investments that express them. Figures are sample data; edits save in this browser.</p>
-
-    <section class="card" aria-labelledby="th-h">
-      <div class="card-header"><h2 id="th-h">Themes</h2></div>
-      <div id="th-grid" class="theme-grid"></div>
-    </section>
-    <div id="th-card" class="card-slot"></div>
-
-    <section class="card" aria-labelledby="inv-h">
-      <div class="card-header">
-        <h2 id="inv-h">Investments</h2>
-        <div class="card-actions">
-          <button type="button" class="btn btn-toggle" id="id-cols" aria-pressed="false">All columns</button>
-        </div>
-      </div>
-      <div id="id-intake"></div>
-      <div class="filters" id="id-filters"></div>
-      <p class="note">Click a row to open its card.</p>
-      <div class="table-wrap">
-        <table class="grid ideas" id="id-table"></table>
-      </div>
-    </section>
-    <div id="id-card" class="card-slot"></div>
   </section>
 
   <section id="tab-proforma" role="tabpanel" aria-labelledby="tabbtn-proforma" hidden>
-    <p class="asof">Tick investments to add them to the book, or add a whole theme. Figures are sample data; selections save in this browser.</p>
-
     <section class="card" aria-labelledby="pf2-sel-h">
       <div class="card-header">
-        <h2 id="pf2-sel-h">Investments to add</h2>
-        <div class="card-actions">
-          <label class="theme-pick"><span class="sr-only">Add theme</span><select id="pf2-theme-pick" aria-label="Add all investments in a theme"></select></label>
-        </div>
+        <h2 id="pf2-sel-h">Select prospective investments to model. <span class="h-count muted" id="pf2-sel-count"></span></h2>
       </div>
+      <p class="note">Every prospective investment (Watching, Researching or IC). Tick one, set its check size, funded %, upfront fee % and funding source, and the book below updates. Figures are sample data; selections save in this browser.</p>
       <div class="table-wrap">
         <table class="grid" id="pf2-selector"></table>
       </div>
@@ -134,17 +163,9 @@
       <div class="chart-box chart-calls"><canvas id="pf2-chart-calls" role="img" aria-label="Bar chart of after-trade projected capital calls, years 1 to 5, aligned with the ladder above."></canvas></div>
     </figure>
 
-    <section class="card" aria-labelledby="pf2-hold-h">
-      <div class="card-header">
-        <h2 id="pf2-hold-h">Pro forma holdings</h2>
-        <div class="card-actions">
-          <button type="button" class="btn btn-toggle" id="pf2-cols" aria-pressed="false">All columns</button>
-        </div>
-      </div>
-      <p class="note">New investment rows are marked PF. Holdings sold to fund a trade show their reduced value. Dollar columns are in $ thousands.</p>
-      <div class="table-wrap">
-        <table class="grid" id="pf2-holdings"></table>
-      </div>
+    <section aria-labelledby="pf2-hold-h" class="hc-group">
+      <h2 id="pf2-hold-h" class="group-title">Pro forma holdings <span class="h-count muted">new rows marked PF; holdings sold to fund a trade show their reduced value</span></h2>
+      <div id="pf2-holdings" class="hc-stack"></div>
     </section>
   </section>
 </main>
@@ -152,16 +173,21 @@
 <script src="vendor/chart.umd.min.js"></script>
 <script src="data/seed.js"></script>
 <script src="js/metrics.js"></script>
+<script src="js/positions.js"></script>
 <script src="js/format.js"></script>
+<script src="js/migrate.js"></script>
 <script src="js/store.js"></script>
 <script src="js/api.js"></script>
 <script src="js/prices.js"></script>
+<script src="js/holdings.js"></script>
+<script src="js/blotter.js"></script>
 <script src="js/portfolio.js"></script>
 <script src="samples/sample-om-extracted.js"></script>
+<script src="js/proforma-model.js"></script>
+<script src="js/invest-model.js"></script>
 <script src="js/themes-model.js"></script>
 <script src="js/intake.js"></script>
 <script src="js/ideas.js"></script>
-<script src="js/proforma-model.js"></script>
 <script src="js/proforma.js"></script>
 <script src="js/app.js"></script>
 </body>

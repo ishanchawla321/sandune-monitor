@@ -5,9 +5,12 @@
 //   public equity = price x shares; bonds and T-bills = price x face / 100;
 //   funds and privates = mark; cash = balance.
 // Public equity prices: Yahoo Finance regular-market close, 2026-09-28.
+// Bonds carry coupon (annual rate), maturity and coupon_freq; price_or_mark is the clean price per 100.
+// Private funds carry vintage. Cash carries yield; T-bills carry maturity (yield is computed from price).
+// transactions[] is the blotter that today's book is derived from; see the note above that block.
 
 window.SEED = {
-  version: 7,
+  version: 9,
   as_of: "2026-09-28",
   sample_data: true,
 
@@ -63,36 +66,36 @@ window.SEED = {
       sector: "Multi-sector (ETF/funds)", price_or_mark: 77.54, quantity: 30000, market_value: null, cost: 2370000,
       commitment: null, unfunded: 0, call_schedule: null, liquidity_bucket: "liquid_now", liquidity_date: "2026-09-28",
       mark_source: "Yahoo Finance close", mark_date: "2026-09-28" },
-    { id: "h-hyb-a", asset_class: "credit", name: "HY bond A (industrials)", ticker_or_id: "HYB-A", security_type: "bond",
+    { id: "h-hyb-a", asset_class: "credit", name: "HY bond A (industrials) 7.50% 2031", ticker_or_id: "HYB-A", security_type: "bond",
       sector: "Industrials", price_or_mark: 101.25, quantity: 1550000, market_value: null, cost: 1530000,
       commitment: null, unfunded: 0, call_schedule: null, liquidity_bucket: "liquid_now", liquidity_date: "2026-09-28",
-      mark_source: "Sample price", mark_date: "2026-09-28" },
-    { id: "h-hyb-b", asset_class: "credit", name: "HY bond B (telecom)", ticker_or_id: "HYB-B", security_type: "bond",
+      mark_source: "Sample price", mark_date: "2026-09-28", coupon: 0.075, maturity: "2031-03-15", coupon_freq: 2 },
+    { id: "h-hyb-b", asset_class: "credit", name: "HY bond B (telecom) 6.25% 2029", ticker_or_id: "HYB-B", security_type: "bond",
       sector: "Communication Services", price_or_mark: 96.75, quantity: 1600000, market_value: null, cost: 1480000,
       commitment: null, unfunded: 0, call_schedule: null, liquidity_bucket: "liquid_now", liquidity_date: "2026-09-28",
-      mark_source: "Sample price", mark_date: "2026-09-28" },
-    { id: "h-hyb-c", asset_class: "credit", name: "HY bond C (chemicals)", ticker_or_id: "HYB-C", security_type: "bond",
+      mark_source: "Sample price", mark_date: "2026-09-28", coupon: 0.0625, maturity: "2029-06-01", coupon_freq: 2 },
+    { id: "h-hyb-c", asset_class: "credit", name: "HY bond C (chemicals) 5.875% 2030", ticker_or_id: "HYB-C", security_type: "bond",
       sector: "Materials", price_or_mark: 99.50, quantity: 1550000, market_value: null, cost: 1520000,
       commitment: null, unfunded: 0, call_schedule: null, liquidity_bucket: "liquid_now", liquidity_date: "2026-09-28",
-      mark_source: "Sample price", mark_date: "2026-09-28" },
+      mark_source: "Sample price", mark_date: "2026-09-28", coupon: 0.05875, maturity: "2030-11-15", coupon_freq: 2 },
 
     // ---- Private funds (~$10M NAV, $4.5M unfunded). cost = paid-in = commitment - unfunded. call_schedule = share of current unfunded called in years 1..3; null = straight-line. ----
     { id: "h-fund-a", asset_class: "private_fund", name: "Buyout Fund A (2021 vintage)", ticker_or_id: "PF-A", security_type: "lp_interest",
       sector: "Multi-sector (ETF/funds)", price_or_mark: 2450000, quantity: null, market_value: null, cost: 2250000,
       commitment: 3000000, unfunded: 750000, call_schedule: [0.5, 0.5, 0], liquidity_bucket: "3y_plus", liquidity_date: "2030-06-30",
-      mark_source: "GP statement Q2 2026", mark_date: "2026-06-30" },
+      mark_source: "GP statement Q2 2026", mark_date: "2026-06-30", vintage: 2021 },
     { id: "h-fund-b", asset_class: "private_fund", name: "Growth Equity Fund B (2023 vintage)", ticker_or_id: "PF-B", security_type: "lp_interest",
       sector: "Technology", price_or_mark: 2470000, quantity: null, market_value: null, cost: 2250000,
       commitment: 4000000, unfunded: 1750000, call_schedule: null, liquidity_bucket: "3y_plus", liquidity_date: "2032-12-31",
-      mark_source: "GP statement Q2 2026", mark_date: "2026-06-30" },
+      mark_source: "GP statement Q2 2026", mark_date: "2026-06-30", vintage: 2023 },
     { id: "h-fund-c", asset_class: "private_fund", name: "Private Credit Fund C (2022 vintage)", ticker_or_id: "PF-C", security_type: "lp_interest",
       sector: "Multi-sector (ETF/funds)", price_or_mark: 2450000, quantity: null, market_value: null, cost: 2500000,
       commitment: 3000000, unfunded: 500000, call_schedule: [1, 0, 0], liquidity_bucket: "1_3y", liquidity_date: "2028-06-30",
-      mark_source: "GP statement Q2 2026", mark_date: "2026-06-30" },
+      mark_source: "GP statement Q2 2026", mark_date: "2026-06-30", vintage: 2022 },
     { id: "h-fund-d", asset_class: "private_fund", name: "Venture Fund D (2024 vintage)", ticker_or_id: "PF-D", security_type: "lp_interest",
       sector: "Technology", price_or_mark: 2440000, quantity: null, market_value: null, cost: 2000000,
       commitment: 3500000, unfunded: 1500000, call_schedule: [0.4, 0.35, 0.25], liquidity_bucket: "3y_plus", liquidity_date: "2034-12-31",
-      mark_source: "GP statement Q2 2026", mark_date: "2026-06-30" },
+      mark_source: "GP statement Q2 2026", mark_date: "2026-06-30", vintage: 2024 },
 
     // ---- Directs / co-invests (~$6M). Names are generic. ----
     { id: "h-dir-a", asset_class: "direct", name: "Software co-invest A", ticker_or_id: "CO-A", security_type: "common_equity",
@@ -122,17 +125,221 @@ window.SEED = {
     { id: "h-cash", asset_class: "cash", name: "Operating cash", ticker_or_id: "USD", security_type: "cash",
       sector: "Cash", price_or_mark: 2500000, quantity: null, market_value: null, cost: 2500000,
       commitment: null, unfunded: 0, call_schedule: null, liquidity_bucket: "liquid_now", liquidity_date: "2026-09-28",
-      mark_source: "Custodian", mark_date: "2026-09-28" },
+      mark_source: "Custodian", mark_date: "2026-09-28", yield: 0.0385 },
     { id: "h-tbill", asset_class: "cash", name: "US Treasury bills, Dec 2026", ticker_or_id: "UST-B 12/26", security_type: "t_bill",
       sector: "Cash", price_or_mark: 99.10, quantity: 5550000, market_value: null, cost: 5480000,
       commitment: null, unfunded: 0, call_schedule: null, liquidity_bucket: "liquid_now", liquidity_date: "2026-09-28",
-      mark_source: "Sample price", mark_date: "2026-09-28" }
+      mark_source: "Sample price", mark_date: "2026-09-28", maturity: "2026-12-15" }
+  ],
+
+  // Transaction blotter. Each holding's quantity, cost basis (paid-in for funds) and unfunded amount above are
+  // derived from these entries and reconcile exactly (tests/invariants.js checks it). Past income (dividends,
+  // coupons, interest, distributions) is already in today's cash balance and is not added to cash again.
+  // Fields: date, holding_id, type (buy, sell, dividend, coupon, interest, capital_call, distribution, fee),
+  // quantity (shares, or face for bonds and T-bills), price (per share, or per 100 face), amount (dollars), note.
+  transactions: [
+    { id: "tx-0001", date: "2021-09-30", holding_id: "h-fund-a", type: "capital_call", quantity: null, price: null, amount: 600000, note: "Capital call 1" },
+    { id: "tx-0002", date: "2022-03-31", holding_id: "h-fund-a", type: "capital_call", quantity: null, price: null, amount: 500000, note: "Capital call 2" },
+    { id: "tx-0003", date: "2022-05-31", holding_id: "h-fund-c", type: "capital_call", quantity: null, price: null, amount: 1000000, note: "Capital call 1" },
+    { id: "tx-0004", date: "2022-08-31", holding_id: "h-re-mf", type: "buy", quantity: null, price: null, amount: 2000000, note: "JV equity contribution" },
+    { id: "tx-0005", date: "2022-11-15", holding_id: "h-fund-a", type: "capital_call", quantity: null, price: null, amount: 450000, note: "Capital call 3" },
+    { id: "tx-0006", date: "2022-11-30", holding_id: "h-fund-c", type: "capital_call", quantity: null, price: null, amount: 800000, note: "Capital call 2" },
+    { id: "tx-0007", date: "2023-03-15", holding_id: "h-re-ind", type: "buy", quantity: null, price: null, amount: 1600000, note: "Fund subscription, fully drawn" },
+    { id: "tx-0008", date: "2023-05-15", holding_id: "h-dir-a", type: "buy", quantity: null, price: null, amount: 1700000, note: "Co-invest alongside sponsor, common equity" },
+    { id: "tx-0009", date: "2023-06-30", holding_id: "h-fund-b", type: "capital_call", quantity: null, price: null, amount: 500000, note: "Capital call 1" },
+    { id: "tx-0010", date: "2023-08-15", holding_id: "h-fund-a", type: "capital_call", quantity: null, price: null, amount: 400000, note: "Capital call 4" },
+    { id: "tx-0011", date: "2023-09-29", holding_id: "h-fund-c", type: "capital_call", quantity: null, price: null, amount: 700000, note: "Capital call 3" },
+    { id: "tx-0012", date: "2023-10-12", holding_id: "h-dir-c", type: "buy", quantity: null, price: null, amount: 1800000, note: "Co-invest alongside sponsor, common equity" },
+    { id: "tx-0013", date: "2023-12-15", holding_id: "h-fund-b", type: "capital_call", quantity: null, price: null, amount: 500000, note: "Capital call 2" },
+    { id: "tx-0014", date: "2024-02-28", holding_id: "h-dir-b", type: "buy", quantity: null, price: null, amount: 1750000, note: "Preferred equity co-invest, 8% cumulative dividend" },
+    { id: "tx-0015", date: "2024-03-29", holding_id: "h-fund-c", type: "distribution", quantity: null, price: null, amount: 56000, note: "Quarterly income distribution" },
+    { id: "tx-0016", date: "2024-03-31", holding_id: "h-dir-b", type: "dividend", quantity: null, price: null, amount: 35000, note: "Quarterly preferred dividend, 8% on $1.75M" },
+    { id: "tx-0017", date: "2024-03-31", holding_id: "h-re-mf", type: "distribution", quantity: null, price: null, amount: 27500, note: "Quarterly cash distribution from operations" },
+    { id: "tx-0018", date: "2024-03-31", holding_id: "h-re-ind", type: "distribution", quantity: null, price: null, amount: 20000, note: "Quarterly income distribution" },
+    { id: "tx-0019", date: "2024-04-15", holding_id: "h-fund-d", type: "capital_call", quantity: null, price: null, amount: 700000, note: "Capital call 1" },
+    { id: "tx-0020", date: "2024-05-06", holding_id: "h-unh", type: "buy", quantity: 3000, price: 490, amount: 1470000, note: "Lot 1" },
+    { id: "tx-0021", date: "2024-06-17", holding_id: "h-xom", type: "buy", quantity: 6000, price: 110, amount: 660000, note: "Lot 1" },
+    { id: "tx-0022", date: "2024-06-24", holding_id: "h-unh", type: "dividend", quantity: null, price: null, amount: 6300, note: "Quarterly dividend, $2.10/sh on 3,000 sh" },
+    { id: "tx-0023", date: "2024-06-28", holding_id: "h-fund-a", type: "capital_call", quantity: null, price: null, amount: 300000, note: "Capital call 5" },
+    { id: "tx-0024", date: "2024-06-28", holding_id: "h-fund-c", type: "distribution", quantity: null, price: null, amount: 58000, note: "Quarterly income distribution" },
+    { id: "tx-0025", date: "2024-06-30", holding_id: "h-dir-b", type: "dividend", quantity: null, price: null, amount: 35000, note: "Quarterly preferred dividend, 8% on $1.75M" },
+    { id: "tx-0026", date: "2024-06-30", holding_id: "h-re-mf", type: "distribution", quantity: null, price: null, amount: 27500, note: "Quarterly cash distribution from operations" },
+    { id: "tx-0027", date: "2024-06-30", holding_id: "h-re-ind", type: "distribution", quantity: null, price: null, amount: 20000, note: "Quarterly income distribution" },
+    { id: "tx-0028", date: "2024-07-29", holding_id: "h-nee", type: "buy", quantity: 12000, price: 66, amount: 792000, note: "Lot 1" },
+    { id: "tx-0029", date: "2024-08-20", holding_id: "h-jpm", type: "buy", quantity: 3500, price: 205, amount: 717500, note: "Lot 1" },
+    { id: "tx-0030", date: "2024-08-30", holding_id: "h-fund-b", type: "capital_call", quantity: null, price: null, amount: 450000, note: "Capital call 3" },
+    { id: "tx-0031", date: "2024-09-10", holding_id: "h-xom", type: "dividend", quantity: null, price: null, amount: 5700, note: "Quarterly dividend, $0.9500/sh on 6,000 sh" },
+    { id: "tx-0032", date: "2024-09-10", holding_id: "h-hyb-b", type: "buy", quantity: 1000000, price: 91, amount: 910000, note: "Lot 1" },
+    { id: "tx-0033", date: "2024-09-15", holding_id: "h-nee", type: "dividend", quantity: null, price: null, amount: 6180, note: "Quarterly dividend, $0.5150/sh on 12,000 sh" },
+    { id: "tx-0034", date: "2024-09-16", holding_id: "h-pg", type: "buy", quantity: 8000, price: 150.5, amount: 1204000, note: "Lot 1" },
+    { id: "tx-0035", date: "2024-09-24", holding_id: "h-unh", type: "dividend", quantity: null, price: null, amount: 6300, note: "Quarterly dividend, $2.10/sh on 3,000 sh" },
+    { id: "tx-0036", date: "2024-09-27", holding_id: "h-fund-c", type: "distribution", quantity: null, price: null, amount: 60000, note: "Quarterly income distribution" },
+    { id: "tx-0037", date: "2024-09-30", holding_id: "h-dir-b", type: "dividend", quantity: null, price: null, amount: 35000, note: "Quarterly preferred dividend, 8% on $1.75M" },
+    { id: "tx-0038", date: "2024-09-30", holding_id: "h-re-mf", type: "distribution", quantity: null, price: null, amount: 27500, note: "Quarterly cash distribution from operations" },
+    { id: "tx-0039", date: "2024-09-30", holding_id: "h-re-ind", type: "distribution", quantity: null, price: null, amount: 20000, note: "Quarterly income distribution" },
+    { id: "tx-0040", date: "2024-10-14", holding_id: "h-aapl", type: "buy", quantity: 3000, price: 226, amount: 678000, note: "Lot 1" },
+    { id: "tx-0041", date: "2024-10-31", holding_id: "h-jpm", type: "dividend", quantity: null, price: null, amount: 4375, note: "Quarterly dividend, $1.25/sh on 3,500 sh" },
+    { id: "tx-0042", date: "2024-11-11", holding_id: "h-cat", type: "buy", quantity: 2000, price: 360, amount: 720000, note: "Lot 1" },
+    { id: "tx-0043", date: "2024-11-13", holding_id: "h-aapl", type: "dividend", quantity: null, price: null, amount: 750, note: "Quarterly dividend, $0.2500/sh on 3,000 sh" },
+    { id: "tx-0044", date: "2024-11-15", holding_id: "h-pg", type: "dividend", quantity: null, price: null, amount: 8052, note: "Quarterly dividend, $1.01/sh on 8,000 sh" },
+    { id: "tx-0045", date: "2024-11-15", holding_id: "h-fund-d", type: "capital_call", quantity: null, price: null, amount: 600000, note: "Capital call 2" },
+    { id: "tx-0046", date: "2024-11-20", holding_id: "h-cat", type: "dividend", quantity: null, price: null, amount: 2820, note: "Quarterly dividend, $1.41/sh on 2,000 sh" },
+    { id: "tx-0047", date: "2024-12-01", holding_id: "h-hyb-b", type: "coupon", quantity: null, price: null, amount: 31250, note: "Semiannual coupon, 6.25% on $1.00M face" },
+    { id: "tx-0048", date: "2024-12-10", holding_id: "h-xom", type: "dividend", quantity: null, price: null, amount: 5700, note: "Quarterly dividend, $0.9500/sh on 6,000 sh" },
+    { id: "tx-0049", date: "2024-12-15", holding_id: "h-nee", type: "dividend", quantity: null, price: null, amount: 6180, note: "Quarterly dividend, $0.5150/sh on 12,000 sh" },
+    { id: "tx-0050", date: "2024-12-24", holding_id: "h-unh", type: "dividend", quantity: null, price: null, amount: 6300, note: "Quarterly dividend, $2.10/sh on 3,000 sh" },
+    { id: "tx-0051", date: "2024-12-30", holding_id: "h-fund-c", type: "distribution", quantity: null, price: null, amount: 61000, note: "Quarterly income distribution" },
+    { id: "tx-0052", date: "2024-12-31", holding_id: "h-dir-b", type: "dividend", quantity: null, price: null, amount: 35000, note: "Quarterly preferred dividend, 8% on $1.75M" },
+    { id: "tx-0053", date: "2024-12-31", holding_id: "h-re-mf", type: "distribution", quantity: null, price: null, amount: 27500, note: "Quarterly cash distribution from operations" },
+    { id: "tx-0054", date: "2024-12-31", holding_id: "h-re-ind", type: "distribution", quantity: null, price: null, amount: 20000, note: "Quarterly income distribution" },
+    { id: "tx-0055", date: "2025-01-13", holding_id: "h-hyg", type: "buy", quantity: 18000, price: 78.2, amount: 1407600, note: "Lot 1" },
+    { id: "tx-0056", date: "2025-01-20", holding_id: "h-hyb-a", type: "buy", quantity: 1050000, price: 98, amount: 1029000, note: "Lot 1" },
+    { id: "tx-0057", date: "2025-01-31", holding_id: "h-jpm", type: "dividend", quantity: null, price: null, amount: 4375, note: "Quarterly dividend, $1.25/sh on 3,500 sh" },
+    { id: "tx-0058", date: "2025-02-03", holding_id: "h-xom", type: "buy", quantity: 6000, price: 121, amount: 726000, note: "Lot 2" },
+    { id: "tx-0059", date: "2025-02-07", holding_id: "h-hyg", type: "distribution", quantity: null, price: null, amount: 6480, note: "Monthly distribution, $0.3600/sh on 18,000 sh" },
+    { id: "tx-0060", date: "2025-02-13", holding_id: "h-aapl", type: "dividend", quantity: null, price: null, amount: 750, note: "Quarterly dividend, $0.2500/sh on 3,000 sh" },
+    { id: "tx-0061", date: "2025-02-15", holding_id: "h-pg", type: "dividend", quantity: null, price: null, amount: 8052, note: "Quarterly dividend, $1.01/sh on 8,000 sh" },
+    { id: "tx-0062", date: "2025-02-20", holding_id: "h-cat", type: "dividend", quantity: null, price: null, amount: 2820, note: "Quarterly dividend, $1.41/sh on 2,000 sh" },
+    { id: "tx-0063", date: "2025-03-03", holding_id: "h-hyb-c", type: "buy", quantity: 1050000, price: 97.5, amount: 1023750, note: "Lot 1" },
+    { id: "tx-0064", date: "2025-03-07", holding_id: "h-hyg", type: "distribution", quantity: null, price: null, amount: 6480, note: "Monthly distribution, $0.3600/sh on 18,000 sh" },
+    { id: "tx-0065", date: "2025-03-10", holding_id: "h-xom", type: "dividend", quantity: null, price: null, amount: 11880, note: "Quarterly dividend, $0.9900/sh on 12,000 sh" },
+    { id: "tx-0066", date: "2025-03-15", holding_id: "h-nee", type: "dividend", quantity: null, price: null, amount: 6798, note: "Quarterly dividend, $0.5665/sh on 12,000 sh" },
+    { id: "tx-0067", date: "2025-03-15", holding_id: "h-hyb-a", type: "coupon", quantity: null, price: null, amount: 39375, note: "Semiannual coupon, 7.5% on $1.05M face" },
+    { id: "tx-0068", date: "2025-03-17", holding_id: "h-nee", type: "buy", quantity: 10000, price: 72.3, amount: 723000, note: "Lot 2" },
+    { id: "tx-0069", date: "2025-03-24", holding_id: "h-unh", type: "dividend", quantity: null, price: null, amount: 6300, note: "Quarterly dividend, $2.10/sh on 3,000 sh" },
+    { id: "tx-0070", date: "2025-03-29", holding_id: "h-fund-c", type: "distribution", quantity: null, price: null, amount: 56000, note: "Quarterly income distribution" },
+    { id: "tx-0071", date: "2025-03-31", holding_id: "h-fund-a", type: "distribution", quantity: null, price: null, amount: 150000, note: "Distribution: partial realisation of portfolio company" },
+    { id: "tx-0072", date: "2025-03-31", holding_id: "h-dir-b", type: "dividend", quantity: null, price: null, amount: 35000, note: "Quarterly preferred dividend, 8% on $1.75M" },
+    { id: "tx-0073", date: "2025-03-31", holding_id: "h-re-mf", type: "distribution", quantity: null, price: null, amount: 27500, note: "Quarterly cash distribution from operations" },
+    { id: "tx-0074", date: "2025-03-31", holding_id: "h-re-ind", type: "distribution", quantity: null, price: null, amount: 20000, note: "Quarterly income distribution" },
+    { id: "tx-0075", date: "2025-03-31", holding_id: "h-cash", type: "interest", quantity: null, price: null, amount: 23800, note: "Interest on operating cash" },
+    { id: "tx-0076", date: "2025-04-07", holding_id: "h-hyg", type: "distribution", quantity: null, price: null, amount: 6480, note: "Monthly distribution, $0.3600/sh on 18,000 sh" },
+    { id: "tx-0077", date: "2025-04-08", holding_id: "h-aapl", type: "buy", quantity: 2800, price: 178.5, amount: 499800, note: "Lot 2" },
+    { id: "tx-0078", date: "2025-04-30", holding_id: "h-jpm", type: "dividend", quantity: null, price: null, amount: 4900, note: "Quarterly dividend, $1.40/sh on 3,500 sh" },
+    { id: "tx-0079", date: "2025-05-07", holding_id: "h-hyg", type: "distribution", quantity: null, price: null, amount: 6480, note: "Monthly distribution, $0.3600/sh on 18,000 sh" },
+    { id: "tx-0080", date: "2025-05-13", holding_id: "h-aapl", type: "dividend", quantity: null, price: null, amount: 1508, note: "Quarterly dividend, $0.2600/sh on 5,800 sh" },
+    { id: "tx-0081", date: "2025-05-15", holding_id: "h-pg", type: "dividend", quantity: null, price: null, amount: 8454.4, note: "Quarterly dividend, $1.06/sh on 8,000 sh" },
+    { id: "tx-0082", date: "2025-05-15", holding_id: "h-hyb-c", type: "coupon", quantity: null, price: null, amount: 30843.75, note: "Semiannual coupon, 5.875% on $1.05M face" },
+    { id: "tx-0083", date: "2025-05-19", holding_id: "h-pg", type: "buy", quantity: 5000, price: 161.2, amount: 806000, note: "Lot 2" },
+    { id: "tx-0084", date: "2025-05-20", holding_id: "h-cat", type: "dividend", quantity: null, price: null, amount: 2820, note: "Quarterly dividend, $1.41/sh on 2,000 sh" },
+    { id: "tx-0085", date: "2025-05-30", holding_id: "h-fund-b", type: "capital_call", quantity: null, price: null, amount: 450000, note: "Capital call 4" },
+    { id: "tx-0086", date: "2025-06-01", holding_id: "h-hyb-b", type: "coupon", quantity: null, price: null, amount: 31250, note: "Semiannual coupon, 6.25% on $1.00M face" },
+    { id: "tx-0087", date: "2025-06-07", holding_id: "h-hyg", type: "distribution", quantity: null, price: null, amount: 6480, note: "Monthly distribution, $0.3600/sh on 18,000 sh" },
+    { id: "tx-0088", date: "2025-06-10", holding_id: "h-jpm", type: "buy", quantity: 2500, price: 241, amount: 602500, note: "Lot 2" },
+    { id: "tx-0089", date: "2025-06-10", holding_id: "h-xom", type: "dividend", quantity: null, price: null, amount: 11880, note: "Quarterly dividend, $0.9900/sh on 12,000 sh" },
+    { id: "tx-0090", date: "2025-06-15", holding_id: "h-nee", type: "dividend", quantity: null, price: null, amount: 12463, note: "Quarterly dividend, $0.5665/sh on 22,000 sh" },
+    { id: "tx-0091", date: "2025-06-24", holding_id: "h-unh", type: "dividend", quantity: null, price: null, amount: 6630, note: "Quarterly dividend, $2.21/sh on 3,000 sh" },
+    { id: "tx-0092", date: "2025-06-28", holding_id: "h-fund-c", type: "distribution", quantity: null, price: null, amount: 58000, note: "Quarterly income distribution" },
+    { id: "tx-0093", date: "2025-06-30", holding_id: "h-dir-b", type: "dividend", quantity: null, price: null, amount: 35000, note: "Quarterly preferred dividend, 8% on $1.75M" },
+    { id: "tx-0094", date: "2025-06-30", holding_id: "h-re-mf", type: "distribution", quantity: null, price: null, amount: 27500, note: "Quarterly cash distribution from operations" },
+    { id: "tx-0095", date: "2025-06-30", holding_id: "h-re-ind", type: "distribution", quantity: null, price: null, amount: 20000, note: "Quarterly income distribution" },
+    { id: "tx-0096", date: "2025-06-30", holding_id: "h-cash", type: "interest", quantity: null, price: null, amount: 24100, note: "Interest on operating cash" },
+    { id: "tx-0097", date: "2025-07-07", holding_id: "h-hyg", type: "distribution", quantity: null, price: null, amount: 6480, note: "Monthly distribution, $0.3600/sh on 18,000 sh" },
+    { id: "tx-0098", date: "2025-07-15", holding_id: "h-hyb-b", type: "buy", quantity: 600000, price: 95, amount: 570000, note: "Lot 2" },
+    { id: "tx-0099", date: "2025-07-15", holding_id: "h-fund-d", type: "capital_call", quantity: null, price: null, amount: 400000, note: "Capital call 3" },
+    { id: "tx-0100", date: "2025-07-31", holding_id: "h-jpm", type: "dividend", quantity: null, price: null, amount: 8400, note: "Quarterly dividend, $1.40/sh on 6,000 sh" },
+    { id: "tx-0101", date: "2025-08-04", holding_id: "h-hyg", type: "buy", quantity: 12000, price: 80.2, amount: 962400, note: "Lot 2" },
+    { id: "tx-0102", date: "2025-08-07", holding_id: "h-hyg", type: "distribution", quantity: null, price: null, amount: 10800, note: "Monthly distribution, $0.3600/sh on 30,000 sh" },
+    { id: "tx-0103", date: "2025-08-11", holding_id: "h-unh", type: "buy", quantity: 2000, price: 440, amount: 880000, note: "Lot 2" },
+    { id: "tx-0104", date: "2025-08-13", holding_id: "h-aapl", type: "dividend", quantity: null, price: null, amount: 1508, note: "Quarterly dividend, $0.2600/sh on 5,800 sh" },
+    { id: "tx-0105", date: "2025-08-15", holding_id: "h-pg", type: "dividend", quantity: null, price: null, amount: 13738.4, note: "Quarterly dividend, $1.06/sh on 13,000 sh" },
+    { id: "tx-0106", date: "2025-08-20", holding_id: "h-cat", type: "dividend", quantity: null, price: null, amount: 3020, note: "Quarterly dividend, $1.51/sh on 2,000 sh" },
+    { id: "tx-0107", date: "2025-09-07", holding_id: "h-hyg", type: "distribution", quantity: null, price: null, amount: 10800, note: "Monthly distribution, $0.3600/sh on 30,000 sh" },
+    { id: "tx-0108", date: "2025-09-10", holding_id: "h-xom", type: "dividend", quantity: null, price: null, amount: 11880, note: "Quarterly dividend, $0.9900/sh on 12,000 sh" },
+    { id: "tx-0109", date: "2025-09-15", holding_id: "h-nee", type: "dividend", quantity: null, price: null, amount: 12463, note: "Quarterly dividend, $0.5665/sh on 22,000 sh" },
+    { id: "tx-0110", date: "2025-09-15", holding_id: "h-hyb-a", type: "coupon", quantity: null, price: null, amount: 39375, note: "Semiannual coupon, 7.5% on $1.05M face" },
+    { id: "tx-0111", date: "2025-09-22", holding_id: "h-xom", type: "buy", quantity: 2500, price: 132.32, amount: 330800, note: "Lot 3" },
+    { id: "tx-0112", date: "2025-09-24", holding_id: "h-unh", type: "dividend", quantity: null, price: null, amount: 11050, note: "Quarterly dividend, $2.21/sh on 5,000 sh" },
+    { id: "tx-0113", date: "2025-09-27", holding_id: "h-fund-c", type: "distribution", quantity: null, price: null, amount: 60000, note: "Quarterly income distribution" },
+    { id: "tx-0114", date: "2025-09-30", holding_id: "h-dir-b", type: "dividend", quantity: null, price: null, amount: 35000, note: "Quarterly preferred dividend, 8% on $1.75M" },
+    { id: "tx-0115", date: "2025-09-30", holding_id: "h-re-mf", type: "distribution", quantity: null, price: null, amount: 27500, note: "Quarterly cash distribution from operations" },
+    { id: "tx-0116", date: "2025-09-30", holding_id: "h-re-ind", type: "distribution", quantity: null, price: null, amount: 20000, note: "Quarterly income distribution" },
+    { id: "tx-0117", date: "2025-09-30", holding_id: "h-cash", type: "interest", quantity: null, price: null, amount: 22900, note: "Interest on operating cash" },
+    { id: "tx-0118", date: "2025-10-06", holding_id: "h-hyb-a", type: "buy", quantity: 500000, price: 100.2, amount: 501000, note: "Lot 2" },
+    { id: "tx-0119", date: "2025-10-07", holding_id: "h-hyg", type: "distribution", quantity: null, price: null, amount: 10800, note: "Monthly distribution, $0.3600/sh on 30,000 sh" },
+    { id: "tx-0120", date: "2025-10-27", holding_id: "h-cat", type: "buy", quantity: 1000, price: 430, amount: 430000, note: "Lot 2" },
+    { id: "tx-0121", date: "2025-10-31", holding_id: "h-jpm", type: "dividend", quantity: null, price: null, amount: 8400, note: "Quarterly dividend, $1.40/sh on 6,000 sh" },
+    { id: "tx-0122", date: "2025-11-07", holding_id: "h-hyg", type: "distribution", quantity: null, price: null, amount: 10800, note: "Monthly distribution, $0.3600/sh on 30,000 sh" },
+    { id: "tx-0123", date: "2025-11-13", holding_id: "h-aapl", type: "dividend", quantity: null, price: null, amount: 1508, note: "Quarterly dividend, $0.2600/sh on 5,800 sh" },
+    { id: "tx-0124", date: "2025-11-15", holding_id: "h-pg", type: "dividend", quantity: null, price: null, amount: 13738.4, note: "Quarterly dividend, $1.06/sh on 13,000 sh" },
+    { id: "tx-0125", date: "2025-11-15", holding_id: "h-hyb-c", type: "coupon", quantity: null, price: null, amount: 30843.75, note: "Semiannual coupon, 5.875% on $1.05M face" },
+    { id: "tx-0126", date: "2025-11-18", holding_id: "h-aapl", type: "buy", quantity: 2000, price: 281.1, amount: 562200, note: "Lot 3" },
+    { id: "tx-0127", date: "2025-11-20", holding_id: "h-cat", type: "dividend", quantity: null, price: null, amount: 4530, note: "Quarterly dividend, $1.51/sh on 3,000 sh" },
+    { id: "tx-0128", date: "2025-12-01", holding_id: "h-hyb-b", type: "coupon", quantity: null, price: null, amount: 50000, note: "Semiannual coupon, 6.25% on $1.60M face" },
+    { id: "tx-0129", date: "2025-12-07", holding_id: "h-hyg", type: "distribution", quantity: null, price: null, amount: 10800, note: "Monthly distribution, $0.3600/sh on 30,000 sh" },
+    { id: "tx-0130", date: "2025-12-08", holding_id: "h-hyb-c", type: "buy", quantity: 500000, price: 99.25, amount: 496250, note: "Lot 2" },
+    { id: "tx-0131", date: "2025-12-10", holding_id: "h-xom", type: "dividend", quantity: null, price: null, amount: 14355, note: "Quarterly dividend, $0.9900/sh on 14,500 sh" },
+    { id: "tx-0132", date: "2025-12-15", holding_id: "h-nee", type: "buy", quantity: 10000, price: 72.5, amount: 725000, note: "Lot 3" },
+    { id: "tx-0133", date: "2025-12-15", holding_id: "h-nee", type: "dividend", quantity: null, price: null, amount: 18128, note: "Quarterly dividend, $0.5665/sh on 32,000 sh" },
+    { id: "tx-0134", date: "2025-12-24", holding_id: "h-unh", type: "dividend", quantity: null, price: null, amount: 11050, note: "Quarterly dividend, $2.21/sh on 5,000 sh" },
+    { id: "tx-0135", date: "2025-12-30", holding_id: "h-fund-c", type: "distribution", quantity: null, price: null, amount: 61000, note: "Quarterly income distribution" },
+    { id: "tx-0136", date: "2025-12-31", holding_id: "h-dir-b", type: "dividend", quantity: null, price: null, amount: 35000, note: "Quarterly preferred dividend, 8% on $1.75M" },
+    { id: "tx-0137", date: "2025-12-31", holding_id: "h-re-mf", type: "distribution", quantity: null, price: null, amount: 27500, note: "Quarterly cash distribution from operations" },
+    { id: "tx-0138", date: "2025-12-31", holding_id: "h-re-ind", type: "distribution", quantity: null, price: null, amount: 20000, note: "Quarterly income distribution" },
+    { id: "tx-0139", date: "2025-12-31", holding_id: "h-cash", type: "interest", quantity: null, price: null, amount: 21600, note: "Interest on operating cash" },
+    { id: "tx-0140", date: "2026-01-07", holding_id: "h-hyg", type: "distribution", quantity: null, price: null, amount: 10800, note: "Monthly distribution, $0.3600/sh on 30,000 sh" },
+    { id: "tx-0141", date: "2026-01-15", holding_id: "h-cash", type: "fee", quantity: null, price: null, amount: 6250, note: "Custody and administration fee, quarterly" },
+    { id: "tx-0142", date: "2026-01-31", holding_id: "h-jpm", type: "dividend", quantity: null, price: null, amount: 8400, note: "Quarterly dividend, $1.40/sh on 6,000 sh" },
+    { id: "tx-0143", date: "2026-02-07", holding_id: "h-hyg", type: "distribution", quantity: null, price: null, amount: 10800, note: "Monthly distribution, $0.3600/sh on 30,000 sh" },
+    { id: "tx-0144", date: "2026-02-13", holding_id: "h-aapl", type: "dividend", quantity: null, price: null, amount: 2028, note: "Quarterly dividend, $0.2600/sh on 7,800 sh" },
+    { id: "tx-0145", date: "2026-02-15", holding_id: "h-pg", type: "dividend", quantity: null, price: null, amount: 13738.4, note: "Quarterly dividend, $1.06/sh on 13,000 sh" },
+    { id: "tx-0146", date: "2026-02-20", holding_id: "h-cat", type: "dividend", quantity: null, price: null, amount: 4530, note: "Quarterly dividend, $1.51/sh on 3,000 sh" },
+    { id: "tx-0147", date: "2026-02-27", holding_id: "h-fund-a", type: "distribution", quantity: null, price: null, amount: 200000, note: "Distribution: recap proceeds" },
+    { id: "tx-0148", date: "2026-03-07", holding_id: "h-hyg", type: "distribution", quantity: null, price: null, amount: 10800, note: "Monthly distribution, $0.3600/sh on 30,000 sh" },
+    { id: "tx-0149", date: "2026-03-10", holding_id: "h-xom", type: "dividend", quantity: null, price: null, amount: 14935, note: "Quarterly dividend, $1.03/sh on 14,500 sh" },
+    { id: "tx-0150", date: "2026-03-12", holding_id: "h-aapl", type: "sell", quantity: 1300, price: 300, amount: 390000, note: "Trim" },
+    { id: "tx-0151", date: "2026-03-15", holding_id: "h-nee", type: "dividend", quantity: null, price: null, amount: 20032, note: "Quarterly dividend, $0.6260/sh on 32,000 sh" },
+    { id: "tx-0152", date: "2026-03-15", holding_id: "h-hyb-a", type: "coupon", quantity: null, price: null, amount: 58125, note: "Semiannual coupon, 7.5% on $1.55M face" },
+    { id: "tx-0153", date: "2026-03-24", holding_id: "h-unh", type: "dividend", quantity: null, price: null, amount: 11050, note: "Quarterly dividend, $2.21/sh on 5,000 sh" },
+    { id: "tx-0154", date: "2026-03-29", holding_id: "h-fund-c", type: "distribution", quantity: null, price: null, amount: 56000, note: "Quarterly income distribution" },
+    { id: "tx-0155", date: "2026-03-31", holding_id: "h-fund-b", type: "capital_call", quantity: null, price: null, amount: 350000, note: "Capital call 5" },
+    { id: "tx-0156", date: "2026-03-31", holding_id: "h-dir-b", type: "dividend", quantity: null, price: null, amount: 35000, note: "Quarterly preferred dividend, 8% on $1.75M" },
+    { id: "tx-0157", date: "2026-03-31", holding_id: "h-re-mf", type: "distribution", quantity: null, price: null, amount: 27500, note: "Quarterly cash distribution from operations" },
+    { id: "tx-0158", date: "2026-03-31", holding_id: "h-re-ind", type: "distribution", quantity: null, price: null, amount: 20000, note: "Quarterly income distribution" },
+    { id: "tx-0159", date: "2026-03-31", holding_id: "h-cash", type: "interest", quantity: null, price: null, amount: 23800, note: "Interest on operating cash" },
+    { id: "tx-0160", date: "2026-04-07", holding_id: "h-hyg", type: "distribution", quantity: null, price: null, amount: 10800, note: "Monthly distribution, $0.3600/sh on 30,000 sh" },
+    { id: "tx-0161", date: "2026-04-15", holding_id: "h-fund-d", type: "capital_call", quantity: null, price: null, amount: 300000, note: "Capital call 4" },
+    { id: "tx-0162", date: "2026-04-15", holding_id: "h-cash", type: "fee", quantity: null, price: null, amount: 6250, note: "Custody and administration fee, quarterly" },
+    { id: "tx-0163", date: "2026-04-30", holding_id: "h-jpm", type: "dividend", quantity: null, price: null, amount: 9000, note: "Quarterly dividend, $1.50/sh on 6,000 sh" },
+    { id: "tx-0164", date: "2026-05-07", holding_id: "h-hyg", type: "distribution", quantity: null, price: null, amount: 10800, note: "Monthly distribution, $0.3600/sh on 30,000 sh" },
+    { id: "tx-0165", date: "2026-05-13", holding_id: "h-aapl", type: "dividend", quantity: null, price: null, amount: 1755, note: "Quarterly dividend, $0.2700/sh on 6,500 sh" },
+    { id: "tx-0166", date: "2026-05-15", holding_id: "h-pg", type: "dividend", quantity: null, price: null, amount: 14300, note: "Quarterly dividend, $1.10/sh on 13,000 sh" },
+    { id: "tx-0167", date: "2026-05-15", holding_id: "h-hyb-c", type: "coupon", quantity: null, price: null, amount: 45531.25, note: "Semiannual coupon, 5.875% on $1.55M face" },
+    { id: "tx-0168", date: "2026-05-20", holding_id: "h-cat", type: "dividend", quantity: null, price: null, amount: 4530, note: "Quarterly dividend, $1.51/sh on 3,000 sh" },
+    { id: "tx-0169", date: "2026-06-01", holding_id: "h-hyb-b", type: "coupon", quantity: null, price: null, amount: 50000, note: "Semiannual coupon, 6.25% on $1.60M face" },
+    { id: "tx-0170", date: "2026-06-04", holding_id: "h-xom", type: "sell", quantity: 2000, price: 150, amount: 300000, note: "Trim" },
+    { id: "tx-0171", date: "2026-06-07", holding_id: "h-hyg", type: "distribution", quantity: null, price: null, amount: 10800, note: "Monthly distribution, $0.3600/sh on 30,000 sh" },
+    { id: "tx-0172", date: "2026-06-10", holding_id: "h-xom", type: "dividend", quantity: null, price: null, amount: 12875, note: "Quarterly dividend, $1.03/sh on 12,500 sh" },
+    { id: "tx-0173", date: "2026-06-15", holding_id: "h-nee", type: "dividend", quantity: null, price: null, amount: 20032, note: "Quarterly dividend, $0.6260/sh on 32,000 sh" },
+    { id: "tx-0174", date: "2026-06-22", holding_id: "h-tbill", type: "buy", quantity: 1100000, price: 98.855, amount: 1087405, note: "Lot 1, Dec 2026 bill" },
+    { id: "tx-0175", date: "2026-06-24", holding_id: "h-unh", type: "dividend", quantity: null, price: null, amount: 11050, note: "Quarterly dividend, $2.21/sh on 5,000 sh" },
+    { id: "tx-0176", date: "2026-06-28", holding_id: "h-fund-c", type: "distribution", quantity: null, price: null, amount: 58000, note: "Quarterly income distribution" },
+    { id: "tx-0177", date: "2026-06-30", holding_id: "h-dir-b", type: "dividend", quantity: null, price: null, amount: 35000, note: "Quarterly preferred dividend, 8% on $1.75M" },
+    { id: "tx-0178", date: "2026-06-30", holding_id: "h-re-mf", type: "distribution", quantity: null, price: null, amount: 27500, note: "Quarterly cash distribution from operations" },
+    { id: "tx-0179", date: "2026-06-30", holding_id: "h-re-ind", type: "distribution", quantity: null, price: null, amount: 20000, note: "Quarterly income distribution" },
+    { id: "tx-0180", date: "2026-06-30", holding_id: "h-cash", type: "interest", quantity: null, price: null, amount: 24100, note: "Interest on operating cash" },
+    { id: "tx-0181", date: "2026-07-07", holding_id: "h-hyg", type: "distribution", quantity: null, price: null, amount: 10800, note: "Monthly distribution, $0.3600/sh on 30,000 sh" },
+    { id: "tx-0182", date: "2026-07-15", holding_id: "h-cash", type: "fee", quantity: null, price: null, amount: 6250, note: "Custody and administration fee, quarterly" },
+    { id: "tx-0183", date: "2026-07-20", holding_id: "h-tbill", type: "buy", quantity: 4450000, price: 98.71, amount: 4392595, note: "Lot 2, Dec 2026 bill" },
+    { id: "tx-0184", date: "2026-07-31", holding_id: "h-jpm", type: "dividend", quantity: null, price: null, amount: 9000, note: "Quarterly dividend, $1.50/sh on 6,000 sh" },
+    { id: "tx-0185", date: "2026-08-07", holding_id: "h-hyg", type: "distribution", quantity: null, price: null, amount: 10800, note: "Monthly distribution, $0.3600/sh on 30,000 sh" },
+    { id: "tx-0186", date: "2026-08-13", holding_id: "h-aapl", type: "dividend", quantity: null, price: null, amount: 1755, note: "Quarterly dividend, $0.2700/sh on 6,500 sh" },
+    { id: "tx-0187", date: "2026-08-15", holding_id: "h-pg", type: "dividend", quantity: null, price: null, amount: 14300, note: "Quarterly dividend, $1.10/sh on 13,000 sh" },
+    { id: "tx-0188", date: "2026-08-20", holding_id: "h-cat", type: "dividend", quantity: null, price: null, amount: 4530, note: "Quarterly dividend, $1.51/sh on 3,000 sh" },
+    { id: "tx-0189", date: "2026-09-07", holding_id: "h-hyg", type: "distribution", quantity: null, price: null, amount: 10800, note: "Monthly distribution, $0.3600/sh on 30,000 sh" },
+    { id: "tx-0190", date: "2026-09-10", holding_id: "h-xom", type: "dividend", quantity: null, price: null, amount: 12875, note: "Quarterly dividend, $1.03/sh on 12,500 sh" },
+    { id: "tx-0191", date: "2026-09-15", holding_id: "h-nee", type: "dividend", quantity: null, price: null, amount: 20032, note: "Quarterly dividend, $0.6260/sh on 32,000 sh" },
+    { id: "tx-0192", date: "2026-09-15", holding_id: "h-hyb-a", type: "coupon", quantity: null, price: null, amount: 58125, note: "Semiannual coupon, 7.5% on $1.55M face" },
+    { id: "tx-0193", date: "2026-09-24", holding_id: "h-unh", type: "dividend", quantity: null, price: null, amount: 11050, note: "Quarterly dividend, $2.21/sh on 5,000 sh" },
+    { id: "tx-0194", date: "2026-09-27", holding_id: "h-fund-c", type: "distribution", quantity: null, price: null, amount: 60000, note: "Quarterly income distribution" }
   ],
 
   // Investments carry every Holding field plus pipeline fields. Amounts in dollars; funded_pct is a fraction.
   // theme_id links an investment to at most one theme; it mirrors themes[].linked_investment_ids.
-  // assumptions[]: { id, text, status: intact | at_risk | broken, changed }
-  // signals[]: price signals { id, kind: "price", date, ticker, price, source } and notes { id, kind: "note", date, text, assumption_id }
+  // key_notes[] and change_my_mind[]: plain strings, one bullet each.
+  // diligence_documents[] (documents to request, numbers that don't tie) and diligence_other[] (calls, analysis):
+  //   { id, text, done: null | "YYYY-MM-DD" }. Ticking an item sets done.
+  // signals[]: dated notes { id, kind: "note", date, text } and price signals { id, kind: "price", date, ticker, price, source }
   // decision_log[]: { date, from, to, reason }
   investments: [
     { id: "i-bway", asset_class: "public_equity", name: "BrainsWay (BWAY)", ticker_or_id: "BWAY",
@@ -141,18 +348,25 @@ window.SEED = {
       mark_source: "Yahoo Finance close", mark_date: "2026-09-28",
       status: "researching", type: "public", theme_id: "t-tms",
       thesis: "TMS device maker positioned to benefit if accelerated protocols lift clinic demand for systems.",
-      assumptions: [
-        { id: "i-bway-a1", text: "Accelerated-protocol demand lifts system placements", status: "intact", changed: "2026-09-28" },
-        { id: "i-bway-a2", text: "Growth is funded without a heavily dilutive equity raise", status: "at_risk", changed: "2026-09-28" }
+      key_notes: [
+        "Accelerated-protocol demand lifts system placements",
+        "Growth is funded without a heavily dilutive equity raise"
       ],
-      triggers: ["Quarterly system placements fall year over year"],
+      change_my_mind: ["Quarterly system placements fall year over year"],
+      diligence_documents: [
+        { id: "i-bway-dd1", text: "Latest 10-K and 10-Q", done: null },
+        { id: "i-bway-dd2", text: "Balance sheet runway and any ATM or shelf filings", done: null }
+      ],
+      diligence_other: [
+        { id: "i-bway-do1", text: "Payer coverage policies for accelerated protocols", done: null },
+        { id: "i-bway-do2", text: "Calls with two TMS clinic operators", done: null }
+      ],
       contacts: [],
       check_size: 250000, funded_pct: 1.0, hold_months: null, months_to_50pct_back: null, interim_cash: false,
       target_return: "", entry_costs: "Not applicable (public market purchase)", terms_notes: "",
       next_step: "Review latest quarterly placements and cash runway", next_step_date: "2026-10-09",
       tickers: ["BWAY"], signals: [],
-      decision_log: [{ date: "2026-09-28", from: null, to: "researching", reason: "Split out of the TMS theme" }],
-      doc_flags: [] },
+      decision_log: [{ date: "2026-09-28", from: null, to: "researching", reason: "Split out of the TMS theme" }] },
 
     { id: "i-stim", asset_class: "public_equity", name: "Neuronetics (STIM)", ticker_or_id: "STIM",
       security_type: "common_stock", sector: "Health Care", price_or_mark: 2.555, quantity: 250000 / 2.555, market_value: null, cost: null,
@@ -160,18 +374,25 @@ window.SEED = {
       mark_source: "Yahoo Finance close", mark_date: "2026-09-28",
       status: "researching", type: "public", theme_id: "t-tms",
       thesis: "TMS device maker with a clinic-facing model; upside if accelerated protocols expand treatment volume and its cash lasts.",
-      assumptions: [
-        { id: "i-stim-a1", text: "Clinic customers keep adding treatment capacity", status: "intact", changed: "2026-09-28" },
-        { id: "i-stim-a2", text: "Cash runway lasts to breakeven without a discounted raise", status: "at_risk", changed: "2026-09-28" }
+      key_notes: [
+        "Clinic customers keep adding treatment capacity",
+        "Cash runway lasts to breakeven without a discounted raise"
       ],
-      triggers: ["An equity raise priced at a discount to market"],
+      change_my_mind: ["An equity raise priced at a discount to market"],
+      diligence_documents: [
+        { id: "i-stim-dd1", text: "Latest 10-K and 10-Q", done: null },
+        { id: "i-stim-dd2", text: "Balance sheet runway and any ATM or shelf filings", done: null }
+      ],
+      diligence_other: [
+        { id: "i-stim-do1", text: "Payer coverage policies for accelerated protocols", done: null },
+        { id: "i-stim-do2", text: "Calls with two TMS clinic operators", done: null }
+      ],
       contacts: [],
       check_size: 250000, funded_pct: 1.0, hold_months: null, months_to_50pct_back: null, interim_cash: false,
       target_return: "", entry_costs: "Not applicable (public market purchase)", terms_notes: "",
       next_step: "Check cash runway and debt covenants", next_step_date: "2026-10-09",
       tickers: ["STIM"], signals: [],
-      decision_log: [{ date: "2026-09-28", from: null, to: "researching", reason: "Split out of the TMS theme" }],
-      doc_flags: [] },
+      decision_log: [{ date: "2026-09-28", from: null, to: "researching", reason: "Split out of the TMS theme" }] },
 
     { id: "i-carwash", asset_class: "direct", name: "Car wash SPV (Anchorage)", ticker_or_id: "SPV-CW",
       security_type: "preferred_equity", sector: "Consumer Discretionary", price_or_mark: null, quantity: null, market_value: null, cost: null,
@@ -179,15 +400,30 @@ window.SEED = {
       mark_source: null, mark_date: null,
       status: "IC", type: "private_equity", theme_id: null,
       thesis: "Preferred equity in a three-site express car wash platform in Anchorage. The flagship is open and ramping; two more sites are planned. Returns depend on the membership ramp and on the next two sites opening on time.",
-      assumptions: [
-        { id: "i-carwash-a1", text: "Flagship membership ramps from ~4,500 (April run-rate) toward the ~8,400 base case", status: "at_risk", changed: "2026-09-28" },
-        { id: "i-carwash-a2", text: "Sites 2 and 3 break ground and open on schedule", status: "intact", changed: "2026-09-28" },
-        { id: "i-carwash-a3", text: "An exit at 3.0x+ EBITDA is achievable, which is what the conservative case needs just to return capital plus the pref", status: "intact", changed: "2026-09-28" }
+      key_notes: [
+        "Flagship membership ramps from ~4,500 (April run-rate) toward the ~8,400 base case",
+        "Sites 2 and 3 break ground and open on schedule",
+        "An exit at 3.0x+ EBITDA is achievable, which is what the conservative case needs just to return capital plus the pref"
       ],
-      triggers: [
+      change_my_mind: [
         "Monthly members below ramp for two quarters",
         "Site 2 construction slips past its start window",
         "Sale-leaseback not executed"
+      ],
+      diligence_documents: [
+        { id: "i-carwash-dd1", text: "Conservative-case exit multiples: text says 2.8x/3.7x, table says 3.0x/4.0x. Math supports the table ($20.0M / $6.7M = 3.0x; $27.1M / $6.7M = 4.0x).", done: null },
+        { id: "i-carwash-dd2", text: "Hold: headline is 3 years, capital-recovery footnote refers to a 5-year period.", done: null },
+        { id: "i-carwash-dd3", text: "Flagship EBITDA must go from $0.68M April run-rate to $5.3M base case, a ~7.8x ramp.", done: null },
+        { id: "i-carwash-dd4", text: "Entry fee % not in the deck; confirm in offering documents.", done: null },
+        { id: "i-carwash-dd5", text: "Offering documents confirming the upfront fee % and the 8%/yr catch-up mechanics", done: null },
+        { id: "i-carwash-dd6", text: "Monthly membership counts since the flagship opened", done: null },
+        { id: "i-carwash-dd7", text: "Permits, construction budgets and timelines for sites 2 and 3", done: null },
+        { id: "i-carwash-dd8", text: "Sale-leaseback LOI or term sheet", done: null }
+      ],
+      diligence_other: [
+        { id: "i-carwash-do1", text: "Map competing express washes in Anchorage", done: null },
+        { id: "i-carwash-do2", text: "Sponsor reference calls", done: null },
+        { id: "i-carwash-do3", text: "Underwrite the membership ramp against comparable openings", done: null }
       ],
       contacts: ["Sponsor deal lead"],
       check_size: 1000000, funded_pct: 1.0, hold_months: 36, months_to_50pct_back: 36, interim_cash: false,
@@ -196,13 +432,7 @@ window.SEED = {
       terms_notes: "1.0x liquidation preference plus 8% cumulative dividend, paid at exit.",
       next_step: "IC vote", next_step_date: "2026-10-06",
       tickers: [], signals: [],
-      decision_log: [{ date: "2026-09-10", from: "researching", to: "IC", reason: "Moved to IC" }],
-      doc_flags: [
-        "Conservative-case exit multiples: text says 2.8x/3.7x, table says 3.0x/4.0x. Math supports the table ($20.0M / $6.7M = 3.0x; $27.1M / $6.7M = 4.0x).",
-        "Hold: headline is 3 years, capital-recovery footnote refers to a 5-year period.",
-        "Flagship EBITDA must go from $0.68M April run-rate to $5.3M base case, a ~7.8x ramp.",
-        "Entry fee % not in the deck; confirm in offering documents."
-      ] },
+      decision_log: [{ date: "2026-09-10", from: "researching", to: "IC", reason: "Moved to IC" }] },
 
     { id: "i-rpa", asset_class: "private_credit", name: "RPA services first-lien loan", ticker_or_id: "LN-RPA",
       security_type: "first_lien_loan", sector: "Technology", price_or_mark: null, quantity: null, market_value: null, cost: null,
@@ -210,15 +440,32 @@ window.SEED = {
       mark_source: null, mark_date: null,
       status: "researching", type: "private_credit", theme_id: "t-ai",
       thesis: "First-lien amortizing term loan to an RPA implementation services firm, with warrants. Cash yield covers most of the return; warrants add upside with a floor and a cap.",
-      assumptions: [
-        { id: "i-rpa-a1", text: "The primary software partner relationship renews on the same terms (agreement expires in ~2 years)", status: "intact", changed: "2026-09-28" },
-        { id: "i-rpa-a2", text: "Recurring revenue stays at or above $20M, the ARR covenant floor", status: "intact", changed: "2026-09-28" },
-        { id: "i-rpa-a3", text: "Adjusted EBITDA quality holds: $4.3M adjusted vs $3.6M book", status: "at_risk", changed: "2026-09-28" }
+      key_notes: [
+        "The primary software partner relationship renews on the same terms (agreement expires in ~2 years)",
+        "Recurring revenue stays at or above $20M, the ARR covenant floor",
+        "Adjusted EBITDA quality holds: $4.3M adjusted vs $3.6M book"
       ],
-      triggers: [
+      change_my_mind: [
         "Partner renewal delayed or on worse terms",
         "ARR below $22M",
         "Add-backs above 20% of adjusted EBITDA"
+      ],
+      diligence_documents: [
+        { id: "i-rpa-dd1", text: "50% of capital back in 24 months is tranche 1 only; a full draw returns 45%.", done: null },
+        { id: "i-rpa-dd2", text: "Warrant valuation uses $5.0M EBITDA; the rest of the memo uses $4.3M.", done: null },
+        { id: "i-rpa-dd3", text: "Service-line revenue doesn't tie between the company overview and the P&L.", done: null },
+        { id: "i-rpa-dd4", text: "Upside net MOIC shown as both 1.75x and 1.74x.", done: null },
+        { id: "i-rpa-dd5", text: "Downside case (29% IRR, 2.5x) is higher than the base case because it assumes a cash sweep and taking control of the company; treat it as an enforcement scenario, not downside protection.", done: null },
+        { id: "i-rpa-dd6", text: "Software partner agreement and renewal terms", done: null },
+        { id: "i-rpa-dd7", text: "Quality of earnings report", done: null },
+        { id: "i-rpa-dd8", text: "Top 10 customer contracts", done: null },
+        { id: "i-rpa-dd9", text: "ARR bridge by service line", done: null },
+        { id: "i-rpa-dd10", text: "Credit agreement covenant definitions", done: null }
+      ],
+      diligence_other: [
+        { id: "i-rpa-do1", text: "Customer calls", done: null },
+        { id: "i-rpa-do2", text: "View on whether agentic AI replaces or extends RPA workflows", done: null },
+        { id: "i-rpa-do3", text: "Downside case rebuilt without the enforcement assumptions", done: null }
       ],
       contacts: ["Lender deal lead"],
       check_size: 1000000, funded_pct: 0.65, hold_months: 48, months_to_50pct_back: 24, interim_cash: true,
@@ -227,14 +474,7 @@ window.SEED = {
       terms_notes: "SOFR + 825 bps, 4% SOFR floor (~12.25% cash). 2.5% origination fee. 20% warrant coverage. 48-month maturity: 16 months interest-only, then straight-line amortization.",
       next_step: "Review credit agreement", next_step_date: "2026-10-14",
       tickers: [], signals: [],
-      decision_log: [{ date: "2026-09-20", from: null, to: "researching", reason: "Term sheet received" }],
-      doc_flags: [
-        "50% of capital back in 24 months is tranche 1 only; a full draw returns 45%.",
-        "Warrant valuation uses $5.0M EBITDA; the rest of the memo uses $4.3M.",
-        "Service-line revenue doesn't tie between the company overview and the P&L.",
-        "Upside net MOIC shown as both 1.75x and 1.74x.",
-        "Downside case (29% IRR, 2.5x) is higher than the base case because it assumes a cash sweep and taking control of the company; treat it as an enforcement scenario, not downside protection."
-      ] },
+      decision_log: [{ date: "2026-09-20", from: null, to: "researching", reason: "Term sheet received" }] },
 
     { id: "i-legalai", asset_class: "direct", name: "Legal AI late-stage equity", ticker_or_id: "PE-LAI",
       security_type: "preferred_equity", sector: "Technology", price_or_mark: 37.00, quantity: 27027, market_value: null, cost: null,
@@ -242,14 +482,25 @@ window.SEED = {
       mark_source: "Round price", mark_date: null,
       status: "watching", type: "venture", theme_id: "t-ai",
       thesis: "Late-stage equity in a legal AI software company at $37/share. The last round valued it at ~$15.5B (Sept 2026) with reported ARR above $400M. No IPO announced.",
-      assumptions: [
-        { id: "i-legalai-a1", text: "ARR growth continues at a pace that justifies the entry multiple", status: "intact", changed: "2026-09-28" },
-        { id: "i-legalai-a2", text: "AI application-software multiples hold through exit", status: "at_risk", changed: "2026-09-28" }
+      key_notes: [
+        "ARR growth continues at a pace that justifies the entry multiple",
+        "AI application-software multiples hold through exit"
       ],
-      triggers: [
+      change_my_mind: [
         "Growth decelerates below 50%",
         "A down round at a peer",
         "Secondary prices below $37"
+      ],
+      diligence_documents: [
+        { id: "i-legalai-dd1", text: "Round size, valuation and ARR come from public reports, not company documents. Unverified.", done: null },
+        { id: "i-legalai-dd2", text: "ARR by cohort and net retention", done: null },
+        { id: "i-legalai-dd3", text: "Cap table and preference stack", done: null },
+        { id: "i-legalai-dd4", text: "Recent secondary trade prices", done: null },
+        { id: "i-legalai-dd5", text: "Confirm round size and valuation against company documents", done: null }
+      ],
+      diligence_other: [
+        { id: "i-legalai-do1", text: "Reference calls with law-firm customers", done: null },
+        { id: "i-legalai-do2", text: "Competitive map of legal AI vendors", done: null }
       ],
       contacts: ["Placement agent"],
       check_size: 1000000, funded_pct: 1.0, hold_months: 36, months_to_50pct_back: 36, interim_cash: false,
@@ -258,14 +509,12 @@ window.SEED = {
       terms_notes: "$37.00 per share; 27,027 shares for $1.0M.",
       next_step: "Request data room access", next_step_date: "2026-10-16",
       tickers: [], signals: [],
-      decision_log: [{ date: "2026-09-22", from: null, to: "watching", reason: "Allocation offered" }],
-      doc_flags: [
-        "Round size, valuation and ARR come from public reports, not company documents. Unverified."
-      ] }
+      decision_log: [{ date: "2026-09-22", from: null, to: "watching", reason: "Allocation offered" }] }
   ],
 
   // Themes group investments under a shared thesis. No check size or target return on a theme.
   // value_chain[]: { segment, who_captures_value }. linked_investment_ids mirrors investments[].theme_id.
+  // key_notes[] and change_my_mind[] are plain strings.
   themes: [
     { id: "t-tms", name: "TMS / interventional psychiatry", status: "exploring",
       thesis: "Accelerated TMS protocols could expand clinic capacity and adoption. Reimbursement and clinic economics decide who captures the value: device makers, clinic operators or payers.",
@@ -275,13 +524,13 @@ window.SEED = {
         { segment: "Clinic operators", who_captures_value: "Capture volume if reimbursement holds" },
         { segment: "Payers", who_captures_value: "Decide whether accelerated protocols get paid" }
       ],
-      assumptions: [
-        { id: "t-tms-a1", text: "Payers cover accelerated protocols", status: "intact", changed: "2026-09-28" },
-        { id: "t-tms-a2", text: "CMS utilization of CPT 90867/90868 keeps rising", status: "intact", changed: "2026-09-28" },
-        { id: "t-tms-a3", text: "New device clearances expand the market, including a subscription-model device cleared for depression in Feb 2025", status: "intact", changed: "2026-09-28" },
-        { id: "t-tms-a4", text: "PE capital keeps entering clinic chains", status: "at_risk", changed: "2026-09-28" }
+      key_notes: [
+        "Payers cover accelerated protocols",
+        "CMS utilization of CPT 90867/90868 keeps rising",
+        "New device clearances expand the market, including a subscription-model device cleared for depression in Feb 2025",
+        "PE capital keeps entering clinic chains"
       ],
-      triggers: [
+      change_my_mind: [
         "A major payer denies accelerated-protocol coverage",
         "90867/90868 volume flattens",
         "A device maker raises equity at a discount"
@@ -304,12 +553,12 @@ window.SEED = {
         { segment: "Application software (Legal AI)", who_captures_value: "Captures value if it owns the workflow and the client data; at risk if models commoditize the feature." },
         { segment: "Implementation services (RPA loan)", who_captures_value: "Earns services margin during adoption; at risk of being automated away as agentic tools mature." }
       ],
-      assumptions: [
-        { id: "t-ai-a1", text: "Enterprise AI budgets keep growing", status: "intact", changed: "2026-09-28" },
-        { id: "t-ai-a2", text: "Agentic AI complements rather than replaces RPA workflows", status: "at_risk", changed: "2026-09-28" },
-        { id: "t-ai-a3", text: "AI application multiples hold", status: "at_risk", changed: "2026-09-28" }
+      key_notes: [
+        "Enterprise AI budgets keep growing",
+        "Agentic AI complements rather than replaces RPA workflows",
+        "AI application multiples hold"
       ],
-      triggers: [
+      change_my_mind: [
         "Large-customer churn at the RPA borrower",
         "Peer down rounds in AI applications"
       ],

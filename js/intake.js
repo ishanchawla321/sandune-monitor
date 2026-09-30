@@ -24,11 +24,12 @@
     { key: "target_return", label: "Target return", kind: "text" },
     { key: "entry_costs", label: "Entry costs", kind: "longtext" },
     { key: "terms_notes", label: "Structure and terms", kind: "longtext" },
-    { key: "assumptions", label: "Assumptions", kind: "list" },
-    { key: "triggers", label: "What would change my mind", kind: "list" },
+    { key: "key_notes", label: "Key notes", kind: "list" },
+    { key: "change_my_mind", label: "What would change my mind", kind: "list" },
+    { key: "diligence_documents", label: "Document asks and checks", kind: "flags" },
+    { key: "diligence_other", label: "Other diligence", kind: "list" },
     { key: "contacts", label: "Contacts (roles only)", kind: "list" },
-    { key: "next_step", label: "Next step", kind: "text" },
-    { key: "doc_flags", label: "Document flags", kind: "flags" }
+    { key: "next_step", label: "Next step", kind: "text" }
   ];
 
   const ui = { tab: "pdf", phase: "idle", message: "", result: null, review: {}, editing: null, bound: false, fileName: "" };
@@ -51,10 +52,10 @@
       fields[f.key] = { value: isNull(v) ? null : v, page: Number.isInteger(raw.page) ? raw.page : null,
                         confidence: ["high", "medium", "low"].includes(raw.confidence) ? raw.confidence : "low" };
     });
-    const flags = (res.doc_flags || []).filter(f => f && f.text).map(f => ({ text: String(f.text), page: Number.isInteger(f.page) ? f.page : null }));
+    const flags = (res.diligence_documents || res.doc_flags || []).filter(f => f && f.text).map(f => ({ text: String(f.text), page: Number.isInteger(f.page) ? f.page : null }));
     const pages = Array.from(new Set(flags.map(f => f.page).filter(p => p !== null)));
-    fields.doc_flags = { value: flags.length ? flags : null, page: pages.length ? pages.join(", ") : null,
-                         confidence: flags.length ? "high" : "low" };
+    fields.diligence_documents = { value: flags.length ? flags : null, page: pages.length ? pages.join(", ") : null,
+                                   confidence: flags.length ? "high" : "low" };
     return { fields, source: res.source === "live" ? "live" : "cached" };
   }
 
@@ -67,7 +68,7 @@
       case "pct": return esc(Fmt.pct(v, 0));
       case "bool": return v ? "Yes" : "No";
       case "list": return `<ul class="rv-list">${v.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
-      case "flags": return `<ul class="rv-list">${v.map(x => `<li><span class="doc-label">Doc check</span> ${esc(x.text)}${x.page ? ` <span class="muted">(p. ${x.page})</span>` : ""}</li>`).join("")}</ul>`;
+      case "flags": return `<ul class="rv-list">${v.map(x => `<li>${esc(x.text)}${x.page ? ` <span class="muted">(p. ${x.page})</span>` : ""}</li>`).join("")}</ul>`;
       default: return esc(v);
     }
   }
@@ -81,7 +82,7 @@
       case "pct": return `<input id="${id}" inputmode="decimal" value="${isNull(v) ? "" : esc(+(v * 100).toFixed(2))}" aria-label="${esc(f.label)}"> <span class="muted">%</span>`;
       case "int": return `<input id="${id}" inputmode="numeric" value="${isNull(v) ? "" : esc(v)}" aria-label="${esc(f.label)}">`;
       case "list": return `<textarea id="${id}" rows="4" aria-label="${esc(f.label)}, one per line">${esc((v || []).join("\n"))}</textarea><div class="muted">One per line.</div>`;
-      case "flags": return `<textarea id="${id}" rows="3" aria-label="Document flags, one per line">${esc((v || []).map(x => x.text + (x.page ? ` (p. ${x.page})` : "")).join("\n"))}</textarea><div class="muted">One per line.</div>`;
+      case "flags": return `<textarea id="${id}" rows="3" aria-label="Document asks and checks, one per line">${esc((v || []).map(x => x.text + (x.page ? ` (p. ${x.page})` : "")).join("\n"))}</textarea><div class="muted">One per line.</div>`;
       case "longtext": return `<textarea id="${id}" rows="3" aria-label="${esc(f.label)}">${esc(v || "")}</textarea>`;
       default: return `<input id="${id}" value="${esc(v || "")}" aria-label="${esc(f.label)}">`;
     }
@@ -132,6 +133,7 @@
         <div><b>Review extracted fields</b>${r.source === "cached" ? ` <span class="tag tag-cached">Cached example</span>` : ""}
           <div class="note">${ui.fileName ? esc(ui.fileName) + ". " : ""}Accept or edit every field that has a value. Highlighted rows are low confidence or not found.</div></div>
         <div class="rv-save"><span class="muted">${total - left.length} of ${total} reviewed</span>
+          ${left.some(f => r.fields[f.key].confidence === "high") ? `<button type="button" class="btn" data-rv-accept-all title="Accept every high-confidence field; medium, low and missing fields still need a look">Accept all high-confidence</button>` : ""}
           <button type="button" class="btn btn-primary" data-rv-commit${left.length || ui.editing ? " disabled" : ""}>Save as investment</button>
           <button type="button" class="btn" data-rv-discard>Discard</button></div>
       </div>
@@ -268,16 +270,17 @@
       liquidity_bucket: isPublic ? "liquid_now" : "3y_plus", liquidity_date: null, mark_source: null, mark_date: null,
       status: "watching", type, theme_id: null,
       thesis: v("thesis") || "",
-      assumptions: (v("assumptions") || []).map((text, n) => ({ id: `${id}-a${n + 1}`, text, status: "intact", changed: today })),
-      triggers: v("triggers") || [], contacts: v("contacts") || [],
+      key_notes: v("key_notes") || [], change_my_mind: v("change_my_mind") || [], contacts: v("contacts") || [],
+      diligence_documents: (v("diligence_documents") || []).map((f, n) => ({ id: `${id}-dd${n + 1}`, text: f.text + (f.page ? ` (p. ${f.page})` : ""), done: null })),
+      diligence_other: (v("diligence_other") || []).map((text, n) => ({ id: `${id}-do${n + 1}`, text, done: null })),
       check_size: check, funded_pct: funded, hold_months: v("hold_months"), months_to_50pct_back: v("months_to_50pct_back"),
       interim_cash: v("interim_cash") === true,
       target_return: v("target_return") || "", entry_costs: v("entry_costs") || "", terms_notes: v("terms_notes") || "",
       next_step: v("next_step") || "", next_step_date: null,
       tickers: [], signals: [],
-      decision_log: [{ date: today, from: null, to: "watching", reason: "Created from document, fields reviewed" }],
-      doc_flags: (v("doc_flags") || []).map(f => f.text + (f.page ? ` (p. ${f.page})` : ""))
+      decision_log: [{ date: today, from: null, to: "watching", reason: "Created from document, fields reviewed" }]
     };
+    root.Migrate.investment(inv);
     ui.phase = "idle";
     ui.open = false;
     ui.result = null;
@@ -304,6 +307,7 @@
       const f = k => FIELDS.find(x => x.key === k);
       const acc = t.closest("[data-rv-accept]");
       if (acc) { ui.review[acc.dataset.rvAccept] = "accepted"; return render(); }
+      if (t.closest("[data-rv-accept-all]")) { pending().filter(fd => ui.result.fields[fd.key].confidence === "high").forEach(fd => { ui.review[fd.key] = "accepted"; }); return render(); }
       const ed = t.closest("[data-rv-edit]");
       if (ed) { ui.editing = ed.dataset.rvEdit; render(); const el = document.getElementById("rv-edit-" + ui.editing); if (el) el.focus(); return; }
       const sv = t.closest("[data-rv-save]");

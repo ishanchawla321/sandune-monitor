@@ -1,18 +1,30 @@
-// App shell: state, tabs, reset. Each tab module renders from the shared state.
+// App shell: state, navigation, reset. Each tab module renders from the shared state.
+// Navigation is two-level: a section (Opportunities, Portfolio) and a tab inside it.
+// A tab is addressed as "section/tab", e.g. "portfolio/current".
 (function (root) {
   "use strict";
 
   let state = root.Store.load();
-  const TABS = ["portfolio", "ideas", "proforma"];
+  const SECTIONS = {
+    opportunities: ["opportunities/themes", "opportunities/ideas"],
+    portfolio: ["portfolio/current", "portfolio/proforma"]
+  };
+  const TABS = SECTIONS.opportunities.concat(SECTIONS.portfolio);
+  const PANEL = { "opportunities/themes": "tab-themes", "opportunities/ideas": "tab-ideas",
+                  "portfolio/current": "tab-portfolio", "portfolio/proforma": "tab-proforma" };
+  const TAB_KEY = "sandune-monitor.tab.v2";
+  // Tab names saved by the previous single-level navigation.
+  const LEGACY = { portfolio: "portfolio/current", ideas: "opportunities/ideas", proforma: "portfolio/proforma" };
 
-  let active = "portfolio";
+  let active = "opportunities/themes";
+  const sectionOf = tab => tab.split("/")[0];
 
   // Only the visible tab renders; switching tabs re-renders from the shared state.
   function render() {
     root.ThemesModel.sync(state);
-    if (active === "portfolio") root.Portfolio.render(state, onChange);
-    if (active === "ideas") root.Ideas.render(state, onChange);
-    if (active === "proforma") root.ProForma.render(state, onChange);
+    if (active === "portfolio/current") root.Portfolio.render(state, onChange);
+    if (sectionOf(active) === "opportunities") root.Ideas.render(state, onChange, active.split("/")[1]);
+    if (active === "portfolio/proforma") root.ProForma.render(state, onChange);
   }
 
   // persist = true for data edits; false for view-only changes (sort, expand, cancelled edit).
@@ -21,30 +33,51 @@
     render();
   }
 
-  function showTab(name) {
-    TABS.forEach(t => {
-      const tab = document.getElementById("tabbtn-" + t);
-      const panel = document.getElementById("tab-" + t);
-      const on = t === name;
-      tab.setAttribute("aria-selected", on);
-      tab.tabIndex = on ? 0 : -1;
-      panel.hidden = !on;
+  function paintNav(tab) {
+    const section = sectionOf(tab);
+    document.querySelectorAll(".nav-top [role=tab]").forEach(b => {
+      const on = b.dataset.section === section;
+      b.setAttribute("aria-selected", on);
+      b.tabIndex = on ? 0 : -1;
     });
-    try { root.localStorage.setItem("sandune-monitor.tab", name); } catch (e) { /* ignore */ }
+    document.querySelectorAll(".nav-sub").forEach(nav => { nav.hidden = nav.dataset.section !== section; });
+    TABS.forEach(t => {
+      const btn = document.querySelector(`[data-tab="${t}"]`);
+      const on = t === tab;
+      btn.setAttribute("aria-selected", on);
+      btn.tabIndex = on ? 0 : -1;
+      document.getElementById(PANEL[t]).hidden = !on;
+    });
+  }
+
+  function showTab(name) {
+    if (!TABS.includes(name)) name = TABS[0];
+    paintNav(name);
+    try { root.localStorage.setItem(TAB_KEY, name); } catch (e) { /* ignore */ }
     active = name;
     render();
   }
 
-  document.querySelector(".tabs").addEventListener("click", e => {
-    const btn = e.target.closest("[role=tab]");
-    if (btn) showTab(btn.id.replace("tabbtn-", ""));
+  // Each section remembers which of its tabs was open last.
+  const lastInSection = {};
+  function showSection(section) {
+    showTab(lastInSection[section] || SECTIONS[section][0]);
+  }
+
+  document.querySelector(".app-header").addEventListener("click", e => {
+    const top = e.target.closest(".nav-top [role=tab]");
+    if (top) { lastInSection[sectionOf(active)] = active; return showSection(top.dataset.section); }
+    const sub = e.target.closest(".nav-sub [role=tab]");
+    if (sub) showTab(sub.dataset.tab);
   });
-  document.querySelector(".tabs").addEventListener("keydown", e => {
+  document.querySelector(".app-header").addEventListener("keydown", e => {
     if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
-    const current = TABS.findIndex(t => document.getElementById("tabbtn-" + t).getAttribute("aria-selected") === "true");
-    const next = TABS[(current + (e.key === "ArrowRight" ? 1 : TABS.length - 1)) % TABS.length];
-    showTab(next);
-    document.getElementById("tabbtn-" + next).focus();
+    const list = e.target.closest(".nav-top") ? Object.keys(SECTIONS) : e.target.closest(".nav-sub") ? SECTIONS[sectionOf(active)] : null;
+    if (!list) return;
+    const cur = e.target.closest(".nav-top") ? sectionOf(active) : active;
+    const next = list[(list.indexOf(cur) + (e.key === "ArrowRight" ? 1 : list.length - 1)) % list.length];
+    if (e.target.closest(".nav-top")) { lastInSection[sectionOf(active)] = active; showSection(next); document.getElementById("secbtn-" + next).focus(); }
+    else { showTab(next); document.querySelector(`[data-tab="${next}"]`).focus(); }
   });
 
   document.getElementById("reset").addEventListener("click", () => {
@@ -75,7 +108,24 @@
   root.Prices.init(state);
   paintPriceToggle();
 
-  let start = "portfolio";
-  try { start = root.localStorage.getItem("sandune-monitor.tab") || start; } catch (e) { /* ignore */ }
-  showTab(TABS.includes(start) ? start : "portfolio");
+  // Cross-tab links: open an investment's card, or show a holding row in Portfolio > Current.
+  function openInvestment(id) {
+    lastInSection[sectionOf(active)] = active;
+    showTab("opportunities/ideas");
+    root.Ideas.open(id);
+  }
+  function viewHolding(id) {
+    lastInSection[sectionOf(active)] = active;
+    showTab("portfolio/current");
+    root.Portfolio.highlight(id);
+  }
+
+  root.App = { showTab, openInvestment, viewHolding, active: () => active };
+
+  let start = TABS[0];
+  try {
+    const saved = root.localStorage.getItem(TAB_KEY) || LEGACY[root.localStorage.getItem("sandune-monitor.tab")];
+    if (saved) start = saved;
+  } catch (e) { /* ignore */ }
+  showTab(start);
 })(window);

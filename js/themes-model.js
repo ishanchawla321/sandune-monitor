@@ -43,16 +43,22 @@
     return (theme.linked_investment_ids || []).map(id => state.investments.find(i => i.id === id)).filter(Boolean);
   }
 
-  // Linked count, total check size, check-weighted liquidity score, and at-risk/broken assumption counts:
-  // flagged = the theme's own, invFlagged = summed across its linked investments.
+  const openDiligence = inv => (inv.diligence_documents || []).concat(inv.diligence_other || []).filter(d => !d.done).length;
+
+  // Linked count, total check size, check-weighted liquidity score, the latest signal date across the theme
+  // and its investments, the earliest next-step date among its investments, and open diligence items.
   function stats(state, theme) {
     const invs = linked(state, theme);
     const check = invs.reduce((s, i) => s + (Number(i.check_size) || 0), 0);
     const weighted = invs.reduce((s, i) => s + Metrics.liquidityScore(i) * (Number(i.check_size) || 0), 0);
-    const bad = list => (list || []).filter(a => a.status === "at_risk" || a.status === "broken").length;
-    const invFlagged = invs.reduce((s, i) => s + bad(i.assumptions), 0);
-    return { count: invs.length, check, blended: check ? weighted / check : null, flagged: bad(theme.assumptions), invFlagged };
+    const dates = (theme.signals || []).concat(...invs.map(i => i.signals || [])).map(s => s.date).filter(Boolean).sort();
+    const steps = invs.map(i => i.next_step_date).filter(Boolean).sort();
+    const nextInv = steps.length ? invs.find(i => i.next_step_date === steps[0]) : null;
+    return { count: invs.length, check, blended: check ? weighted / check : null,
+             lastSignal: dates.length ? dates[dates.length - 1] : null,
+             nextStep: steps.length ? steps[0] : null, nextStepText: nextInv ? nextInv.next_step : "",
+             openDiligence: invs.reduce((s, i) => s + openDiligence(i), 0) };
   }
 
-  root.ThemesModel = { sync, setTheme, linked, stats };
+  root.ThemesModel = { sync, setTheme, linked, stats, openDiligence };
 })(window);
