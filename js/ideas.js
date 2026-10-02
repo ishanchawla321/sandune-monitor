@@ -300,6 +300,7 @@
     const vcEdit = lines("value_chain", (t.value_chain || []).map(v => `${v.segment} | ${v.description} | ${v.companies || ""}`), 4, "Segment | Description | Representative companies");
 
     const pub = t.watch_public || [], priv = t.watch_private || [];
+    if (root.Prices) root.Prices.ensureProfiles(pub.map(c => c.ticker));
     const cap = c => Fmt.marketCap(root.Prices ? root.Prices.marketCap(c.ticker) : null);
     const companyBody = pub.length || priv.length ? `<div class="company-lists">
         <div class="table-wrap"><table class="grid mini"><thead><tr><th class="col-name">Public</th><th>Ticker</th><th class="num">Market Cap</th></tr></thead>

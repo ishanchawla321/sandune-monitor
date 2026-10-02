@@ -1,5 +1,5 @@
 // GET /api/profile?symbols=BWAY,STIM -> { ok, profiles: { BWAY: { market_cap, name } }, source }
-// Calls Finnhub /stock/profile2 per symbol. Symbols that fail are left out; the front end keeps its stored value.
+// Calls Finnhub /stock/profile2 per symbol. Symbols that fail are left out; the front end shows "—" for them.
 "use strict";
 
 const { send, fetchWithTimeout } = require("./_lib.js");

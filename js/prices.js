@@ -1,12 +1,14 @@
 // Live prices. In Live mode, quotes from /api/quote overlay the seed prices of public equities and ETFs
 // (never stored); tickers without a quote are tagged "cached, as of <seed date>". Seed mode shows the
 // seed book exactly as hand-checked. Holdings whose price was edited by hand keep the edited price.
-// Market caps for theme company lists come from /api/profile in Live mode only; the card shows "—" otherwise.
+// Market caps for theme company lists come from /api/profile whenever the page is hosted, in either price mode
+// (they are not part of the book); they are fetched when a theme card needs them and the card shows "—" until
+// they arrive or when a symbol has none.
 (function (root) {
   "use strict";
 
   const KEY = "sandune-monitor.prices";
-  const ui = { mode: "live", quotes: {}, profiles: {}, status: "idle", fetchedAt: null, listeners: [] };
+  const ui = { mode: "live", quotes: {}, profiles: {}, pending: new Set(), status: "idle", fetchedAt: null, listeners: [] };
   let seedDate = "";
 
   try { ui.mode = root.localStorage.getItem(KEY) === "seed" ? "seed" : "live"; } catch (e) { /* default live */ }
@@ -39,12 +41,24 @@
 
   function notify() { ui.listeners.forEach(fn => fn()); }
 
+  // Fetch market caps for any of these tickers not fetched yet. A ticker that returns nothing is kept as null
+  // so it is not asked for again this session; the card shows "—" for it.
+  async function ensureProfiles(list) {
+    if (!root.Api.available) return;
+    const want = Array.from(new Set((list || []).map(t => String(t || "").toUpperCase()).filter(Boolean)))
+      .filter(t => !(t in ui.profiles) && !ui.pending.has(t));
+    if (!want.length) return;
+    want.forEach(t => ui.pending.add(t));
+    const prof = await root.Api.profile(want);
+    want.forEach(t => { ui.pending.delete(t); ui.profiles[t] = prof && prof.profiles && prof.profiles[t] ? prof.profiles[t] : null; });
+    if (prof && prof.profiles) notify();
+  }
+
   async function refresh(state) {
+    ensureProfiles(companyTickers(state));
     if (ui.mode !== "live" || ui.status === "loading") return;
     ui.status = "loading";
-    const companies = companyTickers(state);
-    const [res, prof] = await Promise.all([root.Api.quote(tickers(state)), companies.length ? root.Api.profile(companies) : Promise.resolve(null)]);
-    if (prof && prof.ok && prof.profiles) ui.profiles = prof.profiles;
+    const res = await root.Api.quote(tickers(state));
     if (res && res.ok && res.quotes && Object.keys(res.quotes).length) {
       ui.quotes = res.quotes;
       ui.status = "live";
@@ -65,12 +79,11 @@
   function init(state) {
     seedDate = state.as_of;
     root.Metrics.setPriceOverlay(overlay);
-    if (ui.mode === "live") refresh(state);
+    refresh(state);
   }
 
   // Live market cap for a theme company ticker, or null (the card then shows "—").
   function marketCap(ticker) {
-    if (ui.mode !== "live") return null;
     const p = ui.profiles[String(ticker || "").toUpperCase()];
     return p && p.market_cap > 0 ? p.market_cap : null;
   }
@@ -87,7 +100,7 @@
   }
 
   root.Prices = {
-    init, refresh, setMode, marketCap, statusText, seedShort,
+    init, refresh, setMode, marketCap, ensureProfiles, statusText, seedShort,
     mode: () => ui.mode,
     onUpdate: fn => ui.listeners.push(fn)
   };
