@@ -10,7 +10,7 @@
 // transactions[] is the blotter that today's book is derived from; see the note above that block.
 
 window.SEED = {
-  version: 11,
+  version: 12,
   as_of: "2026-09-28",
   sample_data: true,
 
@@ -479,8 +479,9 @@ window.SEED = {
   // Themes group investments under a shared thesis. No check size or target return on a theme.
   // description: 1-2 sentences. key_notes[] (Notes): plain strings. industry_context: one text block.
   // value_chain[]: { segment, description, companies } (companies: public names or names already in this file; never
-  //   the companies behind our deal investments). watch_public[]: { company, ticker } (market caps are never stored;
-  //   Live mode reads them from /api/profile and the card shows "—" otherwise). watch_private[]: { company, ownership }.
+  //   the companies behind our deal investments). watch_public[]: { company, ticker, market_cap } (market_cap is an approximate
+  //   stored value in dollars, rounded, looked up 2026-10-02; /api/profile replaces it with a live figure when it answers).
+  //   watch_private[]: { company, ownership }.
   // linked_investment_ids mirrors investments[].theme_id.
   themes: [
     { id: "t-tms", name: "TMS / interventional psychiatry", status: "exploring",
@@ -506,13 +507,13 @@ window.SEED = {
         "Next work (15-20 hours): reimbursement expert calls and payer policy review; Radial (Series B likely within 12-18 months); Ampa's model and payment evidence."
       ],
       watch_public: [
-        { company: "Neuronetics", ticker: "STIM" },
-        { company: "BrainsWay", ticker: "BWAY" },
-        { company: "Johnson & Johnson", ticker: "JNJ" },
-        { company: "UnitedHealth Group", ticker: "UNH" },
-        { company: "Elevance Health", ticker: "ELV" },
-        { company: "Cigna Group", ticker: "CI" },
-        { company: "CVS Health", ticker: "CVS" }
+        { company: "Neuronetics", ticker: "STIM", market_cap: 200e6 },
+        { company: "BrainsWay", ticker: "BWAY", market_cap: 510e6 },
+        { company: "Johnson & Johnson", ticker: "JNJ", market_cap: 500e9 },
+        { company: "UnitedHealth Group", ticker: "UNH", market_cap: 340e9 },
+        { company: "Elevance Health", ticker: "ELV", market_cap: 86e9 },
+        { company: "Cigna Group", ticker: "CI", market_cap: 70e9 },
+        { company: "CVS Health", ticker: "CVS", market_cap: 127e9 }
       ],
       watch_private: [
         { company: "Radial", ownership: "VC-backed (General Catalyst-led Series A; BrainsWay strategic)" },
@@ -547,16 +548,16 @@ window.SEED = {
         "UiPath guided to ~8% growth and fell 14% on the print."
       ],
       watch_public: [
-        { company: "Microsoft", ticker: "MSFT" },
-        { company: "Alphabet", ticker: "GOOGL" },
-        { company: "RELX", ticker: "RELX" },
-        { company: "Thomson Reuters", ticker: "TRI" },
-        { company: "UiPath", ticker: "PATH" },
-        { company: "ServiceNow", ticker: "NOW" },
-        { company: "Accenture", ticker: "ACN" },
-        { company: "Infosys", ticker: "INFY" },
-        { company: "Cognizant", ticker: "CTSH" },
-        { company: "Wipro", ticker: "WIT" }
+        { company: "Microsoft", ticker: "MSFT", market_cap: 3.8e12 },
+        { company: "Alphabet", ticker: "GOOGL", market_cap: 4.1e12 },
+        { company: "RELX", ticker: "RELX", market_cap: 58e9 },
+        { company: "Thomson Reuters", ticker: "TRI", market_cap: 42e9 },
+        { company: "UiPath", ticker: "PATH", market_cap: 7e9 },
+        { company: "ServiceNow", ticker: "NOW", market_cap: 212e9 },
+        { company: "Accenture", ticker: "ACN", market_cap: 185e9 },
+        { company: "Infosys", ticker: "INFY", market_cap: 44e9 },
+        { company: "Cognizant", ticker: "CTSH", market_cap: 27e9 },
+        { company: "Wipro", ticker: "WIT", market_cap: 17e9 }
       ],
       watch_private: [
         { company: "OpenAI", ownership: "VC and strategic-backed" },

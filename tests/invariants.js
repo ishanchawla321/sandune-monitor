@@ -138,8 +138,8 @@ Object.entries(CASES).forEach(([name, c]) => {
   check("Legacy migration keeps the text that moves", kept ? 1 : 0, 1, 0);
   check("Legacy migration leaves no old fields", ["assumptions", "triggers", "doc_flags", "diligence_documents", "diligence_other", "terms_notes", "entry_costs", "signals", "tickers", "change_my_mind"].some(k => k in i) || ["why_now", "contacts", "signals", "decision_log", "change_my_mind"].some(k => k in t) ? 1 : 0, 0, 0);
   check("Legacy migration twice equals once", JSON.stringify(l2) === JSON.stringify(l1) ? 1 : 0, 1, 0);
-  check("Legacy migration drops stored market caps", t.watch_public[1].ticker === "STIM" && !("market_cap" in t.watch_public[1]) ? 1 : 0, 1, 0);
-  check("Seed stores no market caps", once.themes.some(th => (th.watch_public || []).some(c => "market_cap" in c)) ? 1 : 0, 0, 0);
+  check("Legacy migration keeps a stored market cap", t.watch_public[1].ticker === "STIM" && t.watch_public[1].market_cap === 160000000 && t.watch_public[0].market_cap === null ? 1 : 0, 1, 0);
+  check("Seed public companies without an approximate market cap", once.themes.reduce((n, th) => n + (th.watch_public || []).filter(c => !(c.market_cap > 0)).length, 0), 0, 0);
 }
 
 // ---- Pass and Move back to prospective round-trip cleanly ----

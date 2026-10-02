@@ -301,14 +301,15 @@
 
     const pub = t.watch_public || [], priv = t.watch_private || [];
     if (root.Prices) root.Prices.ensureProfiles(pub.map(c => c.ticker));
-    const cap = c => Fmt.marketCap(root.Prices ? root.Prices.marketCap(c.ticker) : null);
+    const liveCap = c => (root.Prices ? root.Prices.marketCap(c.ticker) : null);
+    const capCell = c => { const live = liveCap(c); return `<td class="num" title="${live ? "Live, Finnhub" : blank(c.market_cap) ? "" : "Approximate, stored"}">${esc(Fmt.marketCap(live || c.market_cap))}</td>`; };
     const companyBody = pub.length || priv.length ? `<div class="company-lists">
-        <div class="table-wrap"><table class="grid mini"><thead><tr><th class="col-name">Public</th><th>Ticker</th><th class="num">Market Cap</th></tr></thead>
-          <tbody>${pub.length ? pub.map(c => `<tr><td class="col-name">${esc(c.company)}</td><td>${esc(c.ticker)}</td><td class="num">${esc(cap(c))}</td></tr>`).join("") : `<tr><td class="col-name muted" colspan="3">None listed.</td></tr>`}</tbody></table></div>
+        <div class="table-wrap"><table class="grid mini"><thead><tr><th class="col-name">Public</th><th>Ticker</th><th class="num" title="Live from Finnhub when it answers; otherwise an approximate stored value">Market Cap</th></tr></thead>
+          <tbody>${pub.length ? pub.map(c => `<tr><td class="col-name">${esc(c.company)}</td><td>${esc(c.ticker)}</td>${capCell(c)}</tr>`).join("") : `<tr><td class="col-name muted" colspan="3">None listed.</td></tr>`}</tbody></table></div>
         <div class="table-wrap"><table class="grid mini"><thead><tr><th class="col-name">Private</th><th>Ownership</th></tr></thead>
           <tbody>${priv.length ? priv.map(c => `<tr><td class="col-name">${esc(c.company)}</td><td>${esc(c.ownership || "—")}</td></tr>`).join("") : `<tr><td class="col-name muted" colspan="2">None listed.</td></tr>`}</tbody></table></div>
       </div>` : "";
-    const companyEdit = `<label class="fld"><span>Public companies</span>${lines("watch_public", pub.map(c => `${c.company} | ${c.ticker}`), 3, "Company | Ticker")}</label>
+    const companyEdit = `<label class="fld"><span>Public companies</span>${lines("watch_public", pub.map(c => `${c.company} | ${c.ticker}${blank(c.market_cap) ? "" : " | " + Math.round(c.market_cap / 1e6)}`), 3, "Company | Ticker | Approximate market cap ($M)")}</label>
       <label class="fld"><span>Private companies</span>${lines("watch_private", priv.map(c => `${c.company} | ${c.ownership || ""}`), 3, "Company | Ownership")}</label>`;
 
     const linked = TM.linked(ctx.state, t);
@@ -382,7 +383,8 @@
     } else if (key === "companies") {
       i.watch_public = (v.watch_public || []).map(line => {
         const p = split3(line);
-        return { company: p[0] || (p[1] || "").toUpperCase(), ticker: (p[1] || "").toUpperCase() };
+        const mc = Number(String(p[2] || "").replace(/[$,\s]/g, ""));
+        return { company: p[0] || (p[1] || "").toUpperCase(), ticker: (p[1] || "").toUpperCase(), market_cap: isFinite(mc) && mc > 0 ? mc * 1e6 : null };
       }).filter(x => x.company || x.ticker);
       i.watch_private = (v.watch_private || []).map(line => { const p = split3(line); return { company: p[0] || "", ownership: p[1] || "—" }; }).filter(x => x.company);
     } else if (key === "linked") {

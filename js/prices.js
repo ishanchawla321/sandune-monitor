@@ -2,8 +2,8 @@
 // (never stored); tickers without a quote are tagged "cached, as of <seed date>". Seed mode shows the
 // seed book exactly as hand-checked. Holdings whose price was edited by hand keep the edited price.
 // Market caps for theme company lists come from /api/profile whenever the page is hosted, in either price mode
-// (they are not part of the book); they are fetched when a theme card needs them and the card shows "—" until
-// they arrive or when a symbol has none.
+// (they are not part of the book); they are fetched when a theme card needs them and the card shows the stored
+// approximate value until they arrive (or "—" when a symbol has none).
 (function (root) {
   "use strict";
 
