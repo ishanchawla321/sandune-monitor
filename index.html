@@ -30,27 +30,23 @@
     <button type="button" role="tab" id="tabbtn-ideas" data-tab="opportunities/ideas" aria-controls="tab-ideas" aria-selected="false" tabindex="-1">Ideas</button>
   </nav>
   <nav class="nav-sub" role="tablist" aria-label="Portfolio views" data-section="portfolio" hidden>
+    <button type="button" role="tab" id="tabbtn-blotter" data-tab="portfolio/blotter" aria-controls="tab-blotter" aria-selected="false" tabindex="-1">Investment blotter</button>
     <button type="button" role="tab" id="tabbtn-portfolio" data-tab="portfolio/current" aria-controls="tab-portfolio" aria-selected="true">Current</button>
-    <button type="button" role="tab" id="tabbtn-proforma" data-tab="portfolio/proforma" aria-controls="tab-proforma" aria-selected="false" tabindex="-1">Pro Forma</button>
+    <button type="button" role="tab" id="tabbtn-proforma" data-tab="portfolio/proforma" aria-controls="tab-proforma" aria-selected="false" tabindex="-1">Pro forma analysis</button>
   </nav>
 </header>
 
 <main>
   <div id="sec-opportunities">
   <section id="tab-themes" role="tabpanel" aria-labelledby="tabbtn-themes" hidden>
-    <p class="asof">Themes group the investments that express one thesis. Figures are sample data; edits save in this browser.</p>
-
     <section class="card" aria-labelledby="th-h">
       <div class="card-header"><h2 id="th-h">Themes</h2></div>
-      <p class="note">Click a theme to open its card.</p>
-      <div id="th-grid" class="theme-grid"></div>
+      <div id="th-grid" class="theme-bars"></div>
     </section>
     <div id="th-card" class="card-slot"></div>
   </section>
 
   <section id="tab-ideas" role="tabpanel" aria-labelledby="tabbtn-ideas" hidden>
-    <p class="asof">Investments in the pipeline, from first look to funding. Figures are sample data; edits save in this browser.</p>
-
     <section class="card" aria-labelledby="inv-h">
       <div class="card-header">
         <h2 id="inv-h">Prospective investments <span class="h-count muted" id="id-prospective-count"></span></h2>
@@ -60,7 +56,6 @@
       </div>
       <div id="id-intake"></div>
       <div class="filters" id="id-filters"></div>
-      <p class="note">Watching, Researching and IC. Click a row to open its one-pager; changing the status on it moves the investment between sections.</p>
       <div class="table-wrap">
         <table class="grid ideas" id="id-table"></table>
       </div>
@@ -71,14 +66,12 @@
       <div class="card-header">
         <h2 id="done-h">Completed investments <span class="h-count muted" id="id-completed-count"></span></h2>
       </div>
-      <p class="note">Marked Invested. Their funding is posted to the blotter and the holding sits in Portfolio &gt; Current.</p>
       <div id="id-completed"></div>
     </section>
     <div id="id-card-completed" class="card-slot"></div>
 
     <details class="card passed" id="id-passed">
       <summary>Passed <span class="h-count muted" id="id-passed-count"></span></summary>
-      <p class="note">Kept for the decision log. Click a row to open its one-pager.</p>
       <div id="id-passed-list"></div>
     </details>
     <div id="id-card-passed" class="card-slot"></div>
@@ -113,6 +106,9 @@
 
     <div id="pf-holdings" class="hc-stack" aria-label="Holdings by asset class"></div>
 
+  </section>
+
+  <section id="tab-blotter" role="tabpanel" aria-labelledby="tabbtn-blotter" hidden>
     <section class="card" aria-labelledby="bl-h" id="pf-blotter">
       <div class="card-header">
         <h2 id="bl-h">Blotter <span class="h-count muted" id="bl-count"></span></h2>
@@ -120,7 +116,7 @@
           <button type="button" class="btn" id="bl-csv">Download CSV</button>
         </div>
       </div>
-      <p class="note">Every buy, sell, capital call, distribution and income item behind the book. A new entry posts to its holding and to operating cash straight away and saves in this browser. Sample data.</p>
+      <p class="note">Every buy, sell, draw, call, distribution and income item behind the book. A new entry posts to its holding and to operating cash straight away. Sample data.</p>
       <div id="bl-form"></div>
       <div class="filters" id="bl-filters"></div>
       <div class="table-wrap">
@@ -185,6 +181,7 @@
 <script src="samples/sample-om-extracted.js"></script>
 <script src="js/proforma-model.js"></script>
 <script src="js/invest-model.js"></script>
+<script src="js/status-model.js"></script>
 <script src="js/themes-model.js"></script>
 <script src="js/intake.js"></script>
 <script src="js/ideas.js"></script>

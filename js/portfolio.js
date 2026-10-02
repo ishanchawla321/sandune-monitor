@@ -1,4 +1,4 @@
-// Portfolio > Current: tiles, charts, holdings by asset class (js/holdings.js) and the blotter (js/blotter.js).
+// Portfolio > Current: tiles, charts and holdings by asset class (js/holdings.js). The blotter has its own tab (js/blotter.js).
 (function (root) {
   "use strict";
 
@@ -140,11 +140,10 @@
     bind();
     const m = Metrics.summary(state.holdings, state.settings, state.as_of);
     document.getElementById("pf-asof").textContent =
-      `As of ${state.as_of}. Public prices are Yahoo Finance closes; bond and T-bill prices are sample prices; private marks are the latest GP or sponsor statements. Positions, cost and income come from the blotter below.`;
+      `As of ${state.as_of}. Public prices are Yahoo Finance closes; bond and T-bill prices are sample prices; private marks are the latest GP or sponsor statements. Positions, cost and income come from the Investment blotter.`;
     renderTiles(m, state.settings);
     renderCharts(m);
     holdings.render(document.getElementById("pf-holdings"), state, m.holdings, m.nav, onChange);
-    root.Blotter.render(state, onChange);
     return m;
   }
 

@@ -1,4 +1,4 @@
-// Blotter panel (Portfolio > Current): the transaction list behind the book, plus an entry form.
+// Investment blotter (Portfolio > Investment blotter): the transaction list behind the book, plus an entry form.
 // New entries post to the holding and to operating cash through Positions.post() and persist like other edits.
 (function (root) {
   "use strict";

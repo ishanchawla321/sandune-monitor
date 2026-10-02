@@ -7,11 +7,13 @@
   let state = root.Store.load();
   const SECTIONS = {
     opportunities: ["opportunities/themes", "opportunities/ideas"],
-    portfolio: ["portfolio/current", "portfolio/proforma"]
+    portfolio: ["portfolio/blotter", "portfolio/current", "portfolio/proforma"]
   };
+  // The tab a section opens on the first time (Portfolio opens on Current, not on the blotter).
+  const DEFAULT_TAB = { opportunities: "opportunities/themes", portfolio: "portfolio/current" };
   const TABS = SECTIONS.opportunities.concat(SECTIONS.portfolio);
   const PANEL = { "opportunities/themes": "tab-themes", "opportunities/ideas": "tab-ideas",
-                  "portfolio/current": "tab-portfolio", "portfolio/proforma": "tab-proforma" };
+                  "portfolio/blotter": "tab-blotter", "portfolio/current": "tab-portfolio", "portfolio/proforma": "tab-proforma" };
   const TAB_KEY = "sandune-monitor.tab.v2";
   // Tab names saved by the previous single-level navigation.
   const LEGACY = { portfolio: "portfolio/current", ideas: "opportunities/ideas", proforma: "portfolio/proforma" };
@@ -23,6 +25,7 @@
   function render() {
     root.ThemesModel.sync(state);
     if (active === "portfolio/current") root.Portfolio.render(state, onChange);
+    if (active === "portfolio/blotter") root.Blotter.render(state, onChange);
     if (sectionOf(active) === "opportunities") root.Ideas.render(state, onChange, active.split("/")[1]);
     if (active === "portfolio/proforma") root.ProForma.render(state, onChange);
   }
@@ -61,7 +64,7 @@
   // Each section remembers which of its tabs was open last.
   const lastInSection = {};
   function showSection(section) {
-    showTab(lastInSection[section] || SECTIONS[section][0]);
+    showTab(lastInSection[section] || DEFAULT_TAB[section]);
   }
 
   document.querySelector(".app-header").addEventListener("click", e => {
