@@ -74,7 +74,7 @@
       case "money": return `<input id="${id}" inputmode="decimal" value="${isNull(v) ? "" : esc(v / 1000)}" aria-label="${esc(f.label)} in $K"> <span class="muted">$K</span>`;
       case "pct": return `<input id="${id}" inputmode="decimal" value="${isNull(v) ? "" : esc(+(v * 100).toFixed(2))}" aria-label="${esc(f.label)}"> <span class="muted">%</span>`;
       case "int": return `<input id="${id}" inputmode="numeric" value="${isNull(v) ? "" : esc(v)}" aria-label="${esc(f.label)}">`;
-      case "list": return `<textarea id="${id}" rows="4" aria-label="${esc(f.label)}, one per line">${esc((v || []).join("\n"))}</textarea><div class="muted">One per line.</div>`;
+      case "list": return `<textarea id="${id}" rows="4" aria-label="${esc(f.label)}, one per line" placeholder="One per line">${esc((v || []).join("\n"))}</textarea>`;
       case "longtext": return `<textarea id="${id}" rows="3" aria-label="${esc(f.label)}">${esc(v || "")}</textarea>`;
       default: return `<input id="${id}" value="${esc(v || "")}" aria-label="${esc(f.label)}">`;
     }
@@ -121,11 +121,10 @@
         <td class="rv-actions">${actions}</td></tr>`;
     }).join("");
     return `<div class="rv-head">
-        <div><b>Review extracted fields</b>${r.source === "cached" ? ` <span class="tag tag-cached">Cached example</span>` : ""}
-          <div class="note">${ui.fileName ? esc(ui.fileName) + ". " : ""}Accept or edit every field that has a value. Highlighted rows are low confidence or not found.</div></div>
+        <div><b>Review Extracted Fields</b>${ui.fileName ? ` <span class="muted">${esc(ui.fileName)}</span>` : ""}${r.source === "cached" ? ` <span class="tag tag-cached">Cached example</span>` : ""}</div>
         <div class="rv-save"><span class="muted">${total - left.length} of ${total} reviewed</span>
-          ${left.some(f => r.fields[f.key].confidence === "high") ? `<button type="button" class="btn" data-rv-accept-all title="Accept every high-confidence field; medium, low and missing fields still need a look">Accept all high-confidence</button>` : ""}
-          <button type="button" class="btn btn-primary" data-rv-commit${left.length || ui.editing ? " disabled" : ""}>Save as investment</button>
+          ${left.some(f => r.fields[f.key].confidence === "high") ? `<button type="button" class="btn" data-rv-accept-all>Accept All High-Confidence</button>` : ""}
+          <button type="button" class="btn btn-primary" data-rv-commit${left.length || ui.editing ? " disabled" : ""}>Save as Investment</button>
           <button type="button" class="btn" data-rv-discard>Discard</button></div>
       </div>
       <div class="table-wrap"><table class="grid review"><thead><tr><th class="col-name">Field</th><th>Value</th><th class="num">Page</th><th>Confidence</th><th>Review</th></tr></thead>
@@ -141,28 +140,25 @@
     } else if (ui.phase === "review") {
       body = renderReview();
     } else {
-      const localNote = root.Api.available ? "" : `<p class="note">Opened from disk: reading documents needs the hosted site. The sample still works, using a cached example.</p>`;
       body = `
         <div class="intake-tabs" role="tablist" aria-label="Document input">
           <button type="button" role="tab" data-intake-tab="pdf" aria-selected="${ui.tab === "pdf"}">Upload PDF</button>
-          <button type="button" role="tab" data-intake-tab="text" aria-selected="${ui.tab === "text"}">Paste text</button>
+          <button type="button" role="tab" data-intake-tab="text" aria-selected="${ui.tab === "text"}">Paste Text</button>
         </div>
         ${ui.tab === "pdf"
           ? `<div class="dropzone" id="id-dropzone" tabindex="0" role="button" aria-label="Drop a PDF here or press Enter to choose a file">
-               <b>Drop a PDF here</b> or click to choose a file. Max 3 MB.
+               <b>Drop a PDF here</b> or click to choose one (max 3 MB)
                <input type="file" id="id-file" accept="application/pdf,.pdf" hidden></div>`
           : `<textarea id="id-paste" rows="6" placeholder="Paste the offering memo or term sheet text" aria-label="Document text"></textarea>
-             <div class="add-line"><button type="button" class="btn btn-primary" data-intake-extract>Extract fields</button></div>`}
+             <div class="add-line"><button type="button" class="btn btn-primary" data-intake-extract>Extract Fields</button></div>`}
         <div class="intake-foot">
-          <button type="button" class="btn" data-intake-sample>Try it with a sample</button>
-          <a href="samples/sample-om.html" target="_blank" rel="noopener">View the sample memo</a>
-          <span class="muted">Files are sent once for reading and never stored.</span>
+          <button type="button" class="btn" data-intake-sample>Try a Sample</button>
+          <a href="samples/sample-om.html" target="_blank" rel="noopener">View Sample Memo</a>
         </div>
-        ${ui.message ? `<p class="intake-msg" role="status">${esc(ui.message)}</p>` : ""}
-        ${localNote}`;
+        ${ui.message ? `<p class="intake-msg" role="status">${esc(ui.message)}</p>` : ""}`;
     }
     box.innerHTML = `<details class="intake"${ui.phase !== "idle" || ui.open ? " open" : ""}>
-        <summary>New investment from document</summary><div class="intake-body">${body}</div></details>`;
+        <summary>New Investment from Document</summary><div class="intake-body">${body}</div></details>`;
   }
 
   // ---------------- Actions ----------------

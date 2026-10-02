@@ -18,37 +18,25 @@
   const themeName = id => { const t = (ctx.state.themes || []).find(x => x.id === id); return t ? t.name : ""; };
   const fundedFrom = i => (i.funding ? (i.funding.source === "cash" ? "cash" : i.funding.source_name) : "");
 
+  const SCORE_HELP = "Liquidity score = 40 x (1 - months to 50% back / 60) + 40 x (1 - hold months / 60) + 20 if interim cash. Public = 100.";
   const COLS = [
     { key: "name", label: "Name", cls: "col-name" },
-    { key: "theme", label: "Theme", wrapSm: true, value: i => themeName(i.theme_id) },
     { key: "type", label: "Type", wrapSm: true, show: i => L.type[i.type] || i.type },
     { key: "status", label: "Status", show: i => L.status[i.status] || i.status },
-    { key: "score", label: "Liquidity score", num: true, value: i => Metrics.liquidityScore(i), show: i => Metrics.liquidityScore(i).toFixed(0) },
-    { key: "check_size", label: "Position size ($K)", num: true, show: i => Fmt.thousands(i.check_size) },
-    { key: "funded_pct", label: "Funded %", num: true, show: i => Fmt.pct(i.funded_pct, 0) },
-    { key: "hold_months", label: "Hold (mo)", num: true, show: i => (i.hold_months ?? "") + "" },
-    { key: "target_return", label: "Target return", wrap: true },
-    { key: "next_step", label: "Next step", wrap: true },
-    { key: "next_step_date", label: "Next step date" },
-    { key: "contact", label: "Contact", value: i => (i.contacts || []).join("; ") },
-    { key: "asset_class", label: "Asset class", show: i => L.asset_class[i.asset_class] || i.asset_class },
-    { key: "security_type", label: "Security type", show: i => L.security_type[i.security_type] || i.security_type },
-    { key: "sector", label: "Sector" },
-    { key: "price_or_mark", label: "Price", num: true, show: i => Fmt.number(i.price_or_mark, 2) },
-    { key: "quantity", label: "Quantity", num: true, show: i => Fmt.number(i.quantity, 0) },
-    { key: "funded_date", label: "Funded on", value: i => (i.funding ? i.funding.date : "") },
-    { key: "funded_amount", label: "Funded ($K)", num: true, value: i => (i.funding ? i.funding.amount : null), show: i => (i.funding ? Fmt.thousands(i.funding.amount) : "") },
-    { key: "funding_source", label: "Funded from", value: i => fundedFrom(i), show: i => (i.funding ? (i.funding.source === "cash" ? "Cash" : i.funding.source_name) : ""), wrapSm: true },
-    { key: "holding", label: "Holding", value: i => (i.funding ? "View in Portfolio" : ""),
-      html: i => (i.funding ? `<button type="button" class="link" data-view-holding="${esc(i.funding.holding_id)}">View in Portfolio</button>` : "") }
+    { key: "check_size", label: "Position Size", unit: "$K", num: true, show: i => Fmt.thousands(i.check_size) },
+    { key: "target_return", label: "Target Return", wrap: true },
+    { key: "hold_months", label: "Hold", num: true, show: i => (blank(i.hold_months) ? "" : i.hold_months + " mo") },
+    { key: "score", label: "Liquidity Score", num: true, help: SCORE_HELP, value: i => Metrics.liquidityScore(i), show: i => Metrics.liquidityScore(i).toFixed(0) },
+    { key: "funded_date", label: "Funded", value: i => (i.funding ? i.funding.date : "") },
+    { key: "funded_amount", label: "Amount", unit: "$K", num: true, value: i => (i.funding ? i.funding.amount : null), show: i => (i.funding ? Fmt.thousands(i.funding.amount) : "") },
+    { key: "funding_source", label: "Source", value: i => fundedFrom(i), show: i => (i.funding ? (i.funding.source === "cash" ? "Cash" : i.funding.source_name) : ""), wrapSm: true }
   ];
-  const COMPACT = ["name", "theme", "type", "status", "score", "check_size", "funded_pct", "hold_months", "next_step"];
-  const ALL = COLS.filter(c => !["funded_date", "funded_amount", "funding_source", "holding"].includes(c.key));
-  const COMPLETED = ["name", "theme", "type", "funded_date", "funded_amount", "funding_source", "hold_months", "target_return", "holding"];
+  const PROSPECTIVE_COLS = ["name", "type", "status", "check_size", "target_return", "hold_months", "score"];
+  const COMPLETED = ["name", "type", "funded_date", "funded_amount", "funding_source"];
 
   // sel: { kind: "theme" | "investment", id }. editing: the section key in edit mode, or null.
   const ui = { sort: { key: null, dir: 1 }, status: new Set(), type: new Set(), sel: null, editing: null,
-               pending: null, bound: false, allCols: false, notice: null };
+               pending: null, bound: false, notice: null };
   let ctx = null; // { state, onChange }
 
   const today = () => Fmt.today();
@@ -64,10 +52,10 @@
 
   function scoreBuild(i) {
     const s = Metrics.liquidityScoreParts(i);
-    return s.isPublic ? "(public)" : `(${s.parts.map(r1).join(" + ")})`;
+    return s.isPublic ? "public = 100" : `${s.parts.map(r1).join(" + ")}`;
   }
 
-  const stat = (label, value) => `<div class="stat"><span class="stat-label">${label}</span><span class="stat-value">${value}</span></div>`;
+  const stat = (label, value, tip) => `<div class="stat"${tip ? ` title="${esc(tip)}"` : ""}><span class="stat-label">${label}</span><span class="stat-value">${value}</span></div>`;
   const THEME_STATUS_CLASS = { active: "is-ok", exploring: "is-accent", retired: "is-muted" };
   const closeBtn = `<button type="button" class="close-btn" data-close aria-label="Close">×</button>`;
   const opt = (value, label, cur) => `<option value="${esc(value)}"${value === cur ? " selected" : ""}>${esc(label)}</option>`;
@@ -87,26 +75,23 @@
 
   // ---------------- Investment filters and tables ----------------
   function renderFilters() {
-    const chips = (group, keys, set, labels) => keys.map(kk => {
-      const n = ctx.state.investments.filter(i => i[group] === kk && isProspective(i)).length;
-      return `<button type="button" class="chip chip-sm" data-chip="${group}" data-value="${esc(kk)}" aria-pressed="${set.has(kk)}">${esc(labels[kk])} <span class="chip-n">${n}</span></button>`;
-    }).join("");
+    const chips = (group, keys, set, labels) => keys.map(kk =>
+      `<button type="button" class="chip chip-sm" data-chip="${group}" data-value="${esc(kk)}" aria-pressed="${set.has(kk)}">${esc(labels[kk])}</button>`).join("");
     const any = ui.status.size || ui.type.size;
     document.getElementById("id-filters").innerHTML = `
       <fieldset class="filter-box"><legend>Status</legend>${chips("status", PROSPECTIVE, ui.status, L.status)}</fieldset>
       <fieldset class="filter-box"><legend>Type</legend>${chips("type", TYPES, ui.type, L.type)}</fieldset>
-      ${any ? `<button type="button" class="link filter-clear" data-chip-clear>Clear filters</button>` : ""}`;
+      ${any ? `<button type="button" class="link filter-clear" data-chip-clear>Clear Filters</button>` : ""}`;
   }
 
   const headCell = (c, sortable) => {
     const active = sortable && ui.sort.key === c.key;
     const aria = active ? (ui.sort.dir > 0 ? "ascending" : "descending") : "none";
-    const label = esc(c.label) + (active ? (ui.sort.dir > 0 ? " ▲" : " ▼") : "");
-    return `<th class="${c.num ? "num " : ""}${c.cls || ""}" aria-sort="${aria}">${sortable ? `<button type="button" class="sort" data-sort="${c.key}">${label}</button>` : label}</th>`;
+    const label = esc(c.label) + (c.unit ? ` <span class="unit-hint">(${c.unit})</span>` : "") + (active ? (ui.sort.dir > 0 ? " ▲" : " ▼") : "");
+    return `<th class="${c.num ? "num " : ""}${c.cls || ""}" aria-sort="${aria}"${c.help ? ` title="${esc(c.help)}"` : ""}>${sortable ? `<button type="button" class="sort" data-sort="${c.key}">${label}</button>` : label}</th>`;
   };
   const rowHtml = (i, cols, selId) => `<tr class="idea-row${i.id === selId ? " selected" : ""}" data-inv="${esc(i.id)}" tabindex="0" aria-selected="${i.id === selId}">` +
     cols.map(c => `<td class="${c.num ? "num " : ""}${c.cls || ""}${c.wrap ? " wrap" : ""}${c.wrapSm ? " wrap-sm" : ""}">${c.html ? c.html(i) : esc(colText(c, i))}</td>`).join("") + "</tr>";
-  const count = (id, n, noun) => { document.getElementById(id).textContent = `${n} ${n === 1 ? noun : noun + "s"}`; };
 
   function renderTables() {
     const selId = ui.sel && ui.sel.kind === "investment" ? ui.sel.id : null;
@@ -123,30 +108,24 @@
       };
       rows = rows.slice().sort((a, b) => (v(a) > v(b) ? 1 : v(a) < v(b) ? -1 : 0) * ui.sort.dir);
     }
-    const cols = ui.allCols ? ALL : COMPACT.map(kk => COLS.find(c => c.key === kk));
-    const empty = rows.length ? "" : `<tr><td class="col-name muted" colspan="${cols.length}">${prospective.length ? "No prospective investments match these filters." : "No prospective investments yet."}</td></tr>`;
+    const cols = PROSPECTIVE_COLS.map(kk => COLS.find(c => c.key === kk));
+    const empty = rows.length ? "" : `<tr><td class="col-name muted" colspan="${cols.length}">${prospective.length ? "No investments match these filters." : "No prospective investments yet."}</td></tr>`;
     document.getElementById("id-table").innerHTML = `<thead><tr>${cols.map(c => headCell(c, true)).join("")}</tr></thead><tbody>${rows.map(i => rowHtml(i, cols, selId)).join("")}${empty}</tbody>`;
-    count("id-prospective-count", prospective.length, "investment");
-    const tog = document.getElementById("id-cols");
-    tog.setAttribute("aria-pressed", String(ui.allCols));
-    tog.textContent = ui.allCols ? "Compact view" : "All columns";
 
     const done = all.filter(i => i.status === "invested");
     const dcols = COMPLETED.map(kk => COLS.find(c => c.key === kk));
     document.getElementById("id-completed").innerHTML = done.length
       ? `<div class="table-wrap"><table class="grid ideas"><thead><tr>${dcols.map(c => headCell(c, false)).join("")}</tr></thead><tbody>${done.map(i => rowHtml(i, dcols, selId)).join("")}</tbody></table></div>`
-      : `<p class="placeholder">Investments move here when marked Invested.</p>`;
-    count("id-completed-count", done.length, "investment");
+      : `<p class="placeholder">No completed investments yet.</p>`;
 
     const passed = all.filter(i => i.status === "passed");
     const lastPass = i => (i.decision_log || []).filter(d => d.to === "passed").sort((a, b) => (a.date < b.date ? 1 : -1))[0] || {};
     document.getElementById("id-passed-list").innerHTML = passed.length
-      ? `<div class="table-wrap"><table class="grid ideas"><thead><tr><th class="col-name">Name</th><th>Type</th><th>Passed on</th><th>Reason</th></tr></thead><tbody>${passed.map(i => {
+      ? `<div class="table-wrap"><table class="grid ideas"><thead><tr><th class="col-name">Name</th><th>Date</th><th>Reason</th></tr></thead><tbody>${passed.map(i => {
           const d = lastPass(i);
-          return `<tr class="idea-row${i.id === selId ? " selected" : ""}" data-inv="${esc(i.id)}" tabindex="0" aria-selected="${i.id === selId}"><td class="col-name">${esc(i.name)}</td><td>${esc(L.type[i.type] || i.type)}</td><td>${esc(d.date || "")}</td><td class="wrap">${esc(d.reason || "")}</td></tr>`;
+          return `<tr class="idea-row${i.id === selId ? " selected" : ""}" data-inv="${esc(i.id)}" tabindex="0" aria-selected="${i.id === selId}"><td class="col-name">${esc(i.name)}</td><td>${esc(d.date || "")}</td><td class="wrap">${esc(d.reason || "")}</td></tr>`;
         }).join("")}</tbody></table></div>`
       : `<p class="muted">None passed yet.</p>`;
-    count("id-passed-count", passed.length, "investment");
   }
 
   // ---------------- Section framework ----------------
@@ -166,7 +145,7 @@
     return `<section class="card-sec${o.cls ? " " + o.cls : ""}" data-sec="${key}"><div class="sec-head"><h3>${esc(title)}</h3>${editBtn}</div>${content}</section>`;
   }
   const bullets = list => ((list || []).length ? `<ul class="bullets">${list.map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : "");
-  const lines = (field, list, rows, placeholder) => `<textarea data-f="${field}" data-kind="lines" rows="${Math.min(14, Math.max(rows || 3, (list || []).length + 1))}" placeholder="${esc(placeholder || "One per line")}" aria-label="${esc(placeholder || field)}">${esc((list || []).join("\n"))}</textarea><p class="note">One item per line.</p>`;
+  const lines = (field, list, rows, placeholder) => `<textarea data-f="${field}" data-kind="lines" rows="${Math.min(14, Math.max(rows || 3, (list || []).length + 1))}" placeholder="${esc(placeholder || "One per line")}" aria-label="${esc(placeholder || field)}">${esc((list || []).join("\n"))}</textarea>`;
   const fld = (label, inner) => `<label class="fld"><span>${esc(label)}</span>${inner}</label>`;
   const input = (field, kind, value, extra) => `<input type="${kind === "date" ? "date" : "text"}"${["k", "pct", "int", "num"].includes(kind) ? ' inputmode="decimal"' : ""} data-f="${field}" data-kind="${kind}" value="${esc(blank(value) ? "" : value)}"${extra || ""}>`;
   const textarea = (field, value, rows) => `<textarea data-f="${field}" data-kind="text" rows="${rows || 3}">${esc(value || "")}</textarea>`;
@@ -221,18 +200,15 @@
           <label class="fld"><span>Funded amount ($K)</span><input type="text" inputmode="decimal" id="id-fund-amount" value="${esc(f.amount)}"></label>
           <label class="fld"><span>Funding source</span><select id="id-fund-source"><option value="cash"${f.source === "cash" ? " selected" : ""}>Cash</option>
             ${sources.map(h => `<option value="${esc(h.id)}"${f.source === h.id ? " selected" : ""}>${esc(h.name)} (${esc(k(Metrics.marketValue(h)))})</option>`).join("")}</select></label>
-        </div>
-        <p class="note">Posts the purchase, call or draw to the blotter, creates the holding in Portfolio &gt; Current and reduces the funding source.</p>`;
-    } else if (p.from === "invested" && p.to !== "invested" && i.funding) {
-      fund = `<p class="note">Saving reverses the funding: ${esc(root.InvestModel.describe(i.funding))} The holding and blotter entries are removed and cash is restored. You will be asked to confirm.</p>`;
+        </div>`;
     }
-    const title = toFunded ? "Mark as funded" : p.to === "passed" ? "Pass" : PROSPECTIVE.includes(p.to) && !isProspective(i) ? "Move back to prospective" : `Move from ${esc(statusLabel(p.from))} to ${esc(statusLabel(p.to))}`;
+    const title = toFunded ? "Mark as Funded" : p.to === "passed" ? "Pass" : PROSPECTIVE.includes(p.to) && !isProspective(i) ? "Move Back to Prospective" : `Move to ${esc(statusLabel(p.to))}`;
     return `<div class="reason" role="group" aria-label="Status change">
-        <label for="id-reason">${title}: one-line reason for the decision log</label>
+        <h3>${title}</h3>
         ${fund}
-        <div class="add-line"><input type="text" id="id-reason" value="${esc(p.reason || "")}" placeholder="One line">
-        <button type="button" class="btn btn-primary" data-status-save>${toFunded ? "Save and fund" : "Save"}</button>
-        <button type="button" class="btn" data-status-cancel>Cancel</button></div>
+        <label class="fld fld-reason"><span>Reason</span><div class="add-line"><input type="text" id="id-reason" value="${esc(p.reason || "")}" placeholder="One line for the decision log">
+        <button type="button" class="btn btn-primary" data-status-save>${toFunded ? "Save and Fund" : "Save"}</button>
+        <button type="button" class="btn" data-status-cancel>Cancel</button></div></label>
         ${p.error ? `<p class="breach" role="alert">${esc(p.error)}</p>` : ""}</div>`;
   }
 
@@ -241,7 +217,7 @@
       .sort((a, b) => (a.d.date < b.d.date ? 1 : a.d.date > b.d.date ? -1 : b.n - a.n))
       .map(({ d }) => `<tr><td>${esc(d.date)}</td><td>${esc(d.from ? statusLabel(d.from) : "(new)")}</td>
         <td>${esc(statusLabel(d.to))}</td><td class="wrap">${esc(d.reason)}</td></tr>`).join("");
-    return `<details class="card-sec log"><summary><h3>Decision log <span class="sec-count">(${(i.decision_log || []).length})</span></h3></summary>
+    return `<details class="card-sec log"><summary><h3>Decision Log</h3></summary>
         <div class="table-wrap"><table class="grid log"><thead><tr><th>Date</th><th>From</th><th>To</th><th>Reason</th></tr></thead>
         <tbody>${log || `<tr><td colspan="4" class="muted">No entries yet.</td></tr>`}</tbody></table></div></details>`;
   }
@@ -259,7 +235,7 @@
           ${fld("Sector", input("sector", "text", i.sector))}
           ${fld("Theme", `<select data-f="theme_id" data-kind="select"><option value="">None</option>${(ctx.state.themes || []).map(t => opt(t.id, t.name, i.theme_id || "")).join("")}</select>`)}
         </div><div class="sec-actions"><button type="button" class="btn btn-primary" data-save-sec="profile">Save</button><button type="button" class="btn" data-cancel-sec>Cancel</button></div>`
-      : `<div class="chips">${Array.from(new Set([L.type[i.type] || i.type, L.asset_class[i.asset_class] || i.asset_class, L.security_type[i.security_type] || i.security_type, i.sector].filter(Boolean))).map(t => chip(t)).join("")}${i.theme_id ? chip(themeName(i.theme_id), "chip-link", ` data-open-theme="${esc(i.theme_id)}" title="Open theme"`) : ""}
+      : `<div class="chips">${[L.type[i.type] || i.type, L.asset_class[i.asset_class] || i.asset_class, L.security_type[i.security_type] || i.security_type, i.sector].filter((t, n, arr) => t && arr.findIndex(x => String(x).toLowerCase() === String(t).toLowerCase()) === n).map(t => chip(t)).join("")}${i.theme_id ? chip(themeName(i.theme_id), "chip-link", ` data-open-theme="${esc(i.theme_id)}"`) : ""}
           <button type="button" class="edit-link" data-edit-sec="profile" aria-label="Edit name, type, asset class, security type, sector and theme">${PENCIL}<span>Edit</span></button></div>`;
     const title = editingProfile
       ? `<label class="sr-only" for="id-card-name">Investment name</label><input type="text" id="id-card-name" class="title-input" data-f="name" data-kind="text" value="${esc(i.name)}">`
@@ -267,9 +243,9 @@
 
     const statsBody = `<div class="stat-row cols-4 key-stats">
         ${stat("Potential position size", esc(k(i.check_size)) || "—")}
-        ${stat("Target return", esc(i.target_return || "—"))}
+        <div class="stat stat-wide"><span class="stat-label">Target return</span><span class="stat-value">${esc(i.target_return || "—")}</span></div>
         ${stat("Hold", blank(i.hold_months) ? "—" : esc(i.hold_months + " mo"))}
-        ${stat(`Liquidity score <span class="stat-hint">${esc(scoreBuild(i))}</span>`, esc(Metrics.liquidityScore(i).toFixed(0)))}
+        ${stat("Liquidity score", esc(Metrics.liquidityScore(i).toFixed(0)), `${SCORE_HELP} This one: ${scoreBuild(i)}`)}
       </div>`;
     const statsEdit = `<div class="terms">
         ${fld("Potential position size ($K)", input("check_size", "k", blank(i.check_size) ? "" : +(i.check_size / 1000).toFixed(3)))}
@@ -280,16 +256,16 @@
         ${fld("Interim cash", selectEl("interim_cash", ["true", "false"], { true: "Yes", false: "No" }, String(!!i.interim_cash)).replace('data-kind="select"', 'data-kind="bool"'))}
         ${fld("Next step", input("next_step", "text", i.next_step))}
         ${fld("Next step date", input("next_step_date", "date", i.next_step_date))}
-      </div><p class="note">Liquidity score ${esc(Metrics.liquidityScore(i).toFixed(0))} ${esc(scoreBuild(i))} = 40 x (1 - months to 50% back / 60) + 40 x (1 - hold / 60) + 20 if interim cash. Public = 100.</p>`;
+      </div>`;
 
     let actions;
     if (i.status === "invested") {
-      actions = `<button type="button" class="btn" data-move-back>Move back to prospective</button>` +
+      actions = `<button type="button" class="btn" data-move-back>Move Back to Prospective</button>` +
         (i.funding ? `<span class="muted">Funded ${esc(i.funding.date)} · ${esc(k(i.funding.amount))} from ${esc(fundedFrom(i))}</span> <button type="button" class="link" data-view-holding="${esc(i.funding.holding_id)}">View in Portfolio</button>` : "");
     } else if (i.status === "passed") {
-      actions = `<button type="button" class="btn" data-move-back>Move back to prospective</button>`;
+      actions = `<button type="button" class="btn" data-move-back>Move Back to Prospective</button>`;
     } else {
-      actions = `<button type="button" class="btn" data-pass>Pass</button><button type="button" class="btn btn-primary" data-mark-funded>Mark as funded</button>`;
+      actions = `<button type="button" class="btn" data-pass>Pass</button><button type="button" class="btn btn-primary" data-mark-funded>Mark as Funded</button>`;
     }
 
     return `
@@ -299,13 +275,13 @@
         ${chips}
         ${p && p.at !== "actions" ? pendingBlock(i) : ""}
       </header>
-      ${section("stats", "Key figures", { body: statsBody, edit: statsEdit, cls: "sec-stats" })}
-      ${section("company_overview", "Company overview", { body: para(i.company_overview), edit: textarea("company_overview", i.company_overview, 2), empty: "Add a company overview" })}
-      ${section("key_notes", "Notes", { body: bullets(i.key_notes), edit: lines("key_notes", i.key_notes), empty: "Add notes" })}
+      ${section("stats", "Key Figures", { body: statsBody, edit: statsEdit, cls: "sec-stats" })}
+      ${section("company_overview", "Company Overview", { body: para(i.company_overview), edit: textarea("company_overview", i.company_overview, 2), empty: "Add a company overview" })}
+      ${section("key_notes", "Notes", { body: bullets(i.key_notes), edit: lines("key_notes", i.key_notes, 3, "One note per line"), empty: "Add notes" })}
       ${section("thesis", "Thesis", { body: para(i.thesis), edit: textarea("thesis", i.thesis, 3), empty: "Add a thesis" })}
-      ${section("diligence", "Diligence to do", { body: bullets(i.diligence), edit: lines("diligence", i.diligence, 4, "Documents to request, numbers that don't tie, calls and analysis"), empty: "Add diligence to do" })}
-      ${section("terms", "Terms and fee detail", { body: para(i.terms), edit: textarea("terms", i.terms, 4), empty: "Add terms and fee detail" })}
-      ${section("contacts", "Contacts", { body: bullets(i.contacts), edit: lines("contacts", i.contacts, 2, "Roles only, no names"), empty: "Add contacts (roles only)" })}
+      ${section("diligence", "Diligence To Do", { body: bullets(i.diligence), edit: lines("diligence", i.diligence, 4, "One item per line"), empty: "Add diligence to do" })}
+      ${section("terms", "Terms and Fee Detail", { body: para(i.terms), edit: textarea("terms", i.terms, 4), empty: "Add terms and fee detail" })}
+      ${section("contacts", "Contacts", { body: bullets(i.contacts), edit: lines("contacts", i.contacts, 2, "Roles only, one per line"), empty: "Add contacts (roles only)" })}
       ${logSection(i)}
       <section class="card-sec card-actions-row" data-sec="actions">${p && p.at === "actions" ? pendingBlock(i) : ""}<div class="actions">${actions}</div></section>
     </article>`;
@@ -319,27 +295,27 @@
       : `<h2 class="card-title" id="id-card-name">${esc(t.name)}</h2>`;
 
     const vcBody = (t.value_chain || []).length
-      ? `<div class="table-wrap"><table class="grid vc"><thead><tr><th class="col-name">Segment</th><th>Description</th><th>Representative companies</th></tr></thead><tbody>${t.value_chain.map(v =>
+      ? `<div class="table-wrap"><table class="grid vc"><thead><tr><th class="col-name">Segment</th><th>Description</th><th>Representative Companies</th></tr></thead><tbody>${t.value_chain.map(v =>
           `<tr><td class="col-name">${esc(v.segment)}</td><td class="wrap">${esc(v.description)}</td><td class="wrap">${esc(v.companies || "—")}</td></tr>`).join("")}</tbody></table></div>` : "";
     const vcEdit = lines("value_chain", (t.value_chain || []).map(v => `${v.segment} | ${v.description} | ${v.companies || ""}`), 4, "Segment | Description | Representative companies");
 
     const pub = t.watch_public || [], priv = t.watch_private || [];
-    const cap = c => { const live = root.Prices && root.Prices.marketCap(c.ticker); return Fmt.marketCap(live || c.market_cap); };
+    const cap = c => Fmt.marketCap(root.Prices ? root.Prices.marketCap(c.ticker) : null);
     const companyBody = pub.length || priv.length ? `<div class="company-lists">
-        <div class="table-wrap"><table class="grid mini"><thead><tr><th class="col-name">Public</th><th>Ticker</th><th class="num">Market cap</th></tr></thead>
+        <div class="table-wrap"><table class="grid mini"><thead><tr><th class="col-name">Public</th><th>Ticker</th><th class="num">Market Cap</th></tr></thead>
           <tbody>${pub.length ? pub.map(c => `<tr><td class="col-name">${esc(c.company)}</td><td>${esc(c.ticker)}</td><td class="num">${esc(cap(c))}</td></tr>`).join("") : `<tr><td class="col-name muted" colspan="3">None listed.</td></tr>`}</tbody></table></div>
         <div class="table-wrap"><table class="grid mini"><thead><tr><th class="col-name">Private</th><th>Ownership</th></tr></thead>
           <tbody>${priv.length ? priv.map(c => `<tr><td class="col-name">${esc(c.company)}</td><td>${esc(c.ownership || "—")}</td></tr>`).join("") : `<tr><td class="col-name muted" colspan="2">None listed.</td></tr>`}</tbody></table></div>
       </div>` : "";
-    const companyEdit = `<label class="fld"><span>Public companies</span>${lines("watch_public", pub.map(c => `${c.company} | ${c.ticker} | ${blank(c.market_cap) ? "" : Math.round(c.market_cap / 1e6)}`), 3, "Company | Ticker | Market cap ($M)")}</label>
-      <label class="fld"><span>Private companies</span>${lines("watch_private", priv.map(c => `${c.company} | ${c.ownership || ""}`), 3, "Company | Ownership (VC-backed, PE-backed, family-owned; blank if not confirmed)")}</label>`;
+    const companyEdit = `<label class="fld"><span>Public companies</span>${lines("watch_public", pub.map(c => `${c.company} | ${c.ticker}`), 3, "Company | Ticker")}</label>
+      <label class="fld"><span>Private companies</span>${lines("watch_private", priv.map(c => `${c.company} | ${c.ownership || ""}`), 3, "Company | Ownership")}</label>`;
 
     const linked = TM.linked(ctx.state, t);
-    const linkedBody = linked.length ? `<div class="table-wrap"><table class="grid mini"><thead><tr><th class="col-name">Investment</th><th>Status</th><th class="num">Position size ($K)</th><th class="num">Liquidity score</th></tr></thead>
+    const linkedBody = linked.length ? `<div class="table-wrap"><table class="grid mini"><thead><tr><th class="col-name">Investment</th><th>Status</th><th class="num">Position Size <span class="unit-hint">($K)</span></th><th class="num" title="${esc(SCORE_HELP)}">Liquidity Score</th></tr></thead>
         <tbody>${linked.map(i => `<tr class="idea-row" data-open-inv="${esc(i.id)}" tabindex="0">
           <td class="col-name">${esc(i.name)}</td><td>${esc(L.status[i.status] || i.status)}</td><td class="num">${esc(Fmt.thousands(i.check_size))}</td>
           <td class="num">${esc(Metrics.liquidityScore(i).toFixed(0))}</td></tr>`).join("")}</tbody></table></div>` : "";
-    const linkedEdit = `<p class="note">An investment belongs to one theme; ticking it here moves it.</p><div class="picks" role="group" aria-label="Linked investments">${ctx.state.investments.map(i => {
+    const linkedEdit = `<div class="picks" role="group" aria-label="Linked investments">${ctx.state.investments.map(i => {
         const other = i.theme_id && i.theme_id !== t.id ? themeName(i.theme_id) : "";
         return `<label class="pick"><input type="checkbox" data-link-inv="${esc(i.id)}"${i.theme_id === t.id ? " checked" : ""}> ${esc(i.name)}${other ? ` <span class="muted">(now in ${esc(other)})</span>` : ""}</label>`;
       }).join("")}</div>`;
@@ -349,13 +325,13 @@
       <header class="card-head">
         <div class="title-line">${title}${statusSelect(t, THEME_STATUSES, L.theme_status)}${closeBtn}</div>
       </header>
-      ${section("profile", "Theme description", { body: para(t.description), edit: `${fld("Theme name", input("name", "text", t.name))}${fld("Description (1-2 sentences)", textarea("description", t.description, 2))}`, empty: "Add a theme description" })}
-      ${section("key_notes", "Notes", { body: bullets(t.key_notes), edit: lines("key_notes", t.key_notes), empty: "Add notes" })}
+      ${section("profile", "Description", { body: para(t.description), edit: `${fld("Theme name", input("name", "text", t.name))}${fld("Description", textarea("description", t.description, 2))}`, empty: "Add a description" })}
+      ${section("key_notes", "Notes", { body: bullets(t.key_notes), edit: lines("key_notes", t.key_notes, 3, "One note per line"), empty: "Add notes" })}
       ${section("thesis", "Thesis", { body: para(t.thesis), edit: textarea("thesis", t.thesis, 3), empty: "Add a thesis" })}
-      ${section("value_chain", "Value chain and key players", { body: vcBody, edit: vcEdit, empty: "Add the value chain" })}
-      ${section("companies", "Company list", { body: companyBody, edit: companyEdit, empty: "Add public or private companies" })}
-      ${section("industry_context", "Industry context", { body: para(t.industry_context), edit: textarea("industry_context", t.industry_context, 3), empty: "Add industry context" })}
-      ${section("linked", "Linked investments", { body: linkedBody, edit: linkedEdit, empty: "Link investments" })}
+      ${section("value_chain", "Value Chain and Key Players", { body: vcBody, edit: vcEdit, empty: "Add the value chain" })}
+      ${section("companies", "Company List", { body: companyBody, edit: companyEdit, empty: "Add public or private companies" })}
+      ${section("industry_context", "Industry Context", { body: para(t.industry_context), edit: textarea("industry_context", t.industry_context, 3), empty: "Add industry context" })}
+      ${section("linked", "Linked Investments", { body: linkedBody, edit: linkedEdit, empty: "Link investments" })}
     </article>`;
   }
 
@@ -405,8 +381,7 @@
     } else if (key === "companies") {
       i.watch_public = (v.watch_public || []).map(line => {
         const p = split3(line);
-        const mc = Number(String(p[2] || "").replace(/[$,\s]/g, ""));
-        return { company: p[0] || (p[1] || "").toUpperCase(), ticker: (p[1] || "").toUpperCase(), market_cap: isFinite(mc) && mc > 0 ? mc * 1e6 : null };
+        return { company: p[0] || (p[1] || "").toUpperCase(), ticker: (p[1] || "").toUpperCase() };
       }).filter(x => x.company || x.ticker);
       i.watch_private = (v.watch_private || []).map(line => { const p = split3(line); return { company: p[0] || "", ownership: p[1] || "—" }; }).filter(x => x.company);
     } else if (key === "linked") {
@@ -523,7 +498,6 @@
         return ctx.onChange(false);
       }
       if (t.closest("[data-chip-clear]")) { ui.status.clear(); ui.type.clear(); return ctx.onChange(false); }
-      if (t.closest("#id-cols")) { ui.allCols = !ui.allCols; return ctx.onChange(false); }
       const sortBtn = t.closest("[data-sort]");
       if (sortBtn) {
         const key = sortBtn.dataset.sort;
