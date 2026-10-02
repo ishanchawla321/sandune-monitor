@@ -28,7 +28,7 @@
   root.Api = {
     available,
     quote: symbols => call("api/quote?symbols=" + encodeURIComponent(symbols.join(",")), {}, 3000),
-    extract: (data, timeoutMs) => post("api/extract", data, timeoutMs),
-    assess: data => post("api/assess", data, 10000)
+    profile: symbols => call("api/profile?symbols=" + encodeURIComponent(symbols.join(",")), {}, 3000),
+    extract: (data, timeoutMs) => post("api/extract", data, timeoutMs)
   };
 })(window);

@@ -15,6 +15,7 @@
     { key: "asset_class", label: "Asset class", kind: "enum", options: pick(L.asset_class, Object.keys(L.asset_class).filter(k => k !== "cash")) },
     { key: "security_type", label: "Security type", kind: "enum", options: pick(L.security_type, Object.keys(L.security_type).filter(k => k !== "cash" && k !== "t_bill")) },
     { key: "sector", label: "Sector", kind: "text" },
+    { key: "company_overview", label: "Company overview", kind: "longtext" },
     { key: "thesis", label: "Thesis", kind: "longtext" },
     { key: "check_size", label: "Check size or minimum", kind: "money" },
     { key: "funded_pct", label: "Funded %", kind: "pct" },
@@ -22,12 +23,9 @@
     { key: "months_to_50pct_back", label: "Months to 50% back", kind: "int" },
     { key: "interim_cash", label: "Interim cash", kind: "bool" },
     { key: "target_return", label: "Target return", kind: "text" },
-    { key: "entry_costs", label: "Entry costs", kind: "longtext" },
-    { key: "terms_notes", label: "Structure and terms", kind: "longtext" },
-    { key: "key_notes", label: "Key notes", kind: "list" },
-    { key: "change_my_mind", label: "What would change my mind", kind: "list" },
-    { key: "diligence_documents", label: "Document asks and checks", kind: "flags" },
-    { key: "diligence_other", label: "Other diligence", kind: "list" },
+    { key: "terms", label: "Terms and fee detail", kind: "longtext" },
+    { key: "key_notes", label: "Notes", kind: "list" },
+    { key: "diligence", label: "Diligence to do", kind: "list" },
     { key: "contacts", label: "Contacts (roles only)", kind: "list" },
     { key: "next_step", label: "Next step", kind: "text" }
   ];
@@ -40,7 +38,7 @@
   // Normalise an API (or cached) response: unknown enum values and bad types become null.
   function normalise(res) {
     const fields = {};
-    FIELDS.filter(f => f.kind !== "flags").forEach(f => {
+    FIELDS.forEach(f => {
       const raw = (res.fields || {})[f.key] || {};
       let v = raw.value;
       if (f.kind === "enum" && !(v in f.options)) v = null;
@@ -52,10 +50,6 @@
       fields[f.key] = { value: isNull(v) ? null : v, page: Number.isInteger(raw.page) ? raw.page : null,
                         confidence: ["high", "medium", "low"].includes(raw.confidence) ? raw.confidence : "low" };
     });
-    const flags = (res.diligence_documents || res.doc_flags || []).filter(f => f && f.text).map(f => ({ text: String(f.text), page: Number.isInteger(f.page) ? f.page : null }));
-    const pages = Array.from(new Set(flags.map(f => f.page).filter(p => p !== null)));
-    fields.diligence_documents = { value: flags.length ? flags : null, page: pages.length ? pages.join(", ") : null,
-                                   confidence: flags.length ? "high" : "low" };
     return { fields, source: res.source === "live" ? "live" : "cached" };
   }
 
@@ -68,7 +62,6 @@
       case "pct": return esc(Fmt.pct(v, 0));
       case "bool": return v ? "Yes" : "No";
       case "list": return `<ul class="rv-list">${v.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
-      case "flags": return `<ul class="rv-list">${v.map(x => `<li>${esc(x.text)}${x.page ? ` <span class="muted">(p. ${x.page})</span>` : ""}</li>`).join("")}</ul>`;
       default: return esc(v);
     }
   }
@@ -82,7 +75,6 @@
       case "pct": return `<input id="${id}" inputmode="decimal" value="${isNull(v) ? "" : esc(+(v * 100).toFixed(2))}" aria-label="${esc(f.label)}"> <span class="muted">%</span>`;
       case "int": return `<input id="${id}" inputmode="numeric" value="${isNull(v) ? "" : esc(v)}" aria-label="${esc(f.label)}">`;
       case "list": return `<textarea id="${id}" rows="4" aria-label="${esc(f.label)}, one per line">${esc((v || []).join("\n"))}</textarea><div class="muted">One per line.</div>`;
-      case "flags": return `<textarea id="${id}" rows="3" aria-label="Document asks and checks, one per line">${esc((v || []).map(x => x.text + (x.page ? ` (p. ${x.page})` : "")).join("\n"))}</textarea><div class="muted">One per line.</div>`;
       case "longtext": return `<textarea id="${id}" rows="3" aria-label="${esc(f.label)}">${esc(v || "")}</textarea>`;
       default: return `<input id="${id}" value="${esc(v || "")}" aria-label="${esc(f.label)}">`;
     }
@@ -94,7 +86,6 @@
     if (f.kind === "enum") return raw;
     if (f.kind === "bool") return raw === "true";
     if (f.kind === "list") return raw.split("\n").map(s => s.trim()).filter(Boolean);
-    if (f.kind === "flags") return raw.split("\n").map(s => s.trim()).filter(Boolean).map(t => ({ text: t, page: null }));
     if (["money", "pct", "int"].includes(f.kind)) {
       if (raw === "") return null;
       const n = Number(raw.replace(/[$,%\s]/g, ""));
@@ -269,15 +260,12 @@
       unfunded: check === null ? 0 : check * (1 - funded), call_schedule: null,
       liquidity_bucket: isPublic ? "liquid_now" : "3y_plus", liquidity_date: null, mark_source: null, mark_date: null,
       status: "watching", type, theme_id: null,
-      thesis: v("thesis") || "",
-      key_notes: v("key_notes") || [], change_my_mind: v("change_my_mind") || [], contacts: v("contacts") || [],
-      diligence_documents: (v("diligence_documents") || []).map((f, n) => ({ id: `${id}-dd${n + 1}`, text: f.text + (f.page ? ` (p. ${f.page})` : ""), done: null })),
-      diligence_other: (v("diligence_other") || []).map((text, n) => ({ id: `${id}-do${n + 1}`, text, done: null })),
+      company_overview: v("company_overview") || "", thesis: v("thesis") || "",
+      key_notes: v("key_notes") || [], diligence: v("diligence") || [], contacts: v("contacts") || [],
       check_size: check, funded_pct: funded, hold_months: v("hold_months"), months_to_50pct_back: v("months_to_50pct_back"),
       interim_cash: v("interim_cash") === true,
-      target_return: v("target_return") || "", entry_costs: v("entry_costs") || "", terms_notes: v("terms_notes") || "",
+      target_return: v("target_return") || "", terms: v("terms") || "",
       next_step: v("next_step") || "", next_step_date: null,
-      tickers: [], signals: [],
       decision_log: [{ date: today, from: null, to: "watching", reason: "Created from document, fields reviewed" }]
     };
     root.Migrate.investment(inv);

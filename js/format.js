@@ -15,6 +15,13 @@
     dollars(v) { return blank(v) ? "" : signed(v, "$" + grouped(Math.round(v), 0)); },
     number(v, dp) { return blank(v) ? "" : signed(v, grouped(v, dp || 0)); },
     pct(v, dp) { return blank(v) ? "n/a" : signed(v, grouped(v * 100, dp === undefined ? 1 : dp) + "%"); },
+    // Market cap: $230M, $1.2B, $15.5B
+    marketCap(v) {
+      if (blank(v) || v <= 0) return "—";
+      if (v >= 1e12) return "$" + grouped(v / 1e12, 1) + "T";
+      if (v >= 1e9) return "$" + grouped(v / 1e9, 1) + "B";
+      return "$" + grouped(v / 1e6, 0) + "M";
+    },
     // Today's date in the viewer's time zone, as YYYY-MM-DD.
     today() {
       const d = new Date();
@@ -35,7 +42,7 @@
     security_type: { common_stock: "Common stock", etf: "ETF", bond: "Bond", t_bill: "T-bill", lp_interest: "LP interest",
                      common_equity: "Common equity", preferred_equity: "Preferred equity", jv_equity: "JV equity",
                      first_lien_loan: "First-lien loan", basket: "Basket", cash: "Cash" },
-    status: { watching: "Watching", researching: "Researching", IC: "IC", invested: "Invested", passed: "Passed" },
+    status: { watching: "Watching", researching: "Researching", IC: "Late stage", invested: "Invested", passed: "Passed" },
     type: { public: "Public", private_equity: "Private equity", private_credit: "Private credit",
             venture: "Venture (late-stage)" },
     theme_status: { exploring: "Exploring", active: "Active", retired: "Retired" },

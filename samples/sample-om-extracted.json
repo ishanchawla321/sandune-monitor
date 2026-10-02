@@ -28,6 +28,11 @@
       "page": 1,
       "confidence": "medium"
     },
+    "company_overview": {
+      "value": "Northline Cold Storage operates three temperature-controlled warehouses in the Midwest (Des Moines, Joliet, Fort Wayne) with 21 million cubic feet of capacity, serving regional food processors and grocery distributors on contracts averaging 3.4 years.",
+      "page": 1,
+      "confidence": "high"
+    },
     "thesis": {
       "value": "Senior secured unitranche loan to a three-site Midwest cold-storage operator with contracted, recurring storage revenue. Returns come mainly from cash interest at SOFR + 650 with a 1% floor plus a 2% OID, backed by owned real estate appraised at $52M.",
       "page": 1,
@@ -63,13 +68,8 @@
       "page": 2,
       "confidence": "high"
     },
-    "entry_costs": {
-      "value": "No lender fees stated. The 2.0% OID (issued at 98.0) is a discount that adds to lender yield.",
-      "page": 1,
-      "confidence": "medium"
-    },
-    "terms_notes": {
-      "value": "$40.0M senior secured unitranche term loan. SOFR + 650 bps, 1.00% SOFR floor, 2.0% OID. 5-year maturity, 1.0% annual amortization paid quarterly. First-priority lien including owned real estate at all three sites. Covenants: max total leverage 5.5x stepping down to 4.75x by year three; min fixed charge coverage 1.20x.",
+    "terms": {
+      "value": "$40.0M senior secured unitranche term loan. SOFR + 650 bps, 1.00% SOFR floor, 2.0% OID. 5-year maturity, 1.0% annual amortization paid quarterly. First-priority lien including owned real estate at all three sites. Covenants: max total leverage 5.5x stepping down to 4.75x by year three; min fixed charge coverage 1.20x.\nEntry costs: No lender fees stated. The 2.0% OID (issued at 98.0) is a discount that adds to lender yield.",
       "page": 1,
       "confidence": "high"
     },
@@ -84,18 +84,12 @@
       "page": 1,
       "confidence": "medium"
     },
-    "change_my_mind": {
+    "diligence": {
       "value": [
-        "Total leverage above the 5.5x covenant, or no step-down toward 4.75x by year three",
-        "Occupancy falls well below the 88% average for two quarters",
-        "The largest customer signals it will not renew in 2028",
-        "Joliet expansion start-up losses continue past the first year"
-      ],
-      "page": 2,
-      "confidence": "medium"
-    },
-    "diligence_other": {
-      "value": [
+        "Quality-of-earnings report (data room) (p. 2)",
+        "Third-party appraisals for the three owned sites (the $52M figure) (p. 1)",
+        "Largest customer contract (17% of revenue, renews 2028) (p. 1)",
+        "Leverage doesn't tie: the summary states 4.2x total leverage, but the capitalization table shows total debt of $46.5M ($40.0M term loan + $6.5M equipment financing) / $9.5M Adjusted EBITDA = 4.9x. 4.2x counts only the term loan ($40.0M / $9.5M). (p. 2)",
         "Join the lender call with management",
         "Review the quality-of-earnings report and site appraisals in the data room",
         "Power-cost sensitivity: rebuild EBITDA at +20% power prices"
@@ -115,27 +109,5 @@
       "page": 2,
       "confidence": "high"
     }
-  },
-  "diligence_documents": [
-    {
-      "text": "Quality-of-earnings report (data room)",
-      "page": 2,
-      "confidence": "high"
-    },
-    {
-      "text": "Third-party appraisals for the three owned sites (the $52M figure)",
-      "page": 1,
-      "confidence": "high"
-    },
-    {
-      "text": "Largest customer contract (17% of revenue, renews 2028)",
-      "page": 1,
-      "confidence": "medium"
-    },
-    {
-      "text": "Leverage doesn't tie: the summary states 4.2x total leverage, but the capitalization table shows total debt of $46.5M ($40.0M term loan + $6.5M equipment financing) / $9.5M Adjusted EBITDA = 4.9x. 4.2x counts only the term loan ($40.0M / $9.5M).",
-      "page": 2,
-      "confidence": "high"
-    }
-  ]
+  }
 }

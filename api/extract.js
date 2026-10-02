@@ -29,6 +29,7 @@ const FIELDS = {
   security_type: field({ type: "string", enum: ["common_stock", "etf", "bond", "lp_interest", "common_equity", "preferred_equity",
                                                  "jv_equity", "first_lien_loan", "basket"] }),
   sector: field(str),
+  company_overview: field(str),
   thesis: field(str),
   check_size: field({ type: "number" }),
   funded_pct: field({ type: "number" }),
@@ -36,11 +37,9 @@ const FIELDS = {
   months_to_50pct_back: field({ type: "integer" }),
   interim_cash: field({ type: "boolean" }),
   target_return: field(str),
-  entry_costs: field(str),
-  terms_notes: field(str),
+  terms: field(str),
   key_notes: field(strList),
-  change_my_mind: field(strList),
-  diligence_other: field(strList),
+  diligence: field(strList),
   contacts: field(strList),
   next_step: field(str)
 };
@@ -48,17 +47,9 @@ const FIELDS = {
 const SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["fields", "diligence_documents"],
+  required: ["fields"],
   properties: {
-    fields: { type: "object", additionalProperties: false, required: Object.keys(FIELDS), properties: FIELDS },
-    // Documents to request, plus numbers that don't tie inside the document. Each cites a page.
-    diligence_documents: {
-      type: "array",
-      items: {
-        type: "object", additionalProperties: false, required: ["text", "page", "confidence"],
-        properties: { text: str, page: nullable({ type: "integer" }), confidence: { type: "string", enum: ["high", "medium", "low"] } }
-      }
-    }
+    fields: { type: "object", additionalProperties: false, required: Object.keys(FIELDS), properties: FIELDS }
   }
 };
 
@@ -70,17 +61,16 @@ Rules:
 - page: the page number where the value is stated (PDF pages, or the "[Page N]" markers in pasted text). null if unknown.
 - confidence: high = stated explicitly; medium = derived from stated figures with simple arithmetic; low = ambiguous or inferred.
 - name: a short generic label for the opportunity (company descriptor plus instrument), not a person.
+- company_overview: 1-2 sentences on what the company or asset is (what it does, where, how big), with no view on the investment.
 - thesis: 2-3 sentences on why the investment could work and what drives returns.
 - check_size: the offered allocation or minimum investment for one investor, in US dollars (a number, e.g. 1000000).
 - funded_pct: share of the check funded at close, as a fraction 0-1.
 - hold_months: expected hold or maturity in months. months_to_50pct_back: months until half the capital is returned, only if the document supports it.
 - interim_cash: true if the investment pays cash (interest, dividends, distributions) before exit.
-- key_notes: 3-5 one-sentence facts or judgments the return depends on, as plain notes (no status).
-- change_my_mind: 2-4 observable events that would change the view.
-- diligence_other: 2-4 pieces of work still to do that are not document requests: calls, analysis, site visits, modelling.
+- key_notes: 3-5 one-sentence facts or judgments the return depends on, as plain notes.
+- diligence: one list, each item one line: (1) documents to request that the memo references or a lender or investor would need (data room items, agreements, reports, appraisals), citing the page in parentheses; (2) numbers that don't tie inside the document (figures stated differently in two places, or math that gives a different result from the stated figure), showing the arithmetic briefly; (3) work still to do that is not a document request (calls, analysis, site visits, modelling). Do not flag missing information as an inconsistency, and do not include opinions.
 - contacts: roles only (e.g. "Arranger deal lead"). Never include personal names, emails or phone numbers.
-- entry_costs: fees, OID, placement or management fees that affect the investor's return. terms_notes: structure and key terms.
-- diligence_documents: two kinds of item, each one line. (1) Documents to request that the memo references or that a lender or investor would need (data room items, agreements, reports, appraisals). (2) Numbers that don't tie inside the document: figures stated differently in two places, or math that gives a different result from the stated figure; show the arithmetic briefly. Do not flag missing information as an inconsistency, and do not include opinions. Return an empty list only if nothing applies.`;
+- terms: structure and key terms, then any fees, OID, placement or management fees that affect the investor's return, as one text block.`;
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return send(res, 405, { ok: false, message: "Use POST." });
@@ -114,7 +104,7 @@ module.exports = async function handler(req, res) {
     // Belt and braces: contacts must be roles, so drop anything that looks like an email or phone number.
     const c = out.fields && out.fields.contacts;
     if (c && Array.isArray(c.value)) c.value = c.value.filter(x => !/@|\d{3}[\s.-]?\d{3}[\s.-]?\d{4}/.test(x));
-    return send(res, 200, { ok: true, source: "live", fields: out.fields, diligence_documents: out.diligence_documents || [] });
+    return send(res, 200, { ok: true, source: "live", fields: out.fields });
   } catch (e) {
     const status = e instanceof UpstreamError ? e.status : 502;
     const message = status === 503 ? "Document reading is not configured on this site."
