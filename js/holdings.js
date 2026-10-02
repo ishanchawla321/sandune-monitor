@@ -1,7 +1,7 @@
-// Holdings by asset class: one card per class, each with its own columns, subtotal row, inline edit,
-// sort, "All columns" toggle (cards with more than ten columns), CSV export and an add-holding row,
-// then a total card that reconciles to NAV. Rows combine the book (Metrics) with the blotter (Positions).
-// Holdings.create() returns an instance with its own view state, so Portfolio and Pro Forma each get one.
+// Holdings by asset class: one card per class with its own columns, inline edit and sort, then a Total card
+// that reconciles to NAV. Rows combine the book (Metrics) with the blotter (Positions). Formulas live in
+// column-header tooltips. Holdings.create() returns an instance with its own view state, so Portfolio and
+// Pro Forma each get one.
 (function (root) {
   "use strict";
 
@@ -11,8 +11,6 @@
   const div = (a, b) => (b ? a / b : null);
   const num = v => (blank(v) ? 0 : Number(v));
   const perHundred = h => h.security_type === "bond" || h.security_type === "t_bill";
-  const BUCKETS = ["liquid_now", "1_3y", "3y_plus"];
-  const MAX_COMPACT = 10;
 
   // ---------------- Derived row ----------------
   function derive(h, p, nav, asOf) {
@@ -25,6 +23,7 @@
     r.pnl_pct = cost ? r.pnl / cost : null;
     r.realized = p.realized_pnl;
     r.income_itd = p.income_itd;
+    r.income_ltm = p.income_ltm;
     r.div_ltm = p.by_type.dividend.ltm + p.by_type.distribution.ltm;
     r.div_yield = div(r.div_ltm, mv);
     // (unrealized P&L + realized P&L + income since inception) / total cost of every lot bought
@@ -63,108 +62,79 @@
 
   // ---------------- Column helpers ----------------
   const F = {
-    k: v => Fmt.thousands(v), n0: v => Fmt.number(v, 0), n2: v => Fmt.number(v, 2), n3: v => Fmt.number(v, 3),
+    k: v => Fmt.thousands(v), n0: v => Fmt.number(v, 0), n2: v => Fmt.number(v, 2),
     pct1: v => (blank(v) ? "" : Fmt.pct(v, 1)), pct2: v => (blank(v) ? "" : Fmt.pct(v, 2)), pct3: v => (blank(v) ? "" : Fmt.pct(v, 3)),
     x: v => (blank(v) ? "" : Fmt.number(v, 2) + "x"), text: v => (blank(v) ? "" : String(v)), int: v => (blank(v) ? "" : String(v))
   };
   const sum = (rows, key) => rows.reduce((s, r) => s + (blank(r[key]) ? 0 : Number(r[key])), 0);
-  const col = (key, label, o) => Object.assign({ key, label, fmt: "text", value: r => r[key], compact: true }, o || {});
-  const NAME = col("name", "Name", { cls: "col-name", edit: "text", field: "name", total: "label" });
-  const PCT_NAV = col("pct_nav", "% NAV", { num: true, fmt: "pct1", total: "pct_nav" });
+  // col(key, label, { num, fmt, unit, qual, help, edit, field, scale, editable, derivedNote, cls, wrap, options, labels, nullable, after })
+  // unit and qual print once in the header, e.g. "Dividends (LTM, $K)"; help is the header tooltip (formula or method).
+  const col = (key, label, o) => Object.assign({ key, label, fmt: "text", value: r => r[key] }, o || {});
+  const NAME = col("name", "Name", { cls: "col-name", edit: "text", field: "name" });
+  const PCT_NAV = col("pct_nav", "% NAV", { num: true, fmt: "pct1" });
   const TICKER = col("ticker", "Ticker", { edit: "text", field: "ticker_or_id", nullable: true });
-  const MARK_DATE = col("mark_date", "Mark date", { edit: "date", field: "mark_date", nullable: true, compact: false });
-  const MARK_SOURCE = col("mark_source", "Mark source", { edit: "text", field: "mark_source", nullable: true, compact: false, wrap: true });
-  const LIQ = col("liquidity", "Liquidity", { value: r => r.h.liquidity_bucket, show: r => L.liquidity_bucket[r.h.liquidity_bucket] || r.h.liquidity_bucket || "",
-                    edit: "select", field: "liquidity_bucket", options: BUCKETS, labels: L.liquidity_bucket, compact: false });
-  const LIQ_DATE = col("liquidity_date", "Liquidity date", { edit: "date", field: "liquidity_date", nullable: true, compact: false });
   // Book fields that the blotter drives are editable only while the holding has no lots (or calls) yet.
   const noLots = r => !r.has_lots;
-  const money = (key, label, o) => col(key, label, Object.assign({ num: true, fmt: "k", unit: "$K", total: "sum" }, o || {}));
+  const money = (key, label, o) => col(key, label, Object.assign({ num: true, fmt: "k", unit: "$K" }, o || {}));
+  const date = (key, label, field) => col(key, label, { edit: "date", field, nullable: true });
 
-  const PRICE = (label, dp) => col("price", label, { num: true, fmt: dp === 3 ? "n3" : "n2", edit: "number", field: "price_or_mark" });
+  const PRICE = col("price", "Price", { num: true, fmt: "n2", edit: "number", field: "price_or_mark" });
   const SHARES = col("qty", "Shares", { num: true, fmt: "n0", edit: "number", field: "quantity", editable: noLots, derivedNote: "From the blotter" });
-  const AVG_COST = col("avg_cost", "Avg cost", { num: true, fmt: "n2", edit: "number", field: "cost", scale: r => r.qty || 1, editable: noLots, derivedNote: "Weighted average from the blotter" });
-  const MV = money("mv", "Market value", { edit: "number", field: "price_or_mark", scale: () => 1000, editable: r => !Metrics.isPriced(r.h) });
+  const AVG_COST = col("avg_cost", "Avg Cost", { num: true, fmt: "n2", edit: "number", field: "cost", scale: r => r.qty || 1, editable: noLots, derivedNote: "Weighted average from the blotter" });
+  const MV = money("mv", "Market Value", { edit: "number", field: "price_or_mark", scale: () => 1000, editable: r => !Metrics.isPriced(r.h) });
   const PNL = money("pnl", "Unrealized P&L");
-  const PNL_PCT = col("pnl_pct", "P&L %", { num: true, fmt: "pct1", total: rows => div(sum(rows, "pnl"), sum(rows.filter(r => r.pnl !== null), "cost")) });
-  const REALIZED = money("realized", "Realized P&L", { compact: false });
+  const INVESTED = money("invested", "Invested", { edit: "number", field: "cost", scale: () => 1000, editable: noLots, derivedNote: "Sum of fundings in the blotter" });
+  const MARK = money("mv", "Mark", { edit: "number", field: "price_or_mark", scale: () => 1000 });
+  const MOIC = col("moic", "MOIC", { num: true, fmt: "x", help: "MOIC = (mark + income received since inception) / invested" });
 
   // ---------------- Card definitions ----------------
   const CARDS = [
-    { key: "public_equity", title: "Public equity", match: h => h.asset_class === "public_equity",
-      note: "Shares, average cost and dividends come from the blotter. Price is per share; market value is price x shares. Dollar columns in $ thousands.",
-      newHolding: { asset_class: "public_equity", security_type: "common_stock", liquid: true },
-      cols: [NAME, TICKER, SHARES, AVG_COST, PRICE("Last price"), MV, PNL, PNL_PCT,
-             money("div_ltm", "Dividends (LTM)"), col("div_yield", "Dividend yield", { num: true, fmt: "pct2", total: rows => div(sum(rows, "div_ltm"), sum(rows, "mv")) }),
-             col("total_return", "Total return %", { num: true, fmt: "pct1", help: "(Unrealized P&L + realized P&L + income since inception) / total cost of all lots bought",
-                  total: rows => div(sum(rows, "pnl") + sum(rows, "realized") + sum(rows, "income_itd"), sum(rows, "invested_total")) }),
-             REALIZED, PCT_NAV, MARK_SOURCE, MARK_DATE] },
-    { key: "credit_etf", title: "Liquid credit: ETFs", match: h => h.asset_class === "credit" && h.security_type !== "bond",
-      note: "Shares and average cost come from the blotter; distributions are the trailing 12 months. Dollar columns in $ thousands.",
-      newHolding: { asset_class: "credit", security_type: "etf", liquid: true },
-      cols: [NAME, TICKER, SHARES, AVG_COST, PRICE("Last price"), MV, money("div_ltm", "Distributions (LTM)"), PNL, PNL_PCT, REALIZED, PCT_NAV, MARK_SOURCE, MARK_DATE] },
-    { key: "credit_bond", title: "Liquid credit: bonds", match: h => h.asset_class === "credit" && h.security_type === "bond",
-      note: "Prices per 100 of face. Market value and NAV use the clean price; accrued interest (30/360 since the last coupon) is shown separately and is not in NAV. YTM is solved from the clean price. Dollar columns in $ thousands.",
-      newHolding: { asset_class: "credit", security_type: "bond", liquid: true, extra: { coupon: 0.05, coupon_freq: 2 } },
+    { key: "public_equity", title: "Public Equity", match: h => h.asset_class === "public_equity",
+      cols: [NAME, TICKER, SHARES, AVG_COST, PRICE, MV, PNL,
+             money("div_ltm", "Dividends", { qual: "LTM" }),
+             col("div_yield", "Dividend Yield", { num: true, fmt: "pct2", help: "Dividends received in the last 12 months / market value" }),
+             col("total_return", "Total Return %", { num: true, fmt: "pct1",
+                  help: "Total return = (unrealized P&L + realized P&L + income since inception) / total cost of all lots bought" }),
+             PCT_NAV] },
+    { key: "credit_etf", title: "Liquid Credit, ETFs", match: h => h.asset_class === "credit" && h.security_type !== "bond",
+      cols: [NAME, TICKER, SHARES, AVG_COST, PRICE, MV, PNL, money("div_ltm", "Distributions", { qual: "LTM" }), PCT_NAV] },
+    { key: "credit_bond", title: "Liquid Credit, Bonds", match: h => h.asset_class === "credit" && h.security_type === "bond",
       cols: [NAME, col("coupon", "Coupon", { num: true, fmt: "pct3", edit: "number", field: "coupon", scale: () => 0.01 }),
-             col("maturity", "Maturity", { edit: "date", field: "maturity", nullable: true }),
+             date("maturity", "Maturity", "maturity"),
              money("qty", "Face", { edit: "number", field: "quantity", scale: () => 1000, editable: noLots, derivedNote: "From the blotter" }),
-             col("avg_cost", "Avg price", { num: true, fmt: "n2", compact: false, edit: "number", field: "cost", scale: r => (r.qty ? r.qty / 100 : 1), editable: noLots, derivedNote: "Weighted average from the blotter" }),
-             PRICE("Clean price"), money("mv", "Market value (clean)", { cls: "col-w" }),
-             money("accrued", "Accrued interest", { help: "not in NAV", cls: "col-w" }), money("coupons_ltm", "Coupons (LTM)"),
-             col("ytm", "YTM", { num: true, fmt: "pct2", total: rows => div(rows.reduce((s, r) => s + (blank(r.ytm) ? 0 : r.ytm * r.mv), 0), sum(rows.filter(r => !blank(r.ytm)), "mv")) }),
-             col("next_coupon", "Next coupon", { compact: false }), PNL, PCT_NAV, MARK_SOURCE, MARK_DATE] },
-    { key: "private_fund", title: "Private funds", match: h => h.asset_class === "private_fund",
-      note: "Paid-in, unfunded and distributions come from the blotter's capital calls and distributions. DPI = distributions / paid-in, RVPI = NAV / paid-in, TVPI = (NAV + distributions) / paid-in. Next call follows the fund's call schedule (straight-line over 3 years when none is set). Dollar columns in $ thousands.",
-      newHolding: { asset_class: "private_fund", security_type: "lp_interest", liquid: false, extra: { commitment: 0, vintage: null } },
+             col("price", "Price", { num: true, fmt: "n2", edit: "number", field: "price_or_mark", help: "Clean price per 100 of face" }),
+             money("mv", "Market Value", { help: "Clean price x face / 100" }),
+             money("accrued", "Accrued", { help: "Accrued interest, 30/360 since the last coupon date; not in NAV" }),
+             col("ytm", "YTM", { num: true, fmt: "pct2", help: "Yield to maturity solved from the clean price" }),
+             PCT_NAV] },
+    { key: "private_fund", title: "Private Funds", match: h => h.asset_class === "private_fund",
       cols: [NAME, col("vintage", "Vintage", { num: true, fmt: "int", edit: "number", field: "vintage", nullable: true }),
              money("commitment", "Commitment", { edit: "number", field: "commitment", scale: () => 1000, nullable: true, after: (h, r) => { h.unfunded = Math.max(0, num(h.commitment) - num(h.cost)); } }),
-             money("paid_in", "Paid-in", { edit: "number", field: "cost", scale: () => 1000, editable: r => !r.has_calls, derivedNote: "Sum of capital calls in the blotter", after: (h, r) => { if (!blank(h.commitment)) h.unfunded = Math.max(0, num(h.commitment) - num(h.cost)); } }),
+             money("paid_in", "Paid-In", { edit: "number", field: "cost", scale: () => 1000, editable: r => !r.has_calls, derivedNote: "Sum of capital calls in the blotter", after: (h, r) => { if (!blank(h.commitment)) h.unfunded = Math.max(0, num(h.commitment) - num(h.cost)); } }),
              money("unfunded", "Unfunded", { edit: "number", field: "unfunded", scale: () => 1000, editable: r => !r.has_calls, derivedNote: "Commitment less capital calls in the blotter" }),
-             money("distributions", "Distributions"), money("mv", "NAV", { edit: "number", field: "price_or_mark", scale: () => 1000 }),
-             col("dpi", "DPI", { num: true, fmt: "x", compact: false, total: rows => div(sum(rows, "distributions"), sum(rows, "paid_in")) }),
-             col("rvpi", "RVPI", { num: true, fmt: "x", compact: false, total: rows => div(sum(rows, "mv"), sum(rows, "paid_in")) }),
-             col("tvpi", "TVPI", { num: true, fmt: "x", total: rows => div(sum(rows, "mv") + sum(rows, "distributions"), sum(rows, "paid_in")) }),
-             col("next_call", "Next call", { num: true, value: r => (r.next_call ? r.next_call.amount : null), show: r => (r.next_call ? `Y${r.next_call.year} · ${Fmt.thousands(r.next_call.amount)}` : "—"), unit: "$K",
-                  total: rows => rows.reduce((s, r) => s + (r.next_call && r.next_call.year === 1 ? r.next_call.amount : 0), 0), totalFmt: "k" }),
-             PCT_NAV, LIQ, LIQ_DATE, MARK_SOURCE, MARK_DATE] },
-    { key: "direct", title: "Directs, co-invests and private credit", match: h => h.asset_class === "direct" || h.asset_class === "private_credit",
-      note: "Invested is the blotter's funding to date; income received is dividends, interest and distributions since inception. MOIC = (mark + income) / invested. Dollar columns in $ thousands.",
-      newHolding: { asset_class: "direct", security_type: "common_equity", liquid: false },
-      cols: [NAME, col("security_type", "Security type", { value: r => r.h.security_type, show: r => L.security_type[r.h.security_type] || r.h.security_type || "", edit: "select", field: "security_type", options: Object.keys(L.security_type), labels: L.security_type, wrap: true }),
-             money("invested", "Invested", { edit: "number", field: "cost", scale: () => 1000, editable: noLots, derivedNote: "Sum of fundings in the blotter" }),
-             money("mv", "Current mark", { edit: "number", field: "price_or_mark", scale: () => 1000 }), money("income_itd", "Income received"),
-             col("moic", "MOIC", { num: true, fmt: "x", total: rows => div(sum(rows, "mv") + sum(rows, "income_itd"), sum(rows, "invested")) }),
-             col("mark_date", "Mark date", { edit: "date", field: "mark_date", nullable: true }),
-             col("liquidity_date", "Expected liquidity", { edit: "date", field: "liquidity_date", nullable: true }),
-             PCT_NAV, LIQ, MARK_SOURCE] },
-    { key: "real_estate", title: "Real estate", match: h => h.asset_class === "real_estate",
-      note: "Invested is the blotter's funding to date; distributions are since inception. MOIC = (mark + distributions) / invested. Dollar columns in $ thousands.",
-      newHolding: { asset_class: "real_estate", security_type: "jv_equity", liquid: false },
-      cols: [NAME, money("invested", "Invested", { edit: "number", field: "cost", scale: () => 1000, editable: noLots, derivedNote: "Sum of fundings in the blotter" }),
-             money("mv", "Current mark", { edit: "number", field: "price_or_mark", scale: () => 1000 }), money("income_itd", "Distributions"),
-             col("moic", "MOIC", { num: true, fmt: "x", total: rows => div(sum(rows, "mv") + sum(rows, "income_itd"), sum(rows, "invested")) }),
-             col("mark_date", "Mark date", { edit: "date", field: "mark_date", nullable: true }), PCT_NAV, LIQ, LIQ_DATE, MARK_SOURCE] },
-    { key: "cash", title: "Cash and T-bills", match: h => h.asset_class === "cash",
-      note: "T-bill face and price per 100 come from the blotter; their yield is the bond-equivalent yield to maturity from the price. The operating cash balance moves with every blotter entry. Dollar columns in $ thousands.",
-      newHolding: { asset_class: "cash", security_type: "t_bill", liquid: true },
-      cols: [NAME, money("face_or_balance", "Face or balance", { edit: "number", field: r => (r.h.security_type === "t_bill" ? "quantity" : "price_or_mark"), scale: () => 1000, editable: r => r.h.security_type !== "t_bill" || !r.has_lots, derivedNote: "From the blotter", total: null }),
-             col("price", "Price", { num: true, fmt: "n2", edit: "number", field: "price_or_mark", editable: r => Metrics.isPriced(r.h) }),
-             MV, col("yield", "Yield", { num: true, fmt: "pct2", edit: "number", field: "yield", scale: () => 0.01, editable: r => r.h.security_type !== "t_bill", nullable: true,
-                      total: rows => div(rows.reduce((s, r) => s + (blank(r.yield) ? 0 : r.yield * r.mv), 0), sum(rows.filter(r => !blank(r.yield)), "mv")) }),
-             col("maturity", "Maturity", { edit: "date", field: "maturity", nullable: true }), PCT_NAV, MARK_SOURCE, MARK_DATE] }
+             money("distributions", "Distributions"),
+             money("mv", "NAV", { edit: "number", field: "price_or_mark", scale: () => 1000 }),
+             col("tvpi", "TVPI", { num: true, fmt: "x", help: "TVPI = (NAV + distributions) / paid-in" }),
+             PCT_NAV] },
+    { key: "direct", title: "Directs, Co-Invests and Private Credit", match: h => h.asset_class === "direct" || h.asset_class === "private_credit",
+      cols: [NAME, col("security_type", "Security", { value: r => r.h.security_type, show: r => L.security_type[r.h.security_type] || r.h.security_type || "", edit: "select", field: "security_type", options: Object.keys(L.security_type), labels: L.security_type, wrap: true }),
+             INVESTED, MARK, money("income_itd", "Income", { help: "Dividends, interest and distributions received since inception" }), MOIC,
+             date("liquidity_date", "Expected Liquidity", "liquidity_date"), PCT_NAV] },
+    { key: "real_estate", title: "Real Estate", match: h => h.asset_class === "real_estate",
+      cols: [NAME, INVESTED, MARK, money("income_itd", "Distributions"), MOIC, PCT_NAV] },
+    { key: "cash", title: "Cash and T-Bills", match: h => h.asset_class === "cash",
+      cols: [NAME, money("face_or_balance", "Balance / Face", { edit: "number", field: r => (r.h.security_type === "t_bill" ? "quantity" : "price_or_mark"), scale: () => 1000, editable: r => r.h.security_type !== "t_bill" || !r.has_lots, derivedNote: "From the blotter" }),
+             col("yield", "Yield", { num: true, fmt: "pct2", edit: "number", field: "yield", scale: () => 0.01, editable: r => r.h.security_type !== "t_bill", nullable: true,
+                  help: "T-bills: bond-equivalent yield to maturity from the price. Cash: stated rate" }),
+             date("maturity", "Maturity", "maturity"), PCT_NAV] }
   ];
   const cardFor = h => CARDS.find(c => c.match(h)) || CARDS[CARDS.length - 1];
 
   // ---------------- Instance ----------------
   function create(opts) {
     const o = Object.assign({ prefix: "hc", editable: true, badge: null, suffix: null, rowClass: null }, opts || {});
-    const ui = { sort: {}, allCols: {}, bound: false };
-    let ctx = null; // { state, onChange, holdings (with values), nav, positions, container }
-
-    const hasToggle = c => c.cols.length > MAX_COMPACT;
-    const compactCols = c => c.cols.filter(x => x.compact);
-    const colsFor = c => (ui.allCols[c.key] || !hasToggle(c) ? c.cols : compactCols(c));
+    const ui = { sort: {}, bound: false };
+    let ctx = null; // { state, onChange, nav, container, rows }
 
     const show = (c, r) => {
       if (c.show) return c.show(r);
@@ -174,22 +144,11 @@
     const canEdit = (c, r) => o.editable && !!c.edit && !r.pf && (!c.editable || c.editable(r));
     const scaleOf = (c, r) => (c.scale ? c.scale(r) : 1);
     const fieldOf = (c, r) => (typeof c.field === "function" ? c.field(r) : c.field || c.key);
-
-    function rowsFor(card) {
-      return ctx.rows.filter(r => card.match(r.h));
-    }
-
-    function totalCell(c, rows, label) {
-      if (c.total === "label") return esc(label);
-      if (c.total === null || c.total === undefined) return "";
-      if (c.total === "sum") return (F[c.fmt] || F.k)(sum(rows, c.key));
-      if (c.total === "pct_nav") return Fmt.pct(div(sum(rows, "mv"), ctx.nav), 1);
-      const v = c.total(rows);
-      return blank(v) ? "" : (F[c.totalFmt || c.fmt] || F.text)(v);
-    }
+    const rowsFor = card => ctx.rows.filter(r => card.match(r.h));
+    const headLabel = c => esc(c.label) + (c.qual || c.unit ? ` <span class="unit-hint">(${[c.qual, c.unit].filter(Boolean).join(", ")})</span>` : "");
 
     function tableHtml(card) {
-      const cols = colsFor(card);
+      const cols = card.cols;
       let rows = rowsFor(card);
       const s = ui.sort[card.key];
       const sc = s && cols.find(c => c.key === s.key);
@@ -200,37 +159,30 @@
       const head = cols.map(c => {
         const active = s && s.key === c.key;
         const aria = active ? (s.dir > 0 ? "ascending" : "descending") : "none";
-        const label = esc(c.label) + (c.unit ? ` <span class="unit-hint">(${c.unit})</span>` : "") + (c.help && c.help.length <= 12 ? ` <span class="unit-hint">(${esc(c.help)})</span>` : "");
-        return `<th class="${c.num ? "num " : ""}${c.cls || ""}" aria-sort="${aria}"${c.help && c.help.length > 12 ? ` title="${esc(c.help)}"` : ""}><button type="button" class="sort" data-hsort="${card.key}:${c.key}">${label}${active ? (s.dir > 0 ? " ▲" : " ▼") : ""}</button></th>`;
+        return `<th class="${c.num ? "num " : ""}${c.cls || ""}" aria-sort="${aria}"${c.help ? ` title="${esc(c.help)}"` : ""}><button type="button" class="sort" data-hsort="${card.key}:${c.key}">${headLabel(c)}${active ? (s.dir > 0 ? " ▲" : " ▼") : ""}</button></th>`;
       }).join("") + (o.editable ? `<th class="col-act"><span class="sr-only">Actions</span></th>` : "");
       const body = rows.map(r => `<tr data-id="${esc(r.id)}" class="${r.pf ? "pf-new" : ""}${o.rowClass ? " " + o.rowClass(r) : ""}">` + cols.map(c => {
         const editable = canEdit(c, r);
         const derived = c.derivedNote && c.editable && !c.editable(r);
-        const title = editable ? `Click to edit${c.unit === "$K" ? " ($K)" : ""}` : derived ? c.derivedNote : "";
         let text = esc(show(c, r));
-        if (c.key === "name" && r.h.from_investment) text = `<button type="button" class="link name-link" data-open-investment="${esc(r.h.from_investment)}" title="Open the investment one-pager">${text}</button>`;
+        if (c.key === "name" && r.h.from_investment) text = `<button type="button" class="link name-link" data-open-investment="${esc(r.h.from_investment)}">${text}</button>`;
         if (c.key === "name" && o.badge) text = o.badge(r) + text;
         if (c.key === "name" && o.suffix) text += o.suffix(r);
-        return `<td class="${c.num ? "num " : ""}${c.cls || ""}${c.wrap ? " wrap-sm" : ""}${editable ? " editable" : ""}${derived ? " derived" : ""}"${editable ? ` data-edit="${c.key}" data-card="${card.key}" tabindex="0"` : ""}${title ? ` title="${esc(title)}"` : ""}>${text}</td>`;
-      }).join("") + (o.editable ? `<td class="col-act"><button type="button" class="link danger" data-hdel="${esc(r.id)}" aria-label="Delete ${esc(r.name)}">Delete</button></td>` : "") + "</tr>").join("");
-      const total = `<tr class="subtotal">` + cols.map(c => `<td class="${c.num ? "num " : ""}${c.cls || ""}">${totalCell(c, rows, card.title + " subtotal")}</td>`).join("") + (o.editable ? `<td class="col-act"></td>` : "") + "</tr>";
-      const empty = rows.length ? "" : `<tr><td class="col-name muted" colspan="${cols.length + (o.editable ? 1 : 0)}">No holdings in this class.</td></tr>`;
-      const add = o.editable ? `<tfoot><tr class="addrow"><td colspan="${cols.length + 1}"><div class="addrow-inner"><button type="button" class="btn" data-hadd="${card.key}">Add holding</button></div></td></tr></tfoot>` : "";
-      return `<thead><tr>${head}</tr></thead><tbody>${empty}${body}${rows.length ? total : ""}</tbody>${add}`;
+        return `<td class="${c.num ? "num " : ""}${c.cls || ""}${c.wrap ? " wrap-sm" : ""}${editable ? " editable" : ""}${derived ? " derived" : ""}"${editable ? ` data-edit="${c.key}" data-card="${card.key}" tabindex="0"` : ""}${derived ? ` title="${esc(c.derivedNote)}"` : ""}>${text}</td>`;
+      }).join("") + (o.editable ? `<td class="col-act"><button type="button" class="link danger row-del" data-hdel="${esc(r.id)}" aria-label="Delete ${esc(r.name)}">Delete</button></td>` : "") + "</tr>").join("");
+      return `<thead><tr>${head}</tr></thead><tbody>${body}</tbody>`;
     }
 
     function cardHtml(card) {
       const rows = rowsFor(card);
-      if (!rows.length && !o.editable) return "";
+      if (!rows.length) return "";
       const mv = sum(rows, "mv");
       const id = `${o.prefix}-${card.key}`;
-      const toggle = hasToggle(card) ? `<button type="button" class="btn btn-toggle" data-hcols="${card.key}" aria-pressed="${!!ui.allCols[card.key]}">${ui.allCols[card.key] ? "Compact view" : "All columns"}</button>` : "";
       return `<section class="card hc" data-card="${card.key}" aria-labelledby="${id}-h">
         <div class="card-header">
-          <h2 id="${id}-h">${esc(card.title)} <span class="h-count muted">${rows.length} ${rows.length === 1 ? "holding" : "holdings"} · ${Fmt.millions(mv)} · ${Fmt.pct(div(mv, ctx.nav), 1)} of NAV</span></h2>
-          <div class="card-actions">${toggle}<button type="button" class="btn" data-hcsv="${card.key}">Download CSV</button></div>
+          <h2 id="${id}-h">${esc(card.title)}</h2>
+          <div class="hc-sub"><span class="hc-mv">$${Fmt.thousands(mv)}K</span><span class="hc-pct">${Fmt.pct(div(mv, ctx.nav), 1)} of NAV</span></div>
         </div>
-        <p class="note">${o.editable ? "Click a cell to edit. " : ""}${esc(card.note)}</p>
         <div class="table-wrap"><table class="grid hold" data-table="${card.key}">${tableHtml(card)}</table></div>
       </section>`;
     }
@@ -238,13 +190,11 @@
     function totalHtml() {
       const lines = CARDS.map(c => ({ c, rows: rowsFor(c) })).filter(x => x.rows.length);
       const total = sum(ctx.rows, "mv");
-      const ok = Math.abs(total - ctx.nav) < 0.5;
       return `<section class="card hc-total" aria-labelledby="${o.prefix}-total-h">
         <div class="card-header"><h2 id="${o.prefix}-total-h">Total</h2></div>
-        <div class="table-wrap"><table class="grid hold-total"><thead><tr><th class="col-name">Asset class</th><th class="num">Holdings</th><th class="num">Market value <span class="unit-hint">($K)</span></th><th class="num">% NAV</th></tr></thead>
-          <tbody>${lines.map(x => `<tr><td class="col-name">${esc(x.c.title)}</td><td class="num">${x.rows.length}</td><td class="num">${Fmt.thousands(sum(x.rows, "mv"))}</td><td class="num">${Fmt.pct(div(sum(x.rows, "mv"), ctx.nav), 1)}</td></tr>`).join("")}
-          <tr class="grandtotal"><td class="col-name">Total (NAV)</td><td class="num">${ctx.rows.length}</td><td class="num">${Fmt.thousands(total)}</td><td class="num">${Fmt.pct(div(total, ctx.nav), 1)}</td></tr></tbody></table></div>
-        <p class="note">${ok ? `The asset-class subtotals add to NAV, ${esc(Fmt.dollars(ctx.nav))}.` : `Subtotals ${esc(Fmt.dollars(total))} differ from NAV ${esc(Fmt.dollars(ctx.nav))}.`}</p>
+        <div class="table-wrap"><table class="grid hold-total"><thead><tr><th class="col-name">Asset Class</th><th class="num">Market Value <span class="unit-hint">($K)</span></th><th class="num">% NAV</th></tr></thead>
+          <tbody>${lines.map(x => `<tr><td class="col-name">${esc(x.c.title)}</td><td class="num">${Fmt.thousands(sum(x.rows, "mv"))}</td><td class="num">${Fmt.pct(div(sum(x.rows, "mv"), ctx.nav), 1)}</td></tr>`).join("")}
+          <tr class="grandtotal"><td class="col-name">NAV</td><td class="num">${Fmt.thousands(total)}</td><td class="num">${Fmt.pct(div(total, ctx.nav), 1)}</td></tr></tbody></table></div>
       </section>`;
     }
 
@@ -332,29 +282,28 @@
       ctx.onChange(true);
     }
 
-    function addHolding(card) {
-      const d = card.newHolding;
-      ctx.state.holdings.push(Object.assign({
-        id: "h-" + Date.now().toString(36), asset_class: d.asset_class, name: "New holding", ticker_or_id: "",
-        security_type: d.security_type, sector: d.asset_class === "cash" ? "Cash" : "", price_or_mark: 0, quantity: 0,
-        market_value: null, cost: null, commitment: null, unfunded: 0, call_schedule: null,
-        liquidity_bucket: d.liquid ? "liquid_now" : "3y_plus", liquidity_date: d.liquid ? Fmt.today() : null,
-        mark_source: "Manual entry", mark_date: Fmt.today()
-      }, d.extra || {}));
-      ctx.onChange(true);
-    }
-
-    function downloadCsv(card) {
-      const rows = rowsFor(card);
+    // One CSV for every holding, in dollars, with the fields behind every card.
+    function downloadCsv() {
       const q = v => { const s = blank(v) ? "" : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-      const cols = card.cols;
+      const n = v => (blank(v) ? "" : +Number(v).toFixed(6));
+      const cols = [
+        ["Asset class", r => cardFor(r.h).title], ["Name", r => r.name], ["Ticker", r => r.ticker],
+        ["Security type", r => L.security_type[r.h.security_type] || r.h.security_type], ["Sector", r => r.h.sector],
+        ["Quantity or face", r => n(r.qty)], ["Avg cost", r => n(r.avg_cost)], ["Price or mark", r => n(r.price)],
+        ["Market value", r => n(r.mv)], ["Cost", r => n(r.cost)], ["Unrealized P&L", r => n(r.pnl)], ["Realized P&L", r => n(r.realized)],
+        ["Income since inception", r => n(r.income_itd)], ["Income LTM", r => n(r.income_ltm)],
+        ["Commitment", r => n(r.commitment)], ["Paid-in", r => n(r.paid_in)], ["Unfunded", r => n(r.unfunded)], ["Distributions", r => n(r.distributions)],
+        ["Coupon", r => n(r.coupon)], ["Maturity", r => r.maturity], ["Yield or YTM", r => n(blank(r.ytm) ? r.yield : r.ytm)],
+        ["Liquidity", r => L.liquidity_bucket[r.h.liquidity_bucket] || r.h.liquidity_bucket], ["Expected liquidity", r => r.liquidity_date],
+        ["% NAV", r => n(r.pct_nav)]
+      ];
       const lines = [q("Sample data. All holdings, investments and figures are illustrative. Amounts in USD."),
-        cols.map(c => q(c.label)).join(","),
-        ...rows.map(r => cols.map(c => { const v = c.value(r); return q(typeof v === "number" ? +v.toFixed(6) : typeof v === "object" && v ? show(c, r) : v); }).join(","))];
+        cols.map(c => q(c[0])).join(","),
+        ...ctx.rows.map(r => cols.map(c => q(c[1](r))).join(","))];
       const blob = new Blob([lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = `sandune-${card.key}-sample-${ctx.state.as_of}.csv`;
+      a.download = `sandune-holdings-sample-${ctx.state.as_of}.csv`;
       document.body.appendChild(a);
       a.click();
       setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
@@ -374,12 +323,7 @@
           ui.sort[cardKey] = cur && cur.key === key ? { key, dir: -cur.dir } : { key, dir: 1 };
           return ctx.onChange(false);
         }
-        const tog = t.closest("[data-hcols]");
-        if (tog) { ui.allCols[tog.dataset.hcols] = !ui.allCols[tog.dataset.hcols]; return ctx.onChange(false); }
-        const csv = t.closest("[data-hcsv]");
-        if (csv) return downloadCsv(CARDS.find(c => c.key === csv.dataset.hcsv));
-        const add = t.closest("[data-hadd]");
-        if (add) return addHolding(CARDS.find(c => c.key === add.dataset.hadd));
+        if (t.closest("[data-hcsv]")) return downloadCsv();
         const del = t.closest("[data-hdel]");
         if (del) {
           const h = ctx.state.holdings.find(x => x.id === del.dataset.hdel);
@@ -405,7 +349,8 @@
       const positions = P.compute(holdings, state.transactions || [], state.as_of);
       ctx = { state, onChange, nav, container, rows: holdings.map(h => derive(h, positions[h.id], nav, state.as_of)) };
       bind(container);
-      container.innerHTML = CARDS.map(cardHtml).join("") + totalHtml();
+      const toolbar = o.editable ? `<div class="hc-toolbar"><h2>Holdings</h2><button type="button" class="btn" data-hcsv>Export CSV</button></div>` : "";
+      container.innerHTML = toolbar + CARDS.map(cardHtml).join("") + totalHtml();
     }
 
     return { render, CARDS };

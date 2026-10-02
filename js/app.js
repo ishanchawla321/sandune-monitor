@@ -93,6 +93,7 @@
   // the re-render waits until they leave it so their edit isn't wiped.
   function paintPriceToggle() {
     document.querySelectorAll("[data-price-mode]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.priceMode === root.Prices.mode())));
+    document.getElementById("price-seed").textContent = "Seed " + root.Prices.seedShort();
     document.getElementById("price-status").textContent = root.Prices.statusText();
   }
   function renderWhenIdle() {

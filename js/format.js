@@ -35,9 +35,9 @@
 
   Fmt.LABELS = {
     // Key order is the display order in charts, the holdings table and asset-class dropdowns.
-    asset_class: { public_equity: "Public equity", credit: "Liquid credit", private_credit: "Private credit",
-                   private_fund: "Private funds", direct: "Directs / co-invests", real_estate: "Real estate",
-                   cash: "Cash and T-bills" },
+    asset_class: { public_equity: "Public Equity", credit: "Liquid Credit", private_credit: "Private Credit",
+                   private_fund: "Private Funds", direct: "Directs / Co-Invests", real_estate: "Real Estate",
+                   cash: "Cash and T-Bills" },
     liquidity_bucket: { liquid_now: "Liquid now", "1_3y": "1-3 years", "3y_plus": "3+ years" },
     security_type: { common_stock: "Common stock", etf: "ETF", bond: "Bond", t_bill: "T-bill", lp_interest: "LP interest",
                      common_equity: "Common equity", preferred_equity: "Preferred equity", jv_equity: "JV equity",
@@ -46,7 +46,7 @@
     type: { public: "Public", private_equity: "Private equity", private_credit: "Private credit",
             venture: "Venture (late-stage)" },
     theme_status: { exploring: "Exploring", active: "Active", retired: "Retired" },
-    haircut_group: { public_equity: "Public equity", credit: "Liquid credit", t_bill: "T-bills" }
+    haircut_group: { public_equity: "Public Equity", credit: "Liquid Credit", t_bill: "T-Bills" }
   };
 
   root.Fmt = Fmt;

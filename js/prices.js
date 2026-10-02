@@ -1,8 +1,7 @@
 // Live prices. In Live mode, quotes from /api/quote overlay the seed prices of public equities and ETFs
 // (never stored); tickers without a quote are tagged "cached, as of <seed date>". Seed mode shows the
 // seed book exactly as hand-checked. Holdings whose price was edited by hand keep the edited price.
-// Market caps for theme company lists come from /api/profile in Live mode and fall back silently to the
-// value stored on the theme.
+// Market caps for theme company lists come from /api/profile in Live mode only; the card shows "—" otherwise.
 (function (root) {
   "use strict";
 
@@ -69,22 +68,26 @@
     if (ui.mode === "live") refresh(state);
   }
 
-  // Live market cap for a theme company ticker, or null (the caller falls back to the stored value).
+  // Live market cap for a theme company ticker, or null (the card then shows "—").
   function marketCap(ticker) {
     if (ui.mode !== "live") return null;
     const p = ui.profiles[String(ticker || "").toUpperCase()];
     return p && p.market_cap > 0 ? p.market_cap : null;
   }
 
+  // The seed date as "9/28" for the header toggle.
+  function seedShort() { const m = /^\d{4}-(\d{2})-(\d{2})$/.exec(seedDate || ""); return m ? `${+m[1]}/${+m[2]}` : seedDate; }
+  function clock(iso) { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); }
+
+  // Price source, shown once in the header next to the Live | Seed toggle: "Finnhub 3:15 PM" or "Cached 9/28".
   function statusText() {
-    if (ui.mode === "seed") return `Seed prices, ${seedDate}`;
-    if (ui.status === "live") return `Live · Finnhub, ${fmtTime(ui.fetchedAt)}`;
-    if (ui.status === "loading") return "Fetching live prices…";
-    return `Cached, as of ${seedDate}`;
+    if (ui.mode === "seed" || ui.status === "loading" || ui.status === "idle") return "";
+    if (ui.status === "live") return `· Finnhub ${clock(ui.fetchedAt)}`;
+    return `· Cached ${seedShort()}`;
   }
 
   root.Prices = {
-    init, refresh, setMode, marketCap, statusText,
+    init, refresh, setMode, marketCap, statusText, seedShort,
     mode: () => ui.mode,
     onUpdate: fn => ui.listeners.push(fn)
   };

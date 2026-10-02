@@ -12,12 +12,11 @@
     <h1>Sandune Monitor</h1>
     <div class="header-tools">
       <div class="price-toggle" role="group" aria-label="Price source">
-        <span class="muted">Prices:</span>
         <button type="button" class="seg" data-price-mode="live" aria-pressed="true">Live</button>
-        <button type="button" class="seg" data-price-mode="seed" aria-pressed="false">Seed (9/28)</button>
+        <button type="button" class="seg" data-price-mode="seed" aria-pressed="false" id="price-seed">Seed</button>
         <span class="price-status muted" id="price-status" role="status"></span>
       </div>
-      <button type="button" class="btn" id="reset">Reset to sample data</button>
+      <button type="button" class="btn" id="reset">Reset to Sample Data</button>
     </div>
   </div>
   <p class="banner" role="note">Sample data. All holdings, investments and figures are illustrative.</p>
@@ -30,9 +29,9 @@
     <button type="button" role="tab" id="tabbtn-ideas" data-tab="opportunities/ideas" aria-controls="tab-ideas" aria-selected="false" tabindex="-1">Ideas</button>
   </nav>
   <nav class="nav-sub" role="tablist" aria-label="Portfolio views" data-section="portfolio" hidden>
-    <button type="button" role="tab" id="tabbtn-blotter" data-tab="portfolio/blotter" aria-controls="tab-blotter" aria-selected="false" tabindex="-1">Investment blotter</button>
+    <button type="button" role="tab" id="tabbtn-blotter" data-tab="portfolio/blotter" aria-controls="tab-blotter" aria-selected="false" tabindex="-1">Investment Blotter</button>
     <button type="button" role="tab" id="tabbtn-portfolio" data-tab="portfolio/current" aria-controls="tab-portfolio" aria-selected="true">Current</button>
-    <button type="button" role="tab" id="tabbtn-proforma" data-tab="portfolio/proforma" aria-controls="tab-proforma" aria-selected="false" tabindex="-1">Pro forma analysis</button>
+    <button type="button" role="tab" id="tabbtn-proforma" data-tab="portfolio/proforma" aria-controls="tab-proforma" aria-selected="false" tabindex="-1">Pro Forma Analysis</button>
   </nav>
 </header>
 
@@ -48,12 +47,7 @@
 
   <section id="tab-ideas" role="tabpanel" aria-labelledby="tabbtn-ideas" hidden>
     <section class="card" aria-labelledby="inv-h">
-      <div class="card-header">
-        <h2 id="inv-h">Prospective investments <span class="h-count muted" id="id-prospective-count"></span></h2>
-        <div class="card-actions">
-          <button type="button" class="btn btn-toggle" id="id-cols" aria-pressed="false">All columns</button>
-        </div>
-      </div>
+      <div class="card-header"><h2 id="inv-h">Prospective Investments</h2></div>
       <div id="id-intake"></div>
       <div class="filters" id="id-filters"></div>
       <div class="table-wrap">
@@ -63,15 +57,13 @@
     <div id="id-card" class="card-slot"></div>
 
     <section class="card" aria-labelledby="done-h">
-      <div class="card-header">
-        <h2 id="done-h">Completed investments <span class="h-count muted" id="id-completed-count"></span></h2>
-      </div>
+      <div class="card-header"><h2 id="done-h">Completed Investments</h2></div>
       <div id="id-completed"></div>
     </section>
     <div id="id-card-completed" class="card-slot"></div>
 
     <details class="card passed" id="id-passed">
-      <summary>Passed <span class="h-count muted" id="id-passed-count"></span></summary>
+      <summary>Passed</summary>
       <div id="id-passed-list"></div>
     </details>
     <div id="id-card-passed" class="card-slot"></div>
@@ -79,46 +71,41 @@
   </div>
 
   <section id="tab-portfolio" role="tabpanel" aria-labelledby="tabbtn-portfolio" hidden>
-    <p class="asof" id="pf-asof"></p>
-
     <div class="tiles" id="pf-tiles"></div>
     <div class="card dp-build" id="pf-dp-build" hidden></div>
 
     <div class="charts">
       <figure class="card">
-        <figcaption>Exposure by asset class, % of NAV</figcaption>
-        <div class="chart-box"><canvas id="pf-chart-class" role="img" aria-label="Horizontal bar chart of exposure by asset class as a percent of NAV. Figures are in the holdings table."></canvas></div>
+        <figcaption>Exposure by Asset Class, % of NAV</figcaption>
+        <div class="chart-box"><canvas id="pf-chart-class" role="img" aria-label="Horizontal bar chart of exposure by asset class as a percent of NAV."></canvas></div>
       </figure>
       <figure class="card">
-        <figcaption>Exposure by sector, % of NAV</figcaption>
-        <div class="chart-box"><canvas id="pf-chart-sector" role="img" aria-label="Horizontal bar chart of exposure by sector as a percent of NAV, excluding cash. Figures are in the holdings table."></canvas></div>
-        <p class="note">% of NAV excl. cash.</p>
+        <figcaption>Exposure by Sector, % of NAV ex-Cash</figcaption>
+        <div class="chart-box"><canvas id="pf-chart-sector" role="img" aria-label="Horizontal bar chart of exposure by sector as a percent of NAV, excluding cash."></canvas></div>
       </figure>
       <figure class="card card-wide">
-        <figcaption>Liquidity ladder and projected capital calls, next 5 years ($M)</figcaption>
+        <figcaption title="Ladder = cash and T-bills + holdings liquid by that date − cumulative capital calls. Calls follow each fund's call schedule, straight-line over 3 years when none is set.">Liquidity Ladder and Projected Capital Calls, Next 5 Years ($M)</figcaption>
         <div class="chart-sub">Liquidity ladder</div>
         <div class="chart-box chart-ladder"><canvas id="pf-chart-ladder" role="img" aria-label="Line chart of the liquidity ladder from now through year 5, in $M."></canvas></div>
         <div class="chart-sub">Projected capital calls</div>
         <div class="chart-box chart-calls"><canvas id="pf-chart-calls" role="img" aria-label="Bar chart of projected capital calls for years 1 to 5, in $M, on the same year axis as the ladder above."></canvas></div>
-        <p class="note">Ladder = cash and T-bills + holdings liquid by that date − cumulative capital calls.</p>
       </figure>
     </div>
 
     <div id="pf-holdings" class="hc-stack" aria-label="Holdings by asset class"></div>
-
   </section>
 
   <section id="tab-blotter" role="tabpanel" aria-labelledby="tabbtn-blotter" hidden>
     <section class="card" aria-labelledby="bl-h" id="pf-blotter">
       <div class="card-header">
-        <h2 id="bl-h">Blotter <span class="h-count muted" id="bl-count"></span></h2>
+        <h2 id="bl-h">Investment Blotter</h2>
         <div class="card-actions">
-          <button type="button" class="btn" id="bl-csv">Download CSV</button>
+          <button type="button" class="btn" id="bl-new" aria-expanded="false" aria-controls="bl-form">New Entry</button>
+          <button type="button" class="btn" id="bl-csv">Export CSV</button>
         </div>
       </div>
-      <p class="note">Every buy, sell, draw, call, distribution and income item behind the book. A new entry posts to its holding and to operating cash straight away. Sample data.</p>
-      <div id="bl-form"></div>
-      <div class="filters" id="bl-filters"></div>
+      <div id="bl-form" hidden></div>
+      <div class="filters bl-filters" id="bl-filters"></div>
       <div class="table-wrap">
         <table class="grid blotter" id="bl-table"></table>
       </div>
@@ -127,41 +114,40 @@
 
   <section id="tab-proforma" role="tabpanel" aria-labelledby="tabbtn-proforma" hidden>
     <section class="card" aria-labelledby="pf2-sel-h">
-      <div class="card-header">
-        <h2 id="pf2-sel-h">Select prospective investments to model. <span class="h-count muted" id="pf2-sel-count"></span></h2>
-      </div>
-      <p class="note">Every prospective investment (Watching, Researching or Late stage). Tick one, set its position size, funded %, upfront fee % and funding source, and the book below updates. Sample data.</p>
+      <div class="card-header"><h2 id="pf2-sel-h">Select Prospective Investments</h2></div>
       <div class="table-wrap">
-        <table class="grid" id="pf2-selector"></table>
+        <table class="grid selector" id="pf2-selector"></table>
       </div>
-      <div id="pf2-trades" class="pf-trades"></div>
+      <div id="pf2-warnings"></div>
     </section>
 
     <div class="pf-grid">
       <section class="card pf-main" aria-labelledby="pf2-baf-h">
-        <div class="card-header"><h2 id="pf2-baf-h">Current vs pro forma</h2></div>
+        <div class="card-header"><h2 id="pf2-baf-h">Current vs Pro Forma</h2></div>
         <div class="table-wrap">
           <table class="grid baf" id="pf2-table"></table>
         </div>
         <div id="pf2-pre" class="pre-breaches"></div>
       </section>
       <aside class="card pf-limits" aria-labelledby="pf2-limits-h">
-        <div class="card-header"><h2 id="pf2-limits-h">Limits and haircuts</h2></div>
-        <p class="note">Shared with the Portfolio tab. Changes apply to both.</p>
+        <div class="card-header"><h2 id="pf2-limits-h">Limits and Haircuts</h2></div>
         <div id="pf2-limits" class="limits-grid"></div>
       </aside>
     </div>
 
     <figure class="card">
-      <figcaption>Liquidity ladder, before and after ($M)</figcaption>
+      <figcaption title="Ladder = cash and T-bills + holdings liquid by that date − cumulative capital calls, before and after the selected trades.">Liquidity Ladder, Before and After ($M)</figcaption>
       <div class="chart-box chart-ladder"><canvas id="pf2-chart-ladder" role="img" aria-label="Line chart of the liquidity ladder before the trade (gray) and after the trade (navy), now through year 5, same axis."></canvas></div>
       <div class="chart-sub">After-trade capital calls</div>
       <div class="chart-box chart-calls"><canvas id="pf2-chart-calls" role="img" aria-label="Bar chart of after-trade projected capital calls, years 1 to 5, aligned with the ladder above."></canvas></div>
     </figure>
 
     <section aria-labelledby="pf2-hold-h" class="hc-group">
-      <h2 id="pf2-hold-h" class="group-title">Pro forma holdings <span class="h-count muted">new rows marked PF; holdings sold to fund a trade show their reduced value</span></h2>
-      <div id="pf2-holdings" class="hc-stack"></div>
+      <div class="group-head">
+        <h2 id="pf2-hold-h" class="group-title">Pro Forma Holdings</h2>
+        <button type="button" class="btn" id="pf2-hold-toggle" aria-expanded="false" aria-controls="pf2-holdings">Show Pro Forma Holdings</button>
+      </div>
+      <div id="pf2-holdings" class="hc-stack" hidden></div>
     </section>
   </section>
 </main>
