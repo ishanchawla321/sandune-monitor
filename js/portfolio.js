@@ -1,9 +1,9 @@
-// Portfolio > Current: tiles, charts, holdings by asset class (js/holdings.js) and the blotter (js/blotter.js).
+// Portfolio > Current: tiles, charts and holdings by asset class (js/holdings.js). The blotter has its own tab (js/blotter.js).
 (function (root) {
   "use strict";
 
   const Fmt = root.Fmt, Metrics = root.Metrics;
-  const L = Fmt.LABELS;
+  const L = Fmt.LABELS, esc = Fmt.esc;
   const CLASS_ORDER = Object.keys(L.asset_class);
 
   const ACCENT = "#1f3a5f", MUTED = "#a3adb8", GRID = "#e6e8ec", INK = "#1a2230", INK2 = "#5b6470";
@@ -20,19 +20,23 @@
     const dpBreach = dp.total < s.limits.dry_powder_floor;
     const ilBreach = il.pct_incl_unfunded > s.limits.illiquid_incl_unfunded_pct;
     const status = (breach, text) => `<span class="status-pill ${breach ? "is-breach" : "is-ok"}">${breach ? "Breach" : "Within limit"}</span> <span class="tile-sub-text">${text}</span>`;
+    // Formulas sit in tooltips on the tiles; the dry powder tile also opens its build on click.
+    const haircuts = dp.lines.map(l => `${L.haircut_group[l.key] || l.key} ${Fmt.pct(l.haircut, 0)}`).join(", ");
+    const dpTip = `Dry powder = cash + liquid holdings x haircut (${haircuts}) - unfunded commitments - reserve ${Fmt.millions(dp.reserve)}. Click for the build.`;
+    const ilTip = "Illiquid % = value in the 1-3 year and 3+ year buckets / NAV. Incl. unfunded adds unfunded commitments to the numerator.";
+    const unfTip = "Capital calls next 12 months follow each fund's call schedule, straight-line over 3 years when none is set.";
 
     document.getElementById("pf-tiles").innerHTML = `
-      <div class="tile"><div class="tile-label">NAV</div><div class="tile-value">${Fmt.millions(m.nav)}</div>
-        <div class="tile-sub">Incl. cash and T-bills</div></div>
-      <div class="tile"><div class="tile-label">Cash</div><div class="tile-value">${Fmt.millions(m.cash_and_bills)}</div>
-        <div class="tile-sub">Cash ${Fmt.millions(m.cash_balance)} + T-bills ${Fmt.millions(m.cash_and_bills - m.cash_balance)}</div></div>
-      <div class="tile"><div class="tile-label">Unfunded</div><div class="tile-value">${Fmt.millions(m.unfunded)}</div>
-        <div class="tile-sub">Calls next 12 mo ${Fmt.millions(calls12)}</div></div>
-      <button type="button" class="tile tile-button" id="pf-dp-tile" aria-expanded="${ui.dpOpen}" aria-controls="pf-dp-build">
-        <div class="tile-label">Dry powder <span class="tile-hint">${ui.dpOpen ? "Hide build" : "Show build"}</span></div>
+      <div class="tile" title="NAV = market value of every holding including cash and T-bills"><div class="tile-label">NAV</div><div class="tile-value">${Fmt.millions(m.nav)}</div></div>
+      <div class="tile"><div class="tile-label">Cash and T-Bills</div><div class="tile-value">${Fmt.millions(m.cash_and_bills)}</div>
+        <div class="tile-sub">Cash ${Fmt.millions(m.cash_balance)} · T-bills ${Fmt.millions(m.cash_and_bills - m.cash_balance)}</div></div>
+      <div class="tile" title="${esc(unfTip)}"><div class="tile-label">Unfunded</div><div class="tile-value">${Fmt.millions(m.unfunded)}</div>
+        <div class="tile-sub">Calls next 12 months ${Fmt.millions(calls12)}</div></div>
+      <button type="button" class="tile tile-button" id="pf-dp-tile" aria-expanded="${ui.dpOpen}" aria-controls="pf-dp-build" title="${esc(dpTip)}">
+        <div class="tile-label">Dry Powder <span class="tile-hint">${ui.dpOpen ? "Hide Build" : "Show Build"}</span></div>
         <div class="tile-value">${Fmt.millions(dp.total)}</div>
         <div class="tile-sub">${status(dpBreach, "floor " + Fmt.millions(s.limits.dry_powder_floor))}</div></button>
-      <div class="tile"><div class="tile-label">Illiquid</div>
+      <div class="tile" title="${esc(ilTip)}"><div class="tile-label">Illiquid</div>
         <div class="tile-value">${Fmt.pct(il.pct)} <span class="tile-value-2">${Fmt.pct(il.pct_incl_unfunded)} incl. unfunded</span></div>
         <div class="tile-sub">${status(ilBreach, "limit " + Fmt.pct(s.limits.illiquid_incl_unfunded_pct, 0) + " incl. unfunded")}</div></div>`;
 
@@ -41,7 +45,7 @@
     if (ui.dpOpen) {
       const line = (label, value, haircut, counted, cls) =>
         `<tr class="${cls || ""}"><td>${label}</td><td class="num">${value}</td><td class="num">${haircut}</td><td class="num">${counted}</td></tr>`;
-      build.innerHTML = `<div class="card-header"><h2>Dry powder build</h2></div><div class="table-wrap"><table class="grid build">
+      build.innerHTML = `<div class="card-header"><h2>Dry Powder Build</h2></div><div class="table-wrap"><table class="grid build">
         <thead><tr><th>Step</th><th class="num">Value</th><th class="num">Haircut</th><th class="num">Counted</th></tr></thead>
         <tbody>
         ${line("Cash balance", Fmt.dollars(dp.cash), "", Fmt.dollars(dp.cash))}
@@ -139,12 +143,9 @@
     ctx = { state, onChange };
     bind();
     const m = Metrics.summary(state.holdings, state.settings, state.as_of);
-    document.getElementById("pf-asof").textContent =
-      `As of ${state.as_of}. Public prices are Yahoo Finance closes; bond and T-bill prices are sample prices; private marks are the latest GP or sponsor statements. Positions, cost and income come from the blotter below.`;
     renderTiles(m, state.settings);
     renderCharts(m);
     holdings.render(document.getElementById("pf-holdings"), state, m.holdings, m.nav, onChange);
-    root.Blotter.render(state, onChange);
     return m;
   }
 

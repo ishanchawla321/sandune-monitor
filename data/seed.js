@@ -10,7 +10,7 @@
 // transactions[] is the blotter that today's book is derived from; see the note above that block.
 
 window.SEED = {
-  version: 9,
+  version: 11,
   as_of: "2026-09-28",
   sample_data: true,
 
@@ -336,36 +336,31 @@ window.SEED = {
 
   // Investments carry every Holding field plus pipeline fields. Amounts in dollars; funded_pct is a fraction.
   // theme_id links an investment to at most one theme; it mirrors themes[].linked_investment_ids.
-  // key_notes[] and change_my_mind[]: plain strings, one bullet each.
-  // diligence_documents[] (documents to request, numbers that don't tie) and diligence_other[] (calls, analysis):
-  //   { id, text, done: null | "YYYY-MM-DD" }. Ticking an item sets done.
-  // signals[]: dated notes { id, kind: "note", date, text } and price signals { id, kind: "price", date, ticker, price, source }
-  // decision_log[]: { date, from, to, reason }
+  // company_overview: 1-2 sentences. key_notes[] (Notes) and diligence[] (Diligence to do): plain strings, one bullet each.
+  // terms: one text block (structure, terms and fees). decision_log[]: { date, from, to, reason }.
   investments: [
     { id: "i-bway", asset_class: "public_equity", name: "BrainsWay (BWAY)", ticker_or_id: "BWAY",
       security_type: "common_stock", sector: "Health Care", price_or_mark: 13.25, quantity: 250000 / 13.25, market_value: null, cost: null,
       commitment: null, unfunded: 0, call_schedule: null, liquidity_bucket: "liquid_now", liquidity_date: null,
       mark_source: "Yahoo Finance close", mark_date: "2026-09-28",
       status: "researching", type: "public", theme_id: "t-tms",
-      thesis: "TMS device maker positioned to benefit if accelerated protocols lift clinic demand for systems.",
+      company_overview: "TMS device maker; the only company with a cleared and covered accelerated protocol.",
+      thesis: "Priced as the OEM winner. Worth tracking for reimbursement signals; I'm skeptical of the moat because pure-play TMS competes with Spravato and psychedelics for the same patients.",
       key_notes: [
-        "Accelerated-protocol demand lifts system placements",
-        "Growth is funded without a heavily dilutive equity raise"
+        "~6.5x revenue and ~34x adj. EBITDA; Q2 2026 revenue +35% at a 20% adj. EBITDA margin.",
+        "Invested $3M in Radial (Jul 2026), funding operators directly."
       ],
-      change_my_mind: ["Quarterly system placements fall year over year"],
-      diligence_documents: [
-        { id: "i-bway-dd1", text: "Latest 10-K and 10-Q", done: null },
-        { id: "i-bway-dd2", text: "Balance sheet runway and any ATM or shelf filings", done: null }
+      diligence: [
+        "Latest 10-K and 10-Q",
+        "Balance sheet runway and any ATM or shelf filings",
+        "Payer coverage policies for accelerated protocols",
+        "Calls with two TMS clinic operators"
       ],
-      diligence_other: [
-        { id: "i-bway-do1", text: "Payer coverage policies for accelerated protocols", done: null },
-        { id: "i-bway-do2", text: "Calls with two TMS clinic operators", done: null }
-      ],
+      terms: "Entry costs: Not applicable (public market purchase)",
       contacts: [],
       check_size: 250000, funded_pct: 1.0, hold_months: null, months_to_50pct_back: null, interim_cash: false,
-      target_return: "", entry_costs: "Not applicable (public market purchase)", terms_notes: "",
+      target_return: "",
       next_step: "Review latest quarterly placements and cash runway", next_step_date: "2026-10-09",
-      tickers: ["BWAY"], signals: [],
       decision_log: [{ date: "2026-09-28", from: null, to: "researching", reason: "Split out of the TMS theme" }] },
 
     { id: "i-stim", asset_class: "public_equity", name: "Neuronetics (STIM)", ticker_or_id: "STIM",
@@ -373,25 +368,22 @@ window.SEED = {
       commitment: null, unfunded: 0, call_schedule: null, liquidity_bucket: "liquid_now", liquidity_date: null,
       mark_source: "Yahoo Finance close", mark_date: "2026-09-28",
       status: "researching", type: "public", theme_id: "t-tms",
-      thesis: "TMS device maker with a clinic-facing model; upside if accelerated protocols expand treatment volume and its cash lasts.",
+      company_overview: "Maker of NeuroStar, the first cleared TMS device (2008); owns the Greenbrook clinic network after its Dec 2024 acquisition.",
+      thesis: "Device maker plus operator. Upside depends on filling Greenbrook's chairs, the same utilization problem that broke Greenbrook as a standalone.",
       key_notes: [
-        "Clinic customers keep adding treatment capacity",
-        "Cash runway lasts to breakeven without a discounted raise"
+        "Greenbrook reached 183 centers by 2022 before referrals failed to keep pace with the build-out."
       ],
-      change_my_mind: ["An equity raise priced at a discount to market"],
-      diligence_documents: [
-        { id: "i-stim-dd1", text: "Latest 10-K and 10-Q", done: null },
-        { id: "i-stim-dd2", text: "Balance sheet runway and any ATM or shelf filings", done: null }
+      diligence: [
+        "Latest 10-K and 10-Q",
+        "Balance sheet runway and any ATM or shelf filings",
+        "Payer coverage policies for accelerated protocols",
+        "Calls with two TMS clinic operators"
       ],
-      diligence_other: [
-        { id: "i-stim-do1", text: "Payer coverage policies for accelerated protocols", done: null },
-        { id: "i-stim-do2", text: "Calls with two TMS clinic operators", done: null }
-      ],
+      terms: "Entry costs: Not applicable (public market purchase)",
       contacts: [],
       check_size: 250000, funded_pct: 1.0, hold_months: null, months_to_50pct_back: null, interim_cash: false,
-      target_return: "", entry_costs: "Not applicable (public market purchase)", terms_notes: "",
+      target_return: "",
       next_step: "Check cash runway and debt covenants", next_step_date: "2026-10-09",
-      tickers: ["STIM"], signals: [],
       decision_log: [{ date: "2026-09-28", from: null, to: "researching", reason: "Split out of the TMS theme" }] },
 
     { id: "i-carwash", asset_class: "direct", name: "Car wash SPV (Anchorage)", ticker_or_id: "SPV-CW",
@@ -399,81 +391,60 @@ window.SEED = {
       commitment: 1000000, unfunded: 0, call_schedule: null, liquidity_bucket: "3y_plus", liquidity_date: null,
       mark_source: null, mark_date: null,
       status: "IC", type: "private_equity", theme_id: null,
-      thesis: "Preferred equity in a three-site express car wash platform in Anchorage. The flagship is open and ramping; two more sites are planned. Returns depend on the membership ramp and on the next two sites opening on time.",
+      company_overview: "Single-asset SPV in an express car wash platform in Anchorage. One site is open (opened mid-2025): 4,545 members in April 2026 at $49-59 per month exterior and $120 detail, ~$0.7M annualized EBITDA. Two more sites have not broken ground.",
+      thesis: "My view is pass. The plan needs the open site at $5.3M of EBITDA (7.8x the April run-rate) and two unbuilt sites at $3.4-3.5M each, and the preference that is supposed to protect us exists only in the marketing deck.",
       key_notes: [
-        "Flagship membership ramps from ~4,500 (April run-rate) toward the ~8,400 base case",
-        "Sites 2 and 3 break ground and open on schedule",
-        "An exit at 3.0x+ EBITDA is achievable, which is what the conservative case needs just to return capital plus the pref"
+        "Scale still clears: Mister Car Wash was taken private at ~9.0x FY25 adj. EBITDA ($3.1bn EV, Feb 2026). Below scale the sector rolled over after new builds peaked in 2022; Zips filed Chapter 11 in Feb 2025 on ~$654M of debt.",
+        "Industry churn of 4.5-7.6% a month means a site refills a quarter to half of its base each year to stay flat.",
+        "The plan implies ~55% of the deck's own Anchorage membership pool in a ~287K-person market where one competitor runs 7 sites and another just opened its second at $40-60 a month.",
+        "The sale-leaseback on sites 2 and 3 is not downside protection: SLB rent sits ahead of our equity and should be treated as debt.",
+        "My cases: base 1.26x / ~5% net after site build costs; two downside cases 0.27-0.44x; only the deck case works (2.39x / ~24%).",
+        "Stated hold differs across documents: 3, 5 and 5-7 years."
       ],
-      change_my_mind: [
-        "Monthly members below ramp for two quarters",
-        "Site 2 construction slips past its start window",
-        "Sale-leaseback not executed"
+      diligence: [
+        "Sponsor operating agreement: confirm the 1.0x preference and 8% cumulative dividend and their rank vs. the convert.",
+        "SPV LLC agreement describes the holding as Class A Voting Units, not preferred; reconcile.",
+        "Monthly membership counts since opening.",
+        "Permits, budgets and funding for sites 2 and 3.",
+        "Reporting rights and manager removal rights (none today).",
+        "Whether the catch-up can be waived."
       ],
-      diligence_documents: [
-        { id: "i-carwash-dd1", text: "Conservative-case exit multiples: text says 2.8x/3.7x, table says 3.0x/4.0x. Math supports the table ($20.0M / $6.7M = 3.0x; $27.1M / $6.7M = 4.0x).", done: null },
-        { id: "i-carwash-dd2", text: "Hold: headline is 3 years, capital-recovery footnote refers to a 5-year period.", done: null },
-        { id: "i-carwash-dd3", text: "Flagship EBITDA must go from $0.68M April run-rate to $5.3M base case, a ~7.8x ramp.", done: null },
-        { id: "i-carwash-dd4", text: "Entry fee % not in the deck; confirm in offering documents.", done: null },
-        { id: "i-carwash-dd5", text: "Offering documents confirming the upfront fee % and the 8%/yr catch-up mechanics", done: null },
-        { id: "i-carwash-dd6", text: "Monthly membership counts since the flagship opened", done: null },
-        { id: "i-carwash-dd7", text: "Permits, construction budgets and timelines for sites 2 and 3", done: null },
-        { id: "i-carwash-dd8", text: "Sale-leaseback LOI or term sheet", done: null }
-      ],
-      diligence_other: [
-        { id: "i-carwash-do1", text: "Map competing express washes in Anchorage", done: null },
-        { id: "i-carwash-do2", text: "Sponsor reference calls", done: null },
-        { id: "i-carwash-do3", text: "Underwrite the membership ramp against comparable openings", done: null }
-      ],
+      terms: "Class B units of a single-asset SPV behind site-level debt, SLB rent, the open site's lease, site partners' 12% pref on their 17-32% of each site, and a $2.5M 8% convert. On a $2M check: $54.6K of prepaid management fees (18 months) and a $125.3K catch-up to earlier members, leaving ~$1.82M invested (Oct 15 close). Carry 20% from the first dollar, no hurdle, stepping to 25% above 4.0x.",
       contacts: ["Sponsor deal lead"],
       check_size: 1000000, funded_pct: 1.0, hold_months: 36, months_to_50pct_back: 36, interim_cash: false,
-      target_return: "3x+ gross MOIC over ~3 years",
-      entry_costs: "Upfront management fee plus an 8%/yr catch-up from Dec 5, 2025 (fee % not yet confirmed)",
-      terms_notes: "1.0x liquidation preference plus 8% cumulative dividend, paid at exit.",
+      target_return: "Deck case 2.39x / ~24% net; my base 1.26x / ~5% net; probability-weighted ~1.0x.",
       next_step: "IC vote", next_step_date: "2026-10-06",
-      tickers: [], signals: [],
-      decision_log: [{ date: "2026-09-10", from: "researching", to: "IC", reason: "Moved to IC" }] },
+      decision_log: [{ date: "2026-09-10", from: "researching", to: "IC", reason: "Moved to late stage" }] },
 
     { id: "i-rpa", asset_class: "private_credit", name: "RPA services first-lien loan", ticker_or_id: "LN-RPA",
       security_type: "first_lien_loan", sector: "Technology", price_or_mark: null, quantity: null, market_value: null, cost: null,
       commitment: 1000000, unfunded: 350000, call_schedule: null, liquidity_bucket: "3y_plus", liquidity_date: null,
       mark_source: null, mark_date: null,
       status: "researching", type: "private_credit", theme_id: "t-ai",
-      thesis: "First-lien amortizing term loan to an RPA implementation services firm, with warrants. Cash yield covers most of the return; warrants add upside with a floor and a cap.",
+      company_overview: "RPA and AI implementation and managed services firm founded in 2017, with offshore delivery in India. Revenue grew from $12.4M (FY22) to $29.5M (FY25E) across 80+ clients; top 5 under 15% of revenue, largest client 4%, ~96% recurring, 90%+ retention.",
+      thesis: "My recommendation. A senior secured coupon with clear exit visibility (48-month maturity, amortizing from month 17) and warrant upside if the founders sell in 2-3 years. I would lend at this attachment point but would not own the equity.",
       key_notes: [
-        "The primary software partner relationship renews on the same terms (agreement expires in ~2 years)",
-        "Recurring revenue stays at or above $20M, the ARR covenant floor",
-        "Adjusted EBITDA quality holds: $4.3M adjusted vs $3.6M book"
+        "Memo recommendation is $2M (4% of NAV); this app models $1.0M.",
+        "~70% of mandates run on one RPA platform whose partner agreement expires around late 2027; that vendor just guided to ~8% growth.",
+        "GenAI compresses managed services, the work agents replace first.",
+        "Earnings quality: adj. EBITDA went from $0.93M (FY24) to $4.34M (FY25E) after $2.1M of FY24 add-backs; unsold license inventory cost $3.48M in FY25E; presenting resale revenue net takes FY25E revenue to ~$24M, closer to the $20M recurring revenue covenant.",
+        "Leverage: Tranche 1 is 46% of the $14M valuation and a full draw is 71% (the memo's 27% LTV adds loan proceeds to EV).",
+        "Realistic default: break around month 18 with ~$6.2M of Tranche 1 outstanding; near-par recovery on a 3-4x sale of ~$2M book EBITDA, 30-60% if founders leave (0.63x at the 45% midpoint).",
+        "Sponsor's 17.1% net case counts the $2M warrant floor as certain; the term sheet pays it only on a liquidity event.",
+        "What would take it to zero: any covenant breach, Tranche 2 unfunded because H1 2026 revenue missed $15M, or a QoE restating FY25 adj. EBITDA well below $4.3M."
       ],
-      change_my_mind: [
-        "Partner renewal delayed or on worse terms",
-        "ARR below $22M",
-        "Add-backs above 20% of adjusted EBITDA"
+      diligence: [
+        "Quality of earnings report (FY25 add-backs, license spoilage, gross vs. net revenue).",
+        "RPA partner agreement and renewal terms.",
+        "Top client contracts and retention by client.",
+        "Covenant definitions and H1 2026 revenue vs. the $15M Tranche 2 milestone.",
+        "Enforceability of collateral against the Indian entity."
       ],
-      diligence_documents: [
-        { id: "i-rpa-dd1", text: "50% of capital back in 24 months is tranche 1 only; a full draw returns 45%.", done: null },
-        { id: "i-rpa-dd2", text: "Warrant valuation uses $5.0M EBITDA; the rest of the memo uses $4.3M.", done: null },
-        { id: "i-rpa-dd3", text: "Service-line revenue doesn't tie between the company overview and the P&L.", done: null },
-        { id: "i-rpa-dd4", text: "Upside net MOIC shown as both 1.75x and 1.74x.", done: null },
-        { id: "i-rpa-dd5", text: "Downside case (29% IRR, 2.5x) is higher than the base case because it assumes a cash sweep and taking control of the company; treat it as an enforcement scenario, not downside protection.", done: null },
-        { id: "i-rpa-dd6", text: "Software partner agreement and renewal terms", done: null },
-        { id: "i-rpa-dd7", text: "Quality of earnings report", done: null },
-        { id: "i-rpa-dd8", text: "Top 10 customer contracts", done: null },
-        { id: "i-rpa-dd9", text: "ARR bridge by service line", done: null },
-        { id: "i-rpa-dd10", text: "Credit agreement covenant definitions", done: null }
-      ],
-      diligence_other: [
-        { id: "i-rpa-do1", text: "Customer calls", done: null },
-        { id: "i-rpa-do2", text: "View on whether agentic AI replaces or extends RPA workflows", done: null },
-        { id: "i-rpa-do3", text: "Downside case rebuilt without the enforcement assumptions", done: null }
-      ],
+      terms: "Participation in a first-lien term loan of up to $10M ($6.5M at close + $3.5M on milestones). First-priority lien on all assets, 100% equity pledge, DACA over $1.5M, bad-boy guaranty. SOFR + 825 with a 400bp floor (~12.33% cash today). 24 months call protection, 7% premium in year 3. Covenants on minimum cash, EBITDA and recurring revenue; monthly financials. Sponsor takes 125 bps of interest and a 15% promote over 8%. Warrants: $2M struck at $14M post-money (~14%), $2M floor on any sale, cap $3M through month 24 rising to $5.5M after month 36.",
       contacts: ["Lender deal lead"],
       check_size: 1000000, funded_pct: 0.65, hold_months: 48, months_to_50pct_back: 24, interim_cash: true,
-      target_return: "Sponsor base case ~17% net IRR, 1.43x",
-      entry_costs: "Sponsor fees: 100 bps of the 2.5% origination fee, 125 bps of interest, 15% promote over an 8% hurdle (no catch-up). Base-case drag ~3.1% IRR / 0.09x (lender memo p.6).",
-      terms_notes: "SOFR + 825 bps, 4% SOFR floor (~12.25% cash). 2.5% origination fee. 20% warrant coverage. 48-month maturity: 16 months interest-only, then straight-line amortization.",
+      target_return: "~11% net ex-warrants; 1.52x / ~16% at the warrant floor; 1.82x / ~22% at the cap.",
       next_step: "Review credit agreement", next_step_date: "2026-10-14",
-      tickers: [], signals: [],
       decision_log: [{ date: "2026-09-20", from: null, to: "researching", reason: "Term sheet received" }] },
 
     { id: "i-legalai", asset_class: "direct", name: "Legal AI late-stage equity", ticker_or_id: "PE-LAI",
@@ -481,92 +452,120 @@ window.SEED = {
       commitment: 1000000, unfunded: 0, call_schedule: null, liquidity_bucket: "3y_plus", liquidity_date: null,
       mark_source: "Round price", mark_date: null,
       status: "watching", type: "venture", theme_id: "t-ai",
-      thesis: "Late-stage equity in a legal AI software company at $37/share. The last round valued it at ~$15.5B (Sept 2026) with reported ARR above $400M. No IPO announced.",
+      company_overview: "Legal AI software company. ARR grew from ~$100M (Aug 2025) to $400M+ (Sep 2026); customers grew from 235 (end of 2024) to 3,000+, including 80% of the Am Law 100.",
+      thesis: "Best business of the three, wrong price. $37 implies ~$13.7bn, or ~34x ARR, while its model suppliers move into legal. Pass at $37; revisit at ~$31-35.",
       key_notes: [
-        "ARR growth continues at a pace that justifies the entry multiple",
-        "AI application-software multiples hold through exit"
+        "Comparables: Clio at ~12x ARR (Nov 2025); closest competitor Legora at an $8.5bn pre-money (Sep 2026).",
+        "A 15% net IRR at a 12x exit needs ~$2.6bn of 2031 ARR (a 45% CAGR for five years). My base (80% growth next year fading to 20%) reaches $2.2bn.",
+        "Bear $1.3bn at 6x (0.5x); bull $3.3bn at 18x (3.9x).",
+        "Moat is workflow lock-in (25,000+ customer-built agents), but it rents its content and model layers; its own model launched only in Sep 2026.",
+        "$37 is 11.6% below the $41.86 Series H and 10% above the $33.64 Series G, and in line with secondary trades (~$37.17, Sep 28 2026): no discount.",
+        "What would bring it in at $1M+: direct Series G/H preferred at or below ~$35, or common at or below $33.64."
       ],
-      change_my_mind: [
-        "Growth decelerates below 50%",
-        "A down round at a peer",
-        "Secondary prices below $37"
+      diligence: [
+        "Instrument: direct preferred, common, or SPV interest; SPV fees and carry.",
+        "Charter and preference stack (~$1.6-1.8bn of earlier preferred).",
+        "ROFR and transfer process.",
+        "Information rights."
       ],
-      diligence_documents: [
-        { id: "i-legalai-dd1", text: "Round size, valuation and ARR come from public reports, not company documents. Unverified.", done: null },
-        { id: "i-legalai-dd2", text: "ARR by cohort and net retention", done: null },
-        { id: "i-legalai-dd3", text: "Cap table and preference stack", done: null },
-        { id: "i-legalai-dd4", text: "Recent secondary trade prices", done: null },
-        { id: "i-legalai-dd5", text: "Confirm round size and valuation against company documents", done: null }
-      ],
-      diligence_other: [
-        { id: "i-legalai-do1", text: "Reference calls with law-firm customers", done: null },
-        { id: "i-legalai-do2", text: "Competitive map of legal AI vendors", done: null }
-      ],
+      terms: "Offered at $37.00 per share. Likely a secondary, probably through an SPV (not confirmed). Preferred would sit behind ~$1.6-1.8bn of earlier preferred; common is impaired only below a ~$1.8bn exit if the stack is 1x non-participating (charter unseen). Five-year expected hold.",
       contacts: ["Placement agent"],
       check_size: 1000000, funded_pct: 1.0, hold_months: 36, months_to_50pct_back: 36, interim_cash: false,
-      target_return: "Not yet set",
-      entry_costs: "Not yet known",
-      terms_notes: "$37.00 per share; 27,027 shares for $1.0M.",
+      target_return: "15%+ net hurdle; base case ~1.7x / ~11%; weighted ~14% direct, ~11% through an SPV.",
       next_step: "Request data room access", next_step_date: "2026-10-16",
-      tickers: [], signals: [],
       decision_log: [{ date: "2026-09-22", from: null, to: "watching", reason: "Allocation offered" }] }
   ],
 
   // Themes group investments under a shared thesis. No check size or target return on a theme.
-  // value_chain[]: { segment, who_captures_value }. linked_investment_ids mirrors investments[].theme_id.
-  // key_notes[] and change_my_mind[] are plain strings.
+  // description: 1-2 sentences. key_notes[] (Notes): plain strings. industry_context: one text block.
+  // value_chain[]: { segment, description, companies } (companies: public names or names already in this file; never
+  //   the companies behind our deal investments). watch_public[]: { company, ticker } (market caps are never stored;
+  //   Live mode reads them from /api/profile and the card shows "—" otherwise). watch_private[]: { company, ownership }.
+  // linked_investment_ids mirrors investments[].theme_id.
   themes: [
     { id: "t-tms", name: "TMS / interventional psychiatry", status: "exploring",
-      thesis: "Accelerated TMS protocols could expand clinic capacity and adoption. Reimbursement and clinic economics decide who captures the value: device makers, clinic operators or payers.",
-      why_now: "Accelerated protocols compress a 6-week course into days, which changes clinic capacity math.",
+      description: "Device makers, protocol owners, clinic operators and payers in transcranial magnetic stimulation for treatment-resistant depression (TRD).",
+      thesis: "Value is moving to (i) whoever owns a covered accelerated protocol and (ii) operators who can fill TMS chair time with other TRD treatments. Of the two, interventional psychiatry MSOs look most attractive: they offer every covered TRD treatment under one roof, keep the referral flow whichever treatment wins, and get a 3-4x lift in chair revenue on a fixed cost base if payers start paying per session for accelerated protocols outside the hospital.",
+      industry_context: "TMS devices were cleared in 2008 (NeuroStar) and 2013 (BrainsWay), and payers covered TMS broadly by ~2017. Greenbrook scaled to 183 centers by 2022, but de novo sites outran referrals, which led to a creditor takeover and a sale to Neuronetics in Dec 2024. Accelerated protocols compress a course from weeks to days, which changes clinic capacity math if payers follow.",
       value_chain: [
-        { segment: "Device makers (BWAY, STIM)", who_captures_value: "Sell or subscribe systems" },
-        { segment: "Clinic operators", who_captures_value: "Capture volume if reimbursement holds" },
-        { segment: "Payers", who_captures_value: "Decide whether accelerated protocols get paid" }
+        { segment: "Device makers", description: "74-77% gross margins; revenue tied to clinic capex and utilization; Ampa's ~$36K/year subscription undercuts a $90-100K capital sale", companies: "Neuronetics, BrainsWay, MagVenture, Magstim, Ampa" },
+        { segment: "Protocol and targeting software", description: "Paid only where payers reimburse the protocol; Magnus is the only one with its own codes", companies: "Magnus Medical, Zeta Surgical, ANT Neuro, Osmind" },
+        { segment: "TRD alternatives", description: "Compete for the same patients; J&J guides Spravato to $3-3.5bn by 2028", companies: "Johnson & Johnson (Spravato), ketamine clinics, Flow Neuroscience" },
+        { segment: "Operators", description: "Utilization decides margin: a two-chair TMS-only site does ~17% four-wall EBITDA at 60% utilization and loses money at 40%", companies: "Radial, Hopemark, Heading, NeuroStim, Greenbrook (Neuronetics)" },
+        { segment: "Payers", description: "Require 1-2+ failed medications; cap at 30 + 6 sessions, one paid session per day", companies: "UnitedHealth, Elevance, Cigna, CVS (Aetna), Highmark, Premera, VA" }
       ],
       key_notes: [
-        "Payers cover accelerated protocols",
-        "CMS utilization of CPT 90867/90868 keeps rising",
-        "New device clearances expand the market, including a subscription-model device cleared for depression in Feb 2025",
-        "PE capital keeps entering clinic chains"
+        "Penetration is stuck at 4-5%: of ~2.8M U.S. adults with TRD, ~110-130K get TMS each year.",
+        "Standard course is 36 visits over 7-9 weeks with ~1/3 of patients reaching remission; visit burden is the main drag on adoption.",
+        "Coverage of accelerated protocols went from zero to 57-80M claimed lives in ~9 months (2026), but national plans (Aetna, Cigna, UHC, Elevance) still pay only the standard 30 + 6 course.",
+        "The only place accelerated TMS is paid per course today is Medicare paying SAINT in hospital outpatient departments through Magnus Medical's codes.",
+        "Under the \"one paid session per day\" rule, payers have little reason to switch to per-session payment, so providers have little reason to run accelerated protocols.",
+        "Capital is moving to operators: BrainsWay invested in Radial, Neuronetics owns Greenbrook, and growth investors are backing MSOs.",
+        "BrainsWay trades as the OEM winner (~6.5x revenue, ~34x adj. EBITDA; Q2 2026 revenue +35% at a 20% adj. EBITDA margin), but every pure-play TMS company competes with Spravato and late-stage psychedelics for the same patients.",
+        "Building our own platform is uphill: referral density takes 2-3 years. If we built, roll up sub-scale practices rather than de novo.",
+        "Next work (15-20 hours): reimbursement expert calls and payer policy review; Radial (Series B likely within 12-18 months); Ampa's model and payment evidence."
       ],
-      change_my_mind: [
-        "A major payer denies accelerated-protocol coverage",
-        "90867/90868 volume flattens",
-        "A device maker raises equity at a discount"
+      watch_public: [
+        { company: "Neuronetics", ticker: "STIM" },
+        { company: "BrainsWay", ticker: "BWAY" },
+        { company: "Johnson & Johnson", ticker: "JNJ" },
+        { company: "UnitedHealth Group", ticker: "UNH" },
+        { company: "Elevance Health", ticker: "ELV" },
+        { company: "Cigna Group", ticker: "CI" },
+        { company: "CVS Health", ticker: "CVS" }
       ],
-      contacts: ["Medtech sell-side analyst", "TMS clinic operator"],
-      watch_public: ["BWAY", "STIM"],
-      watch_private: ["Ampa (device, subscription model; clearance date per README, unverified)", "Radial (clinics)"],
-      signals: [
-        { id: "t-tms-s1", kind: "price", date: "2026-09-28", ticker: "BWAY", price: 13.25, source: "Yahoo Finance close" },
-        { id: "t-tms-s2", kind: "price", date: "2026-09-28", ticker: "STIM", price: 2.555, source: "Yahoo Finance close" }
+      watch_private: [
+        { company: "Radial", ownership: "VC-backed (General Catalyst-led Series A; BrainsWay strategic)" },
+        { company: "Ampa", ownership: "—" },
+        { company: "Magnus Medical", ownership: "—" },
+        { company: "MagVenture", ownership: "—" },
+        { company: "Magstim", ownership: "—" },
+        { company: "Flow Neuroscience", ownership: "—" },
+        { company: "Hopemark", ownership: "—" },
+        { company: "Heading", ownership: "—" }
       ],
-      linked_investment_ids: ["i-bway", "i-stim"],
-      decision_log: [{ date: "2026-09-15", from: null, to: "exploring", reason: "Added to pipeline" }] },
+      linked_investment_ids: ["i-bway", "i-stim"] },
 
     { id: "t-ai", name: "AI and automation", status: "active",
-      thesis: "Enterprise spend on AI and automation keeps compounding. We hold it two ways: late-stage equity in a legal AI company for upside, and a first-lien loan to an RPA implementer that pays cash while we wait.",
-      why_now: "Agentic AI is moving from pilots to budgets, and the question is who keeps the margin.",
+      description: "How enterprise AI spend splits between model providers, data owners, vertical applications, automation platforms and implementation services.",
+      thesis: "Model providers are moving up the stack into vertical applications, so application-layer value holds only where the app owns the workflow and the client data. Services firms that maintain automations face price deflation as agents take over that work. We take exposure two ways: senior secured credit to an implementation firm, which pays cash and amortizes while the shift plays out, and application equity only at a price that clears our hurdle.",
+      industry_context: "Agentic AI is moving from pilots to budgets. The open question is who keeps the margin: the model provider, the data owner, the workflow app, or the firm that implements it.",
       value_chain: [
-        { segment: "Model providers", who_captures_value: "Pricing power is concentrating with the largest labs and cloud platforms." },
-        { segment: "Application software (Legal AI)", who_captures_value: "Captures value if it owns the workflow and the client data; at risk if models commoditize the feature." },
-        { segment: "Implementation services (RPA loan)", who_captures_value: "Earns services margin during adoption; at risk of being automated away as agentic tools mature." }
+        { segment: "Model providers", description: "Capital-intensive; moving into vertical applications", companies: "OpenAI, Anthropic, Alphabet (Google), Microsoft" },
+        { segment: "Data and content", description: "Own proprietary content apps depend on; exposed when models replicate the workflow", companies: "RELX (LexisNexis), Thomson Reuters" },
+        { segment: "Vertical applications", description: "Win by owning workflow and client data; priced at high revenue multiples", companies: "Clio, Legora, OpenEvidence, Cursor (Anysphere)" },
+        { segment: "Automation platforms", description: "RPA and workflow software being rebuilt around agents", companies: "UiPath, ServiceNow, Microsoft (Power Automate)" },
+        { segment: "Implementation services", description: "Earn services margin during adoption; at risk of deflation", companies: "Accenture, Infosys, Cognizant, Wipro, Tata Consultancy Services" }
       ],
       key_notes: [
-        "Enterprise AI budgets keep growing",
-        "Agentic AI complements rather than replaces RPA workflows",
-        "AI application multiples hold"
+        "Model providers have valuations to justify (Anthropic raised at $965bn post-money in May 2026 on a ~$47bn revenue run-rate), which pushes them into vertical apps.",
+        "A legal plugin for Claude took 16% off Thomson Reuters and 14% off RELX in a day (Feb 2026); coding saw the same pattern when Cursor built its own model.",
+        "Vertical apps can hold ground: OpenEvidence raised at $15bn (Sep 2026) after Claude for Healthcare and ChatGPT Health launched.",
+        "Legal AI pricing: Clio raised at $5bn on ~$400M ARR (~12x, Nov 2025); Legora went from $10bn+ talks to an $8.5bn pre-money (Sep 2026).",
+        "Public SaaS trades at ~3-8x forward revenue; names still growing 30%+ get ~10-15x.",
+        "Indian IT majors are guiding to AI-driven price deflation in managed services, the work agents replace first.",
+        "UiPath guided to ~8% growth and fell 14% on the print."
       ],
-      change_my_mind: [
-        "Large-customer churn at the RPA borrower",
-        "Peer down rounds in AI applications"
+      watch_public: [
+        { company: "Microsoft", ticker: "MSFT" },
+        { company: "Alphabet", ticker: "GOOGL" },
+        { company: "RELX", ticker: "RELX" },
+        { company: "Thomson Reuters", ticker: "TRI" },
+        { company: "UiPath", ticker: "PATH" },
+        { company: "ServiceNow", ticker: "NOW" },
+        { company: "Accenture", ticker: "ACN" },
+        { company: "Infosys", ticker: "INFY" },
+        { company: "Cognizant", ticker: "CTSH" },
+        { company: "Wipro", ticker: "WIT" }
       ],
-      contacts: [],
-      watch_public: [],
-      watch_private: [],
-      signals: [],
-      linked_investment_ids: ["i-legalai", "i-rpa"],
-      decision_log: [{ date: "2026-09-28", from: null, to: "active", reason: "Theme created to group Legal AI and the RPA loan" }] }
+      watch_private: [
+        { company: "OpenAI", ownership: "VC and strategic-backed" },
+        { company: "Anthropic", ownership: "VC and strategic-backed" },
+        { company: "Legora", ownership: "VC-backed" },
+        { company: "Clio", ownership: "VC-backed" },
+        { company: "OpenEvidence", ownership: "VC-backed" },
+        { company: "Anysphere (Cursor)", ownership: "VC-backed" }
+      ],
+      linked_investment_ids: ["i-legalai", "i-rpa"] }
   ]
 };

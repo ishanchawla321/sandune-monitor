@@ -15,6 +15,13 @@
     dollars(v) { return blank(v) ? "" : signed(v, "$" + grouped(Math.round(v), 0)); },
     number(v, dp) { return blank(v) ? "" : signed(v, grouped(v, dp || 0)); },
     pct(v, dp) { return blank(v) ? "n/a" : signed(v, grouped(v * 100, dp === undefined ? 1 : dp) + "%"); },
+    // Market cap: $230M, $1.2B, $15.5B
+    marketCap(v) {
+      if (blank(v) || v <= 0) return "—";
+      if (v >= 1e12) return "$" + grouped(v / 1e12, 1) + "T";
+      if (v >= 1e9) return "$" + grouped(v / 1e9, 1) + "B";
+      return "$" + grouped(v / 1e6, 0) + "M";
+    },
     // Today's date in the viewer's time zone, as YYYY-MM-DD.
     today() {
       const d = new Date();
@@ -28,19 +35,18 @@
 
   Fmt.LABELS = {
     // Key order is the display order in charts, the holdings table and asset-class dropdowns.
-    asset_class: { public_equity: "Public equity", credit: "Liquid credit", private_credit: "Private credit",
-                   private_fund: "Private funds", direct: "Directs / co-invests", real_estate: "Real estate",
-                   cash: "Cash and T-bills" },
+    asset_class: { public_equity: "Public Equity", credit: "Liquid Credit", private_credit: "Private Credit",
+                   private_fund: "Private Funds", direct: "Directs / Co-Invests", real_estate: "Real Estate",
+                   cash: "Cash and T-Bills" },
     liquidity_bucket: { liquid_now: "Liquid now", "1_3y": "1-3 years", "3y_plus": "3+ years" },
     security_type: { common_stock: "Common stock", etf: "ETF", bond: "Bond", t_bill: "T-bill", lp_interest: "LP interest",
                      common_equity: "Common equity", preferred_equity: "Preferred equity", jv_equity: "JV equity",
                      first_lien_loan: "First-lien loan", basket: "Basket", cash: "Cash" },
-    status: { watching: "Watching", researching: "Researching", IC: "IC", invested: "Invested", passed: "Passed" },
+    status: { watching: "Watching", researching: "Researching", IC: "Late stage", invested: "Invested", passed: "Passed" },
     type: { public: "Public", private_equity: "Private equity", private_credit: "Private credit",
             venture: "Venture (late-stage)" },
     theme_status: { exploring: "Exploring", active: "Active", retired: "Retired" },
-    assumption: { intact: "Intact", at_risk: "At risk", broken: "Broken" },
-    haircut_group: { public_equity: "Public equity", credit: "Liquid credit", t_bill: "T-bills" }
+    haircut_group: { public_equity: "Public Equity", credit: "Liquid Credit", t_bill: "T-Bills" }
   };
 
   root.Fmt = Fmt;

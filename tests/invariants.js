@@ -117,17 +117,55 @@ Object.entries(CASES).forEach(([name, c]) => {
   }));
 }
 
-// ---- Migration is idempotent ----
+// ---- Migration is idempotent and keeps the text that moves ----
 {
   const Migrate = require(path.join(repo, "js/migrate.js"));
   const once = Migrate.state(JSON.parse(JSON.stringify(ctx.window.SEED)));
   const twice = Migrate.state(JSON.parse(JSON.stringify(once)));
   check("Migration twice equals once", JSON.stringify(twice) === JSON.stringify(once) ? 1 : 0, 1, 0);
-  const legacy = { investments: [{ id: "x", assumptions: [{ text: "A", status: "intact" }], triggers: ["B"], doc_flags: ["C"], signals: [] }], themes: [{ id: "t", assumptions: [{ text: "D" }], triggers: ["E"] }] };
+  // Older shapes: v8 assumptions / triggers / doc_flags, v9 change_my_mind / diligence lists / terms_notes + entry_costs, theme why_now etc.
+  const legacy = { investments: [{ id: "x", status: "IC", assumptions: [{ text: "A", status: "intact" }], triggers: ["B"], doc_flags: ["C"],
+                                   diligence_documents: [{ id: "1", text: "D", done: "2026-01-01" }], diligence_other: [{ id: "2", text: "E", done: null }],
+                                   terms_notes: "T", entry_costs: "F", signals: [], tickers: ["X"] }],
+                   themes: [{ id: "t", assumptions: [{ text: "G" }], triggers: ["H"], why_now: "W", value_chain: [{ segment: "S", who_captures_value: "V" }],
+                             watch_public: ["BWAY", { company: "Neuronetics", ticker: "stim", market_cap: 160000000 }], watch_private: ["P"], contacts: ["R"], signals: [], decision_log: [] }] };
   const l1 = Migrate.state(JSON.parse(JSON.stringify(legacy)));
   const l2 = Migrate.state(JSON.parse(JSON.stringify(l1)));
-  check("Legacy migration keeps text", l1.investments[0].key_notes[0] === "A" && l1.investments[0].change_my_mind[0] === "B" && l1.investments[0].diligence_documents[0].text === "C" && l1.themes[0].key_notes[0] === "D" ? 1 : 0, 1, 0);
+  const i = l1.investments[0], t = l1.themes[0];
+  const kept = i.key_notes[0] === "A" && i.diligence.join("|") === "C|D (done 2026-01-01)|E" && i.terms === "T\nEntry costs: F" &&
+               t.key_notes[0] === "G" && t.industry_context === "W" && t.value_chain[0].description === "V" && t.watch_public[0].ticker === "BWAY" &&
+               t.watch_private[0].company === "P" && t.key_notes.some(n => n.includes("R"));
+  check("Legacy migration keeps the text that moves", kept ? 1 : 0, 1, 0);
+  check("Legacy migration leaves no old fields", ["assumptions", "triggers", "doc_flags", "diligence_documents", "diligence_other", "terms_notes", "entry_costs", "signals", "tickers", "change_my_mind"].some(k => k in i) || ["why_now", "contacts", "signals", "decision_log", "change_my_mind"].some(k => k in t) ? 1 : 0, 0, 0);
   check("Legacy migration twice equals once", JSON.stringify(l2) === JSON.stringify(l1) ? 1 : 0, 1, 0);
+  check("Legacy migration drops stored market caps", t.watch_public[1].ticker === "STIM" && !("market_cap" in t.watch_public[1]) ? 1 : 0, 1, 0);
+  check("Seed stores no market caps", once.themes.some(th => (th.watch_public || []).some(c => "market_cap" in c)) ? 1 : 0, 0, 0);
+}
+
+// ---- Pass and Move back to prospective round-trip cleanly ----
+{
+  const StatusModel = require(path.join(repo, "js/status-model.js"));
+  const s3 = JSON.parse(JSON.stringify(state));
+  const inv = s3.investments.find(i => i.id === "i-carwash");
+  const snapshot = x => JSON.stringify(Object.assign({}, x, { status: null, decision_log: null }));
+  const before = snapshot(inv), logLen = inv.decision_log.length, from = inv.status;
+  check("Pass: moves to passed", StatusModel.pass(inv, "Sponsor terms too rich", s3.as_of) && inv.status === "passed" ? 1 : 0, 1, 0);
+  check("Pass: no longer prospective", PFM.prospective(s3).length, 4, 0);
+  check("Move back: returns to prior status", StatusModel.moveBack(s3, inv, "Terms improved", s3.as_of) && inv.status === from ? 1 : 0, 1, 0);
+  check("Move back: prospective again", PFM.prospective(s3).length, 5, 0);
+  check("Move back: two decision-log lines added", inv.decision_log.length - logLen, 2, 0);
+  check("Move back: investment otherwise unchanged", snapshot(inv) === before ? 1 : 0, 1, 0);
+  check("Move back: book untouched", Math.round(Metrics.summary(s3.holdings, s3.settings, s3.as_of).nav), 49748585, 0);
+  // From Completed: funding reversed, back to the prior status, book exactly restored.
+  Invest.execute(s3, inv, { date: s3.as_of, amount: 1000000, source: "cash" });
+  inv.decision_log.push({ date: s3.as_of, from: inv.status, to: "invested", reason: "Marked as funded" });
+  inv.status = "invested";
+  check("Move back from Completed: returns to prior status", StatusModel.moveBack(s3, inv, "", s3.as_of) && inv.status === from ? 1 : 0, 1, 0);
+  check("Move back from Completed: funding cleared", inv.funding ? 1 : 0, 0, 0);
+  const m3 = Metrics.summary(s3.holdings, s3.settings, s3.as_of);
+  check("Move back from Completed: NAV", Math.round(m3.nav), 49748585, 0);
+  check("Move back from Completed: dry powder", Math.round(m3.dry_powder.total), 19749461, 0);
+  check("Move back from Completed: blotter count", s3.transactions.length, state.transactions.length, 0);
 }
 
 // ---- Every transaction date is a real calendar date ----
@@ -141,8 +179,8 @@ Object.entries(CASES).forEach(([name, c]) => {
   const bad = (state.transactions || []).filter(t => !valid(t.date)).map(t => `${t.id} ${t.date}`);
   if (bad.length) console.log("     invalid dates: " + bad.join(", "));
   check("Transactions with an invalid calendar date", bad.length, 0, 0);
-  const dated = state.investments.concat(state.themes || []).flatMap(x => (x.signals || []).map(s => s.date).concat((x.decision_log || []).map(d => d.date)));
-  check("Signal and decision-log dates that are invalid", dated.filter(d => !valid(d)).length, 0, 0);
+  const dated = state.investments.flatMap(x => (x.decision_log || []).map(d => d.date)).concat(state.investments.map(i => i.next_step_date).filter(Boolean));
+  check("Decision-log and next-step dates that are invalid", dated.filter(d => !valid(d)).length, 0, 0);
 }
 
 // ---- Blotter reconciles to the book ----

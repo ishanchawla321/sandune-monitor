@@ -1,10 +1,11 @@
-// Blotter panel (Portfolio > Current): the transaction list behind the book, plus an entry form.
-// New entries post to the holding and to operating cash through Positions.post() and persist like other edits.
+// Investment blotter (Portfolio > Investment Blotter): the transaction list behind the book, plus an entry form
+// that opens from "New Entry". New entries post to the holding and to operating cash through Positions.post()
+// and persist like other edits.
 (function (root) {
   "use strict";
 
   const Fmt = root.Fmt, P = root.Positions, Metrics = root.Metrics;
-  const L = Fmt.LABELS, esc = Fmt.esc;
+  const esc = Fmt.esc;
   const PAGE = 25;
 
   const COLS = [
@@ -13,9 +14,7 @@
     { key: "type", label: "Type" },
     { key: "quantity", label: "Quantity", num: true },
     { key: "price", label: "Price", num: true },
-    { key: "amount", label: "Amount ($)", num: true },
-    { key: "cash", label: "Cash effect ($)", num: true },
-    { key: "note", label: "Note", wrap: true }
+    { key: "amount", label: "Amount", unit: "$", num: true }
   ];
 
   // Which holdings a transaction type makes sense for. Anything else falls back to every non-cash holding.
@@ -31,7 +30,7 @@
     fee: () => true
   };
 
-  const ui = { sort: { key: "date", dir: -1 }, types: new Set(), holding: "", limit: PAGE, bound: false,
+  const ui = { sort: { key: "date", dir: -1 }, type: "", holding: "", limit: PAGE, bound: false, formOpen: false,
                form: { type: "buy", holding_id: "", date: "", quantity: "", price: "", amount: "", note: "", error: "" } };
   let ctx = null;
 
@@ -47,9 +46,9 @@
       const sale = t.type === "sell" && pos[t.holding_id] ? pos[t.holding_id].sales[t.id] : null;
       return Object.assign({}, t, { holding: holdingName(t.holding_id), amount: P.amountOf(t, h), cash: P.cashEffect(t, h), sale });
     });
-    let list = txs.filter(t => (!ui.types.size || ui.types.has(t.type)) && (!ui.holding || t.holding_id === ui.holding));
+    const list = txs.filter(t => (!ui.type || t.type === ui.type) && (!ui.holding || t.holding_id === ui.holding));
     const k = ui.sort.key;
-    const v = t => (["quantity", "price", "amount", "cash"].includes(k) ? (t[k] === null || t[k] === undefined ? -Infinity : Number(t[k]))
+    const v = t => (["quantity", "price", "amount"].includes(k) ? (t[k] === null || t[k] === undefined ? -Infinity : Number(t[k]))
                     : k === "type" ? P.LABELS[t.type] || t.type : String(t[k] || "").toLowerCase());
     list.sort((a, b) => {
       const x = v(a), y = v(b);
@@ -66,6 +65,11 @@
   }
 
   function renderForm() {
+    const box = document.getElementById("bl-form");
+    const btn = document.getElementById("bl-new");
+    box.hidden = !ui.formOpen;
+    btn.setAttribute("aria-expanded", String(ui.formOpen));
+    if (!ui.formOpen) { box.innerHTML = ""; return; }
     const f = ui.form;
     if (!f.date) f.date = Fmt.today();
     const list = candidates(f.type);
@@ -77,19 +81,8 @@
     const q = Number(String(f.quantity).replace(/[$,\s]/g, "")), p = Number(String(f.price).replace(/[$,\s]/g, ""));
     const computed = units && isFinite(q) && isFinite(p) && q > 0 && p > 0 ? (perHundred(h) ? q * p / 100 : q * p) : null;
     const opt = (v, label, cur) => `<option value="${esc(v)}"${v === cur ? " selected" : ""}>${esc(label)}</option>`;
-    const help = {
-      buy: units && h && !unitType(h) ? "Funds, directs and real estate have no unit price: enter the amount invested." : "Quantity and price; the amount is computed. Cash falls by the amount.",
-      sell: "Quantity and price at which units were sold. Realized P&L uses the weighted average cost.",
-      dividend: "Cash dividend received. Adds to income and to operating cash.",
-      coupon: "Coupon received on a bond. Adds to income and to operating cash.",
-      interest: "Interest received. Adds to income and to operating cash.",
-      capital_call: "Amount called by the fund. Raises paid-in, lowers unfunded and operating cash.",
-      loan_draw: "Amount drawn on a private-credit loan (initial or delayed draw). Raises the amount invested, lowers unfunded and operating cash.",
-      distribution: "Cash distributed by a fund, ETF, co-invest or property. Adds to income and to operating cash.",
-      fee: "Fee paid from operating cash. Does not change the position."
-    }[f.type];
     const amountOnly = !units || (h && !unitType(h));
-    document.getElementById("bl-form").innerHTML = `
+    box.innerHTML = `
       <form class="bl-form" id="bl-entry" autocomplete="off" aria-label="New blotter entry">
         <label class="fld"><span>Type</span><select data-bl="type">${P.TYPES.map(t => opt(t, P.LABELS[t], f.type)).join("")}</select></label>
         <label class="fld fld-holding"><span>Holding</span><select data-bl="holding_id">${list.map(x => opt(x.id, x.name, f.holding_id)).join("")}</select></label>
@@ -99,9 +92,9 @@
              <label class="fld"><span>${pLabel}</span><input type="text" inputmode="decimal" data-bl="price" value="${esc(f.price)}" placeholder="0.00"></label>
              <div class="fld"><span>Amount ($)</span><b class="bl-computed">${computed === null ? "—" : esc(Fmt.dollars(computed))}</b></div>`}
         <label class="fld fld-note"><span>Note</span><input type="text" data-bl="note" value="${esc(f.note)}" placeholder="Optional"></label>
-        <div class="fld fld-submit"><span>&nbsp;</span><button type="submit" class="btn btn-primary">Add entry</button></div>
+        <div class="fld fld-submit"><span>&nbsp;</span><button type="submit" class="btn btn-primary">Add Entry</button></div>
+        <div class="fld fld-cancel"><span>&nbsp;</span><button type="button" class="btn" data-bl-cancel>Cancel</button></div>
       </form>
-      <p class="note bl-help">${esc(help)}</p>
       ${f.error ? `<p class="bl-error" role="alert">${esc(f.error)}</p>` : ""}`;
   }
 
@@ -129,23 +122,20 @@
   }
 
   // ---------------- List ----------------
-  function renderFilters(all) {
-    const chips = P.TYPES.map(t => {
-      const n = all.filter(x => x.type === t).length;
-      return `<button type="button" class="chip" data-bl-type="${t}" aria-pressed="${ui.types.has(t)}">${esc(P.LABELS[t])} <span class="chip-n">${n}</span></button>`;
-    }).join("");
-    const hs = ctx.state.holdings.map(h => `<option value="${esc(h.id)}"${ui.holding === h.id ? " selected" : ""}>${esc(h.name)}</option>`).join("");
+  function renderFilters() {
+    const opt = (v, label, cur) => `<option value="${esc(v)}"${v === cur ? " selected" : ""}>${esc(label)}</option>`;
     document.getElementById("bl-filters").innerHTML = `
-      <div class="chip-row" role="group" aria-label="Filter by type"><span class="chip-label">Type</span>${chips}</div>
-      <div class="chip-row"><label class="chip-label" for="bl-holding">Holding</label><select id="bl-holding" class="bl-select"><option value="">All holdings</option>${hs}</select>
-        ${ui.types.size || ui.holding ? `<button type="button" class="link" data-bl-clear>Clear filters</button>` : ""}</div>`;
+      <label class="fld"><span>Type</span><select id="bl-type" class="bl-select">${opt("", "All types", ui.type)}${P.TYPES.map(t => opt(t, P.LABELS[t], ui.type)).join("")}</select></label>
+      <label class="fld"><span>Holding</span><select id="bl-holding" class="bl-select">${opt("", "All holdings", ui.holding)}${ctx.state.holdings.map(h => opt(h.id, h.name, ui.holding)).join("")}</select></label>
+      ${ui.type || ui.holding ? `<button type="button" class="link filter-clear" data-bl-clear>Clear Filters</button>` : ""}`;
   }
 
   function renderTable(list) {
     const head = COLS.map(c => {
       const active = ui.sort.key === c.key;
       const aria = active ? (ui.sort.dir > 0 ? "ascending" : "descending") : "none";
-      return `<th class="${c.num ? "num " : ""}${c.cls || ""}" aria-sort="${aria}"><button type="button" class="sort" data-bl-sort="${c.key}">${esc(c.label)}${active ? (ui.sort.dir > 0 ? " ▲" : " ▼") : ""}</button></th>`;
+      const label = esc(c.label) + (c.unit ? ` <span class="unit-hint">(${c.unit})</span>` : "");
+      return `<th class="${c.num ? "num " : ""}${c.cls || ""}" aria-sort="${aria}"><button type="button" class="sort" data-bl-sort="${c.key}">${label}${active ? (ui.sort.dir > 0 ? " ▲" : " ▼") : ""}</button></th>`;
     }).join("") + `<th class="col-act"><span class="sr-only">Actions</span></th>`;
     const shown = list.slice(0, ui.limit);
     const cell = (c, t) => {
@@ -154,27 +144,27 @@
       if (c.key === "quantity") return t.quantity === null || t.quantity === undefined ? "" : esc(Fmt.number(t.quantity, 0));
       if (c.key === "price") return t.price === null || t.price === undefined ? "" : esc(Fmt.number(t.price, perHundred(h) ? 3 : 2));
       if (c.key === "amount") return esc(Fmt.dollars(t.amount));
-      if (c.key === "cash") return `<span class="${t.cash < 0 ? "chg-bad" : "chg-good"}">${esc((t.cash < 0 ? "−" : "+") + Fmt.dollars(Math.abs(t.cash)))}</span>`;
-      if (c.key === "note" && t.sale) {
-        const r = t.sale.realized;
-        const detail = `${t.sale.avg_cost === null ? "" : "Avg cost " + Fmt.number(t.sale.avg_cost, 2) + " · "}realized ${r < 0 ? "−" : "+"}$${Fmt.thousands(Math.abs(r))}K`;
-        return `${esc(t.note || "")}${t.note ? "<br>" : ""}<span class="sale-detail">${esc(detail)}</span>`;
-      }
       return esc(t[c.key] === null || t[c.key] === undefined ? "" : String(t[c.key]));
     };
-    const body = shown.map(t => `<tr>` + COLS.map(c => `<td class="${c.num ? "num " : ""}${c.cls || ""}${c.wrap ? " wrap" : ""}">${cell(c, t)}</td>`).join("") +
-      `<td class="col-act"><button type="button" class="link danger" data-bl-del="${esc(t.id)}" aria-label="Delete entry ${esc(t.date)} ${esc(t.holding)}">Delete</button></td></tr>`).join("");
-    const empty = list.length ? "" : `<tr><td colspan="${COLS.length + 1}" class="col-name muted">No entries match these filters.</td></tr>`;
+    // The note and, for a sale, the average cost and realized P&L sit in the row tooltip.
+    const tip = t => {
+      const parts = [];
+      if (t.note) parts.push(t.note);
+      if (t.sale) parts.push(`${t.sale.avg_cost === null ? "" : "Avg cost " + Fmt.number(t.sale.avg_cost, 2) + " · "}Realized ${t.sale.realized < 0 ? "−" : "+"}$${Fmt.thousands(Math.abs(t.sale.realized))}K`);
+      parts.push(`Cash ${t.cash < 0 ? "−" : "+"}${Fmt.dollars(Math.abs(t.cash))}`);
+      return parts.join(" · ");
+    };
+    const body = shown.map(t => `<tr title="${esc(tip(t))}">` + COLS.map(c => `<td class="${c.num ? "num " : ""}${c.cls || ""}">${cell(c, t)}</td>`).join("") +
+      `<td class="col-act"><button type="button" class="link danger row-del" data-bl-del="${esc(t.id)}" aria-label="Delete entry ${esc(t.date)} ${esc(t.holding)}">Delete</button></td></tr>`).join("");
+    const empty = list.length ? "" : `<tr><td colspan="${COLS.length + 1}" class="col-name muted">No entries.</td></tr>`;
     const more = list.length > ui.limit ? `<tfoot><tr class="addrow"><td colspan="${COLS.length + 1}"><div class="addrow-inner">
-        <span class="muted">Showing ${shown.length} of ${list.length}.</span>
-        <button type="button" class="btn" data-bl-more>Show all</button></div></td></tr></tfoot>` : "";
+        <button type="button" class="btn" data-bl-more>Show All</button></div></td></tr></tfoot>` : "";
     document.getElementById("bl-table").innerHTML = `<thead><tr>${head}</tr></thead><tbody>${body}${empty}</tbody>${more}`;
-    document.getElementById("bl-count").textContent = `${list.length} ${list.length === 1 ? "entry" : "entries"}`;
   }
 
   function downloadCsv(list) {
     const q = v => { const s = v === null || v === undefined ? "" : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-    const lines = [q("Sample data. All holdings, ideas and figures are illustrative. Amounts in USD."),
+    const lines = [q("Sample data. All holdings, investments and figures are illustrative. Amounts in USD."),
       ["Date", "Holding", "Holding ID", "Type", "Quantity", "Price", "Amount", "Cash effect", "Note"].map(q).join(",")]
       .concat(list.map(t => [t.date, t.holding, t.holding_id, P.LABELS[t.type] || t.type, t.quantity, t.price, +t.amount.toFixed(2), +t.cash.toFixed(2),
         t.sale ? `${t.note ? t.note + ". " : ""}Avg cost ${t.sale.avg_cost === null ? "n/a" : t.sale.avg_cost.toFixed(2)}, realized ${t.sale.realized.toFixed(2)}` : t.note].map(q).join(",")));
@@ -209,12 +199,20 @@
       const el = e.target.closest("[data-bl]");
       if (el && (el.dataset.bl === "type" || el.dataset.bl === "holding_id")) { ui.form[el.dataset.bl] = el.value; ui.form.error = ""; return renderForm(); }
       if (e.target.id === "bl-holding") { ui.holding = e.target.value; ui.limit = PAGE; return ctx.onChange(false); }
+      if (e.target.id === "bl-type") { ui.type = e.target.value; ui.limit = PAGE; return ctx.onChange(false); }
     });
     panel.addEventListener("click", e => {
       const t = e.target;
-      const chip = t.closest("[data-bl-type]");
-      if (chip) { const k = chip.dataset.blType; ui.types.has(k) ? ui.types.delete(k) : ui.types.add(k); ui.limit = PAGE; return ctx.onChange(false); }
-      if (t.closest("[data-bl-clear]")) { ui.types.clear(); ui.holding = ""; ui.limit = PAGE; return ctx.onChange(false); }
+      if (t.closest("#bl-new")) {
+        ui.formOpen = !ui.formOpen;
+        ui.form.error = "";
+        renderForm();
+        const first = panel.querySelector("#bl-entry select");
+        if (ui.formOpen && first) first.focus({ preventScroll: true });
+        return;
+      }
+      if (t.closest("[data-bl-cancel]")) { ui.formOpen = false; ui.form.error = ""; renderForm(); return document.getElementById("bl-new").focus({ preventScroll: true }); }
+      if (t.closest("[data-bl-clear]")) { ui.type = ""; ui.holding = ""; ui.limit = PAGE; return ctx.onChange(false); }
       const s = t.closest("[data-bl-sort]");
       if (s) { const k = s.dataset.blSort; ui.sort = ui.sort.key === k ? { key: k, dir: -ui.sort.dir } : { key: k, dir: k === "date" ? -1 : 1 }; return ctx.onChange(false); }
       if (t.closest("[data-bl-more]")) { ui.limit = Infinity; return ctx.onChange(false); }
@@ -233,9 +231,9 @@
   function render(state, onChange) {
     ctx = { state, onChange };
     bind();
-    const { all, list } = rows();
+    const { list } = rows();
     renderForm();
-    renderFilters(all);
+    renderFilters();
     renderTable(list);
   }
 

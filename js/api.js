@@ -28,7 +28,15 @@
   root.Api = {
     available,
     quote: symbols => call("api/quote?symbols=" + encodeURIComponent(symbols.join(",")), {}, 3000),
-    extract: (data, timeoutMs) => post("api/extract", data, timeoutMs),
-    assess: data => post("api/assess", data, 10000)
+    // Market caps: one request per five symbols so a slow symbol cannot time out the whole list; the merged
+    // result is { ok, profiles } or null when nothing came back.
+    profile: async symbols => {
+      const chunks = [];
+      for (let i = 0; i < symbols.length; i += 5) chunks.push(symbols.slice(i, i + 5));
+      const parts = await Promise.all(chunks.map(c => call("api/profile?symbols=" + encodeURIComponent(c.join(",")), {}, 3000)));
+      const profiles = Object.assign({}, ...parts.filter(p => p && p.ok && p.profiles).map(p => p.profiles));
+      return Object.keys(profiles).length ? { ok: true, profiles } : null;
+    },
+    extract: (data, timeoutMs) => post("api/extract", data, timeoutMs)
   };
 })(window);
