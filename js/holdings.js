@@ -348,7 +348,7 @@
       const rows = rowsFor(card);
       const q = v => { const s = blank(v) ? "" : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
       const cols = card.cols;
-      const lines = [q("Sample data. All holdings, ideas and figures are illustrative. Amounts in USD."),
+      const lines = [q("Sample data. All holdings, investments and figures are illustrative. Amounts in USD."),
         cols.map(c => q(c.label)).join(","),
         ...rows.map(r => cols.map(c => { const v = c.value(r); return q(typeof v === "number" ? +v.toFixed(6) : typeof v === "object" && v ? show(c, r) : v); }).join(","))];
       const blob = new Blob([lines.join("\r\n")], { type: "text/csv;charset=utf-8" });

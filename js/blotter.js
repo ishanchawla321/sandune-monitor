@@ -174,7 +174,7 @@
 
   function downloadCsv(list) {
     const q = v => { const s = v === null || v === undefined ? "" : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-    const lines = [q("Sample data. All holdings, ideas and figures are illustrative. Amounts in USD."),
+    const lines = [q("Sample data. All holdings, investments and figures are illustrative. Amounts in USD."),
       ["Date", "Holding", "Holding ID", "Type", "Quantity", "Price", "Amount", "Cash effect", "Note"].map(q).join(",")]
       .concat(list.map(t => [t.date, t.holding, t.holding_id, P.LABELS[t.type] || t.type, t.quantity, t.price, +t.amount.toFixed(2), +t.cash.toFixed(2),
         t.sale ? `${t.note ? t.note + ". " : ""}Avg cost ${t.sale.avg_cost === null ? "n/a" : t.sale.avg_cost.toFixed(2)}, realized ${t.sale.realized.toFixed(2)}` : t.note].map(q).join(",")));

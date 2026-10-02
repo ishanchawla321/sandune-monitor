@@ -17,7 +17,7 @@
     { key: "sector", label: "Sector", kind: "text" },
     { key: "company_overview", label: "Company overview", kind: "longtext" },
     { key: "thesis", label: "Thesis", kind: "longtext" },
-    { key: "check_size", label: "Check size or minimum", kind: "money" },
+    { key: "check_size", label: "Potential position size or minimum", kind: "money" },
     { key: "funded_pct", label: "Funded %", kind: "pct" },
     { key: "hold_months", label: "Hold (months)", kind: "int" },
     { key: "months_to_50pct_back", label: "Months to 50% back", kind: "int" },
