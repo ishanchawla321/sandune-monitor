@@ -8,7 +8,7 @@
   const ACCENT = "#1f3a5f", MUTED = "#a3adb8", GRID = "#e6e8ec", INK = "#1a2230", INK2 = "#5b6470";
   const Y_AXIS_WIDTH = 64;
 
-  const ui = { bound: false, charts: {}, funded_note: null };
+  const ui = { bound: false, charts: {}, funded_note: null, holdOpen: false };
   let ctx = null; // { state, onChange }
 
   function pfState() {
@@ -29,15 +29,14 @@
       const srcOpts = [`<option value="cash"${s.source === "cash" ? " selected" : ""}>Cash</option>`].concat(sources.map(h =>
         `<option value="${esc(h.id)}"${s.source === h.id ? " selected" : ""}>${esc(h.name)} ($${Fmt.thousands(Metrics.marketValue(h))}K)</option>`)).join("");
       return `<tr data-sel="${esc(i.id)}" class="${s.include ? "sel-on" : ""}">
-        <td class="col-name"><span class="sel-row"><input type="checkbox" data-sel-field="include"${s.include ? " checked" : ""} aria-label="Model ${esc(i.name)}"> <button type="button" class="link name-link" data-open-investment="${esc(i.id)}" title="Open the investment one-pager">${esc(i.name)}</button></span></td>
-        <td class="wrap-sm">${esc(L.type[i.type] || i.type)}</td>
-        <td>${esc(L.status[i.status] || i.status)}</td>
+        <td class="sel-check"><input type="checkbox" data-sel-field="include"${s.include ? " checked" : ""} aria-label="Model ${esc(i.name)}"></td>
+        <td class="col-name"><button type="button" class="link name-link" data-open-investment="${esc(i.id)}">${esc(i.name)}</button></td>
         <td class="num"><input class="num-input" inputmode="decimal" data-sel-field="check" value="${esc(+(Number(s.check) / 1000).toFixed(3))}" aria-label="Position size in $K for ${esc(i.name)}"></td>
         <td class="num"><input class="num-input" inputmode="decimal" data-sel-field="funded_pct" value="${esc(+(Number(s.funded_pct) * 100).toFixed(2))}" aria-label="Funded percent for ${esc(i.name)}"></td>
         <td class="num"><input class="num-input" inputmode="decimal" data-sel-field="fee_pct" value="${esc(+(Number(s.fee_pct) * 100).toFixed(2))}" aria-label="Upfront fee percent for ${esc(i.name)}"></td>
         <td><select data-sel-field="source" aria-label="Funding source for ${esc(i.name)}">${srcOpts}</select></td></tr>`;
     }).join("");
-    const empty = list.length ? "" : `<tr><td class="col-name muted" colspan="7">No prospective investments. Investments with status Watching, Researching or Late stage appear here.</td></tr>`;
+    const empty = list.length ? "" : `<tr><td class="col-name muted" colspan="6">No prospective investments.</td></tr>`;
     // Investments funded while ticked are no longer prospective: drop their selection and say so once.
     const gone = Object.keys(pfState().selections).filter(id => pfState().selections[id].include && !list.some(i => i.id === id))
       .map(id => ctx.state.investments.find(i => i.id === id)).filter(i => i && i.status === "invested");
@@ -46,12 +45,11 @@
       gone.forEach(i => { delete pfState().selections[i.id]; });
       save();
     }
-    const note = ui.funded_note && ui.funded_note.length ? `<tr class="note-row"><td colspan="7">${esc(ui.funded_note.join(", "))} ${ui.funded_note.length === 1 ? "is" : "are"} now in Portfolio &gt; Current and no longer modelled here.</td></tr>` : "";
+    const note = ui.funded_note && ui.funded_note.length ? `<tr class="note-row"><td colspan="6">${esc(ui.funded_note.join(", "))}: funded, now in Portfolio &gt; Current.</td></tr>` : "";
     document.getElementById("pf2-selector").innerHTML = `<thead><tr>
-        <th class="col-name">Investment</th><th>Type</th><th>Status</th><th class="num">Position size ($K)</th><th class="num">Funded %</th>
-        <th class="num">Upfront fee %</th><th>Funding source</th>
+        <th class="sel-check"><span class="sr-only">Model</span></th><th class="col-name">Investment</th><th class="num">Position Size <span class="unit-hint">($K)</span></th><th class="num">Funded %</th>
+        <th class="num">Fee %</th><th>Funding Source</th>
       </tr></thead><tbody>${note}${rows}${empty}</tbody>`;
-    document.getElementById("pf2-sel-count").textContent = `${list.filter(i => selection(i).include).length} of ${list.length} selected`;
   }
 
   function onSelectorChange(el) {
@@ -74,8 +72,6 @@
     pfState().selections[inv.id] = s;
     save();
     tr.classList.toggle("sel-on", !!s.include);
-    const list = Model.prospective(ctx.state);
-    document.getElementById("pf2-sel-count").textContent = `${list.filter(i => selection(i).include).length} of ${list.length} selected`;
     renderOutputs();
   }
 
@@ -115,24 +111,17 @@
     const flags = {};
     Object.keys(checks).forEach(k => { flags[k] = flagState(checks[k], before, after); });
 
-    // Trades summary and warnings
-    const tradeText = pf.trades.length
-      ? pf.trades.map(t => `<li><b>${esc(t.name)}</b>: position $${Fmt.thousands(t.check)}K, funded $${Fmt.thousands(t.funded)}K` +
-          (t.unfunded > 0 ? `, unfunded $${Fmt.thousands(t.unfunded)}K called in year 1` : "") +
-          `; from ${t.from_holding > 0 ? `${esc(t.source_name)} $${Fmt.thousands(t.from_holding)}K` : ""}${t.from_holding > 0 && t.from_cash > 0.5 ? " + " : ""}${t.from_cash > 0.5 || t.from_holding <= 0 ? `cash $${Fmt.thousands(t.from_cash)}K` : ""}` +
-          (t.fee > 0 ? `; fee $${Fmt.thousands(t.fee)}K paid from cash` : "") + `</li>`).join("")
-      : `<li class="muted">Nothing selected. Tick a prospective investment above to see its effect on the book.</li>`;
-    document.getElementById("pf2-trades").innerHTML = `<ul class="trades">${tradeText}</ul>` +
-      (pf.warnings.length ? `<div class="warn" role="alert">${pf.warnings.map(w => `<p>${esc(w)}</p>`).join("")}</div>` : "");
+    // Warnings only (a funding source too small for the trade, and the like).
+    document.getElementById("pf2-warnings").innerHTML = pf.warnings.length ? `<div class="warn" role="alert">${pf.warnings.map(w => `<p>${esc(w)}</p>`).join("")}</div>` : "";
 
     // Current / Pro Forma / Change table with a Threshold group (Limit, Flag).
-    const row = (label, b, a, chg, chgCls, flag, limit) =>
-      `<tr class="${flag && flag.state !== "ok" ? "row-" + flag.state : ""}"><td class="col-name">${label}</td><td class="num" data-label="Current">${b}</td>` +
+    const row = (label, b, a, chg, chgCls, flag, limit, tip) =>
+      `<tr class="${flag && flag.state !== "ok" ? "row-" + flag.state : ""}"${tip ? ` title="${esc(tip)}"` : ""}><td class="col-name">${label}</td><td class="num" data-label="Current">${b}</td>` +
       `<td class="num pfc" data-label="Pro forma">${a}</td><td class="num ${chgCls}" data-label="Change">${chg}</td>` +
       `<td class="lim" data-label="Limit">${limit || ""}</td><td class="flagcell">${flag ? flagHtml(flag) : ""}</td></tr>`;
-    const money = (label, key, dir, flag, limit) => {
+    const money = (label, key, dir, flag, limit, tip) => {
       const d = key(after) - key(before);
-      return row(label, Fmt.millions(key(before), 2), Fmt.millions(key(after), 2), dM(d), chgClass(d, dir, EPS.m), flag, limit);
+      return row(label, Fmt.millions(key(before), 2), Fmt.millions(key(after), 2), dM(d), chgClass(d, dir, EPS.m), flag, limit, tip);
     };
     const pct = (label, key, dir, flag, limit) => {
       const d = key(after) - key(before);
@@ -149,10 +138,11 @@
         <tr><th class="lim">Limit</th><th>Flag</th></tr></thead><tbody>`;
     html += group("Liquidity");
     html += money("NAV", m => m.nav, 1);
-    html += money("Cash and T-bills", m => m.cash_and_bills, 1);
+    html += money(esc(L.asset_class.cash), m => m.cash_and_bills, 1);
     html += money("Unfunded", m => m.unfunded, -1);
-    html += money("Dry powder", m => m.dry_powder.total, 1, flags.dry_powder, checks.dry_powder.limit);
-    html += `<tr class="note-row"><td colspan="6">Funding from a liquid position instead of cash reduces dry powder by the haircut-adjusted amount, not the full amount.</td></tr>`;
+    const haircuts = before.dry_powder.lines.map(l => `${L.haircut_group[l.key] || l.key} ${Fmt.pct(l.haircut, 0)}`).join(", ");
+    html += money("Dry powder", m => m.dry_powder.total, 1, flags.dry_powder, checks.dry_powder.limit,
+                  `Dry powder = cash + liquid holdings x haircut (${haircuts}) - unfunded - reserve. Funding from a liquid holding instead of cash reduces dry powder by the haircut-adjusted amount.`);
     html += pct("Illiquid %", m => m.illiquid.pct, -1);
     html += pct("Illiquid % incl. unfunded", m => m.illiquid.pct_incl_unfunded, -1, flags.illiquid_incl, checks.illiquid_incl.limit);
     html += group("Concentration");
@@ -174,9 +164,9 @@
     const labels = { dry_powder: "Dry powder below floor", illiquid_incl: "Illiquid % incl. unfunded above limit",
                      largest_position: "Largest position above single-position limit", largest_sector: "Largest sector above limit" };
     const pre = Object.keys(flags).filter(k => flags[k].before);
-    document.getElementById("pf2-pre").innerHTML = `<h3>Breaches before trade</h3>` + (pre.length
+    document.getElementById("pf2-pre").innerHTML = `<h3>Breaches Before Trade</h3>` + (pre.length
       ? `<ul>${pre.map(k => `<li><span class="flag flag-pre">Breach before trade</span> ${esc(labels[k])}${flags[k].after ? "" : " (resolved by this trade)"}</li>`).join("")}</ul>`
-      : `<p class="muted">None. The current book is within every limit.</p>`);
+      : `<p class="muted">None.</p>`);
 
     renderCharts(before, after);
     renderHoldings(after, pf);
@@ -224,10 +214,16 @@
     badge: r => (r.pf ? `<span class="badge badge-pf">PF</span> ` : ""),
     suffix: r => (sold[r.id] ? ` <span class="badge badge-sold">Sold $${Fmt.thousands(sold[r.id])}K</span>` : ""),
     rowClass: r => (sold[r.id] ? "pf-funded" : "") });
+  // Collapsed by default; the toggle button above the cards opens them.
   function renderHoldings(after, pf) {
+    const box = document.getElementById("pf2-holdings"), btn = document.getElementById("pf2-hold-toggle");
+    box.hidden = !ui.holdOpen;
+    btn.setAttribute("aria-expanded", String(ui.holdOpen));
+    btn.textContent = ui.holdOpen ? "Hide Pro Forma Holdings" : "Show Pro Forma Holdings";
+    if (!ui.holdOpen) { box.innerHTML = ""; return; }
     Object.keys(sold).forEach(k => delete sold[k]);
     pf.trades.forEach(t => { if (t.from_holding > 0) sold[t.source] = (sold[t.source] || 0) + t.from_holding; });
-    holdings.render(document.getElementById("pf2-holdings"), ctx.state, after.holdings, after.nav, () => renderOutputs());
+    holdings.render(box, ctx.state, after.holdings, after.nav, () => renderOutputs());
   }
 
   // ---------------- Limits panel (shared settings) ----------------
@@ -239,9 +235,9 @@
     { path: "limits.largest_sector_pct", label: "Largest sector, max", kind: "pct" }
   ];
   const HAIRCUTS = [
-    { path: "haircuts.t_bill", label: "T-bills", kind: "pct" },
-    { path: "haircuts.public_equity", label: "Public equity", kind: "pct" },
-    { path: "haircuts.credit", label: "Liquid credit (HY)", kind: "pct" }
+    { path: "haircuts.t_bill", label: L.haircut_group.t_bill, kind: "pct" },
+    { path: "haircuts.public_equity", label: L.haircut_group.public_equity, kind: "pct" },
+    { path: "haircuts.credit", label: L.haircut_group.credit, kind: "pct" }
   ];
   const getPath = (o, p) => p.split(".").reduce((x, k) => (x ? x[k] : undefined), o);
   const setPath = (o, p, v) => { const ks = p.split("."); ks.slice(0, -1).reduce((x, k) => x[k], o)[ks[ks.length - 1]] = v; };
@@ -274,6 +270,7 @@
     panel.addEventListener("click", e => {
       const oi = e.target.closest("[data-open-investment]");
       if (oi) return root.App.openInvestment(oi.dataset.openInvestment);
+      if (e.target.closest("#pf2-hold-toggle")) { ui.holdOpen = !ui.holdOpen; return renderOutputs(); }
     });
     panel.addEventListener("change", e => {
       if (e.target.matches("[data-sel-field]")) { ui.funded_note = null; return onSelectorChange(e.target); }
