@@ -10,7 +10,7 @@
 // transactions[] is the blotter that today's book is derived from; see the note above that block.
 
 window.SEED = {
-  version: 12,
+  version: 13,
   as_of: "2026-09-28",
   sample_data: true,
 
@@ -347,8 +347,8 @@ window.SEED = {
       company_overview: "TMS device maker; the only company with a cleared and covered accelerated protocol.",
       thesis: "Priced as the OEM winner. Worth tracking for reimbursement signals; I'm skeptical of the moat because pure-play TMS competes with Spravato and psychedelics for the same patients.",
       key_notes: [
-        "~6.5x revenue and ~34x adj. EBITDA; Q2 2026 revenue +35% at a 20% adj. EBITDA margin.",
-        "Invested $3M in Radial (Jul 2026), funding operators directly."
+        "~6.5x 2026E revenue and ~34x 2026E adj. EBITDA; Q2'26 revenue +35% on 75% / 20% gross / EBITDA margins.",
+        "The only OEM with a cleared and covered accelerated protocol (SWIFT); invested $3M in Radial (Jul '26)."
       ],
       diligence: [
         "Latest 10-K and 10-Q",
@@ -371,7 +371,7 @@ window.SEED = {
       company_overview: "Maker of NeuroStar, the first cleared TMS device (2008); owns the Greenbrook clinic network after its Dec 2024 acquisition.",
       thesis: "Device maker plus operator. Upside depends on filling Greenbrook's chairs, the same utilization problem that broke Greenbrook as a standalone.",
       key_notes: [
-        "Greenbrook reached 183 centers by 2022 before referrals failed to keep pace with the build-out."
+        "Greenbrook reached 183 centers by 2022, closed 50 of them in 2023 (mostly acquired sites), and ~$128M of lender debt was converted to equity in the Dec '24 sale to Neuronetics."
       ],
       diligence: [
         "Latest 10-K and 10-Q",
@@ -391,28 +391,27 @@ window.SEED = {
       commitment: 1000000, unfunded: 0, call_schedule: null, liquidity_bucket: "3y_plus", liquidity_date: null,
       mark_source: null, mark_date: null,
       status: "IC", type: "private_equity", theme_id: null,
-      company_overview: "Single-asset SPV in an express car wash platform in Anchorage. One site is open (opened mid-2025): 4,545 members in April 2026 at $49-59 per month exterior and $120 detail, ~$0.7M annualized EBITDA. Two more sites have not broken ground.",
-      thesis: "My view is pass. The plan needs the open site at $5.3M of EBITDA (7.8x the April run-rate) and two unbuilt sites at $3.4-3.5M each, and the preference that is supposed to protect us exists only in the marketing deck.",
+      company_overview: "Single-asset SPV marketed as a three-site express car wash platform in Anchorage. Today it is one open site (the Super Center) doing ~$0.7M of run-rate EBITDA (off one month) vs. a $5.3M plan, plus two sites that have not broken ground. The sponsor is a first-time sponsor whose only car wash deal is an unrealized minority stake (~39%).",
+      thesis: "My least favorite of the three: a single open car wash being marketed as a platform, in a space that is overcrowded and facing headwinds. Pass.",
       key_notes: [
-        "Scale still clears: Mister Car Wash was taken private at ~9.0x FY25 adj. EBITDA ($3.1bn EV, Feb 2026). Below scale the sector rolled over after new builds peaked in 2022; Zips filed Chapter 11 in Feb 2025 on ~$654M of debt.",
-        "Industry churn of 4.5-7.6% a month means a site refills a quarter to half of its base each year to stay flat.",
-        "The plan implies ~55% of the deck's own Anchorage membership pool in a ~287K-person market where one competitor runs 7 sites and another just opened its second at $40-60 a month.",
-        "The sale-leaseback on sites 2 and 3 is not downside protection: SLB rent sits ahead of our equity and should be treated as debt.",
-        "My cases: base 1.26x / ~5% net after site build costs; two downside cases 0.27-0.44x; only the deck case works (2.39x / ~24%).",
-        "Stated hold differs across documents: 3, 5 and 5-7 years."
+        "Express car washes were a sponsor favorite through 2022 (platforms sold at high teens at the peak); valuations have reset, with the largest exit Leonard Green's take-private of Mister Car Wash at ~9x in Feb '26 (LGP already owned ~67% and contributed no new equity).",
+        "Oversupply: new builds peaked at ~900 to 950 a year in 2022 to 2023. Zips filed Ch. 11 in Feb '25, resulting in a lender takeover.",
+        "Churn runs ~7 to 7.5% a month, or 50%+ of the recurring base every year.",
+        "SLB cap rates are ~6.5 to 7% today vs. ~6% in 2021 (the deck underwrites 6.5%); a site this small could be 100 to 200bps higher. A former CEO of a large car wash operator's read: higher rates plus more competition have pushed the SLB trade to treading water.",
+        "The two unbuilt sites are modeled at ~2.7x the revenue of a mature Tommy's Express, and the plan needs >50% of a shrinking 287K-person market that already has Sudzy Salmon (7 sites statewide, 3 to 4 in Anchorage) and a Tommy's Express.",
+        "The SLB of sites 2 and 3 is not downside protection: SLB rent sits ahead of the equity at the site level, and the Super Center is also leased, so three leases sit ahead of us."
       ],
       diligence: [
-        "Sponsor operating agreement: confirm the 1.0x preference and 8% cumulative dividend and their rank vs. the convert.",
-        "SPV LLC agreement describes the holding as Class A Voting Units, not preferred; reconcile.",
-        "Monthly membership counts since opening.",
-        "Permits, budgets and funding for sites 2 and 3.",
-        "Reporting rights and manager removal rights (none today).",
-        "Whether the catch-up can be waived."
+        "Operating agreement of the entity that owns the Super Center: confirm the 1.0x pref and 8% dividend exist and where they rank vs. the $2.5M convert.",
+        "Monthly membership and revenue since opening (the run-rate is one month).",
+        "Permits, budgets, funding and SLB terms for sites 2 and 3.",
+        "Reporting rights and manager removal (none today).",
+        "Whether the catch-up to earlier members can be waived."
       ],
-      terms: "Class B units of a single-asset SPV behind site-level debt, SLB rent, the open site's lease, site partners' 12% pref on their 17-32% of each site, and a $2.5M 8% convert. On a $2M check: $54.6K of prepaid management fees (18 months) and a $125.3K catch-up to earlier members, leaving ~$1.82M invested (Oct 15 close). Carry 20% from the first dollar, no hurdle, stepping to 25% above 4.0x.",
+      terms: "Class B units of a single-asset SPV, ranking behind site debt, the leases, the site partners' 12% pref and a $2.5M 8% convert at the operating entity. The 1.0x pref and 8% dividend appear only in the marketing deck; the operating agreement that would grant them is not in the package. Only ~$1.8M of our $2M reaches the business after 18 mos. of prepaid management fees and a catch-up to earlier members. Carry is 20% from the first dollar with no hurdle. No reporting rights, no ability to remove the manager.",
       contacts: ["Sponsor deal lead"],
       check_size: 1000000, funded_pct: 1.0, hold_months: 36, months_to_50pct_back: 36, interim_cash: false,
-      target_return: "Deck case 2.39x / ~24% net; my base 1.26x / ~5% net; probability-weighted ~1.0x.",
+      target_return: "~1.3x base case after the site build cost ahead of us; 50%+ loss if sites 2 and 3 ramp like site 1.",
       next_step: "IC vote", next_step_date: "2026-10-06",
       decision_log: [{ date: "2026-09-10", from: "researching", to: "IC", reason: "Moved to late stage" }] },
 
@@ -421,29 +420,30 @@ window.SEED = {
       commitment: 1000000, unfunded: 350000, call_schedule: null, liquidity_bucket: "3y_plus", liquidity_date: null,
       mark_source: null, mark_date: null,
       status: "researching", type: "private_credit", theme_id: "t-ai",
-      company_overview: "RPA and AI implementation and managed services firm founded in 2017, with offshore delivery in India. Revenue grew from $12.4M (FY22) to $29.5M (FY25E) across 80+ clients; top 5 under 15% of revenue, largest client 4%, ~96% recurring, 90%+ retention.",
-      thesis: "My recommendation. A senior secured coupon with clear exit visibility (48-month maturity, amortizing from month 17) and warrant upside if the founders sell in 2-3 years. I would lend at this attachment point but would not own the equity.",
+      company_overview: "Princeton, NJ-based RPA / AI implementation and managed services shop with delivery out of India, founded in 2017 by two ex-EY automation leads who still own 95% between them. Revenue went from $12M to ~$30M in three years across 80+ clients (none above 4% of revenue), with 90%+ retention and 96% of revenue recurring.",
+      thesis: "My recommendation for the full $2M. At 4% of NAV an illiquid position needs clear visibility to exit, and this is the only one of the three that has it: amortization from month 17 returns most of tranche 1 by ~month 36 to 39, and the warrants keep the upside if the founders sell. I wouldn't own the equity, but I'm fine lending against it at this attachment point.",
       key_notes: [
-        "Memo recommendation is $2M (4% of NAV); this app models $1.0M.",
-        "~70% of mandates run on one RPA platform whose partner agreement expires around late 2027; that vendor just guided to ~8% growth.",
-        "GenAI compresses managed services, the work agents replace first.",
-        "Earnings quality: adj. EBITDA went from $0.93M (FY24) to $4.34M (FY25E) after $2.1M of FY24 add-backs; unsold license inventory cost $3.48M in FY25E; presenting resale revenue net takes FY25E revenue to ~$24M, closer to the $20M recurring revenue covenant.",
-        "Leverage: Tranche 1 is 46% of the $14M valuation and a full draw is 71% (the memo's 27% LTV adds loan proceeds to EV).",
-        "Realistic default: break around month 18 with ~$6.2M of Tranche 1 outstanding; near-par recovery on a 3-4x sale of ~$2M book EBITDA, 30-60% if founders leave (0.63x at the 45% midpoint).",
-        "Sponsor's 17.1% net case counts the $2M warrant floor as certain; the term sheet pays it only on a liquidity event.",
-        "What would take it to zero: any covenant breach, Tranche 2 unfunded because H1 2026 revenue missed $15M, or a QoE restating FY25 adj. EBITDA well below $4.3M."
+        "The memo recommends $2M (4% of NAV); this app models $1.0M.",
+        "Platform concentration: 70% of mandates run on one RPA vendor's platform and the partnership agreement is up in late 2027.",
+        "GenAI: the Indian IT majors are already guiding to AI price deflation, and this is a smaller version of the same model.",
+        "Earnings quality: adj. EBITDA went from $0.9M to $4.3M in a year (the $0.9M itself needed $2.1M of add-backs), ELA spoilage is running at $3.5M, and the ~$30M revenue figure presents license resale gross; net presentation takes revenue closer to ~$24M vs. a $20M covenant.",
+        "Both founders plan to sell in 2 to 3 years, which is worrisome given growth was largely their relationships plus the India bench.",
+        "Leverage: the memo's 27% LTV adds the loan proceeds to EV; against the term sheet's $14M valuation the full $10M draw is closer to 70%.",
+        "Downside: a covenant trip around month 18 recovers near par on a 3 to 4x sale of ~$2M of book EBITDA (tranche 1 only), and more like 30 to 60% if the founders walk pre-sale.",
+        "The sponsor's 17% net case counts the $2M warrant floor as money good; it only pays on a liquidity event.",
+        "What would change my mind: the participation not sharing pro rata in the warrant, or 2026 EBITDA tracking below the $4.3M underwritten (a plain ~11% illiquid loan is not worth 4% of NAV)."
       ],
       diligence: [
-        "Quality of earnings report (FY25 add-backs, license spoilage, gross vs. net revenue).",
-        "RPA partner agreement and renewal terms.",
-        "Top client contracts and retention by client.",
-        "Covenant definitions and H1 2026 revenue vs. the $15M Tranche 2 milestone.",
-        "Enforceability of collateral against the Indian entity."
+        "Confirm pro rata participation in the warrant.",
+        "Quality of earnings (add-backs, ELA spoilage, gross vs. net revenue).",
+        "RPA platform partnership agreement and renewal terms.",
+        "Covenant definitions and 2026 EBITDA tracking vs. $4.3M.",
+        "Enforceability of the collateral against the Indian delivery entity."
       ],
-      terms: "Participation in a first-lien term loan of up to $10M ($6.5M at close + $3.5M on milestones). First-priority lien on all assets, 100% equity pledge, DACA over $1.5M, bad-boy guaranty. SOFR + 825 with a 400bp floor (~12.33% cash today). 24 months call protection, 7% premium in year 3. Covenants on minimum cash, EBITDA and recurring revenue; monthly financials. Sponsor takes 125 bps of interest and a 15% promote over 8%. Warrants: $2M struck at $14M post-money (~14%), $2M floor on any sale, cap $3M through month 24 rising to $5.5M after month 36.",
+      terms: "Participation in the lender's first-lien term loan of up to $10M ($6.5M at close + $3.5M on milestones), secured by a lien on the U.S. assets, a 100% equity pledge and a DACA. Pricing S+825 (~12.3% cash today), amortization starting month 17, most of tranche 1 back by ~month 36 to 39. The lender takes 125bps of interest and a 15% promote over an 8% hurdle. Warrants: $2M struck at $14M post, $2M floor on any sale, $5.5M cap after month 36.",
       contacts: ["Lender deal lead"],
       check_size: 1000000, funded_pct: 0.65, hold_months: 48, months_to_50pct_back: 24, interim_cash: true,
-      target_return: "~11% net ex-warrants; 1.52x / ~16% at the warrant floor; 1.82x / ~22% at the cap.",
+      target_return: "~11% net ex-warrant; warrants add ~$400K to $1.1M on our pro rata share on a sale.",
       next_step: "Review credit agreement", next_step_date: "2026-10-14",
       decision_log: [{ date: "2026-09-20", from: null, to: "researching", reason: "Term sheet received" }] },
 
@@ -452,26 +452,26 @@ window.SEED = {
       commitment: 1000000, unfunded: 0, call_schedule: null, liquidity_bucket: "3y_plus", liquidity_date: null,
       mark_source: "Round price", mark_date: null,
       status: "watching", type: "venture", theme_id: "t-ai",
-      company_overview: "Legal AI software company. ARR grew from ~$100M (Aug 2025) to $400M+ (Sep 2026); customers grew from 235 (end of 2024) to 3,000+, including 80% of the Am Law 100.",
-      thesis: "Best business of the three, wrong price. $37 implies ~$13.7bn, or ~34x ARR, while its model suppliers move into legal. Pass at $37; revisit at ~$31-35.",
+      company_overview: "Legal AI software company. ARR went from ~$100M to $400M+ in a year, with 3,000+ customers including 80% of the Am Law 100, backed by top-tier VCs.",
+      thesis: "The best business of the three on financial performance, but $37/sh is ~34x ARR and leaves nothing for the risk that its model suppliers move into legal themselves. Pass at $37 through an SPV; if the shares are direct preferred, I'd size at $1M.",
       key_notes: [
-        "Comparables: Clio at ~12x ARR (Nov 2025); closest competitor Legora at an $8.5bn pre-money (Sep 2026).",
-        "A 15% net IRR at a 12x exit needs ~$2.6bn of 2031 ARR (a 45% CAGR for five years). My base (80% growth next year fading to 20%) reaches $2.2bn.",
-        "Bear $1.3bn at 6x (0.5x); bull $3.3bn at 18x (3.9x).",
-        "Moat is workflow lock-in (25,000+ customer-built agents), but it rents its content and model layers; its own model launched only in Sep 2026.",
-        "$37 is 11.6% below the $41.86 Series H and 10% above the $33.64 Series G, and in line with secondary trades (~$37.17, Sep 28 2026): no discount.",
-        "What would bring it in at $1M+: direct Series G/H preferred at or below ~$35, or common at or below $33.64."
+        "It does not own the layer underneath: content from LexisNexis, models from OpenAI / Anthropic / Google. It released a research preview of its own model in Aug '26 to get ahead of this.",
+        "Those suppliers have their own valuations to justify (Anthropic at $965bn in May '26); Anthropic's legal plugin took ~17% off Thomson Reuters in Feb '26.",
+        "Cursor had to build its own model to cut reliance on Anthropic / OpenAI, and Claude Code still passed it.",
+        "$37 is 12% below the $41.86 Series H and ~10% above the Series G, in line with secondary marks. A $37 print in the same month as a $41.86 primary is most likely a secondary through an SPV.",
+        "~$13.7bn at $37, or ~34x ARR, vs. Clio raising at 12x on similar ARR last year.",
+        "What would change my mind: direct preferred rather than an SPV interest ($1M); evidence its own legal model is gaining adoption (more interested); the frontier labs' in-house legal tools gaining adoption instead (definite no)."
       ],
       diligence: [
-        "Instrument: direct preferred, common, or SPV interest; SPV fees and carry.",
-        "Charter and preference stack (~$1.6-1.8bn of earlier preferred).",
-        "ROFR and transfer process.",
-        "Information rights."
+        "What we'd own: direct preferred, common, or SPV interest; SPV fees and carry.",
+        "Liquidation preference terms if direct.",
+        "Adoption data on its own model vs. the labs' legal tools.",
+        "Transfer process and information rights."
       ],
-      terms: "Offered at $37.00 per share. Likely a secondary, probably through an SPV (not confirmed). Preferred would sit behind ~$1.6-1.8bn of earlier preferred; common is impaired only below a ~$1.8bn exit if the stack is 1x non-participating (charter unseen). Five-year expected hold.",
+      terms: "Offered at $37.00 per share, most likely a secondary sale through an SPV. Direct preferred would carry a liquidation preference ($2M back ahead of common in any exit below our entry valuation); an SPV interest sits a layer removed, with fees and carry diluting both economics and downside protection.",
       contacts: ["Placement agent"],
       check_size: 1000000, funded_pct: 1.0, hold_months: 36, months_to_50pct_back: 36, interim_cash: false,
-      target_return: "15%+ net hurdle; base case ~1.7x / ~11%; weighted ~14% direct, ~11% through an SPV.",
+      target_return: "Mid-teens needs ~45% ARR growth a year for ~5 years at a 12x 2031 exit; my base case is closer to ~11% if direct, less through an SPV.",
       next_step: "Request data room access", next_step_date: "2026-10-16",
       decision_log: [{ date: "2026-09-22", from: null, to: "watching", reason: "Allocation offered" }] }
   ],
@@ -486,25 +486,25 @@ window.SEED = {
   themes: [
     { id: "t-tms", name: "TMS / interventional psychiatry", status: "exploring",
       description: "Device makers, protocol owners, clinic operators and payers in transcranial magnetic stimulation for treatment-resistant depression (TRD).",
-      thesis: "Value is moving to (i) whoever owns a covered accelerated protocol and (ii) operators who can fill TMS chair time with other TRD treatments. Of the two, interventional psychiatry MSOs look most attractive: they offer every covered TRD treatment under one roof, keep the referral flow whichever treatment wins, and get a 3-4x lift in chair revenue on a fixed cost base if payers start paying per session for accelerated protocols outside the hospital.",
-      industry_context: "TMS devices were cleared in 2008 (NeuroStar) and 2013 (BrainsWay), and payers covered TMS broadly by ~2017. Greenbrook scaled to 183 centers by 2022, but de novo sites outran referrals, which led to a creditor takeover and a sale to Neuronetics in Dec 2024. Accelerated protocols compress a course from weeks to days, which changes clinic capacity math if payers follow.",
+      thesis: "Value is converging toward i) whoever owns a covered accelerated protocol and ii) operators who can fill empty TMS chair time with other TRD treatments. Of the two, MSO interventional psychiatry platforms are the most attractive: they are best positioned for TAM capture by offering every covered TRD treatment under one roof, they keep the patient whichever way the psychiatrist leans, and they get a 3 to 4x lift in chair revenue on a fixed cost base if reimbursement shifts to per-session payment on accelerated protocols outside the hospital.",
+      industry_context: "TMS has been FDA-cleared for depression since 2008 (NeuroStar; BrainsWay in 2013) and payers covered it broadly by ~2017. Greenbrook was the first pure-play attempt to scale TMS centers, reaching 183 by 2022; growth outran referrals, 50 of the 183 centers (mostly acquired ones) closed in 2023, and ~$128M of lender debt was converted to equity in the Dec '24 sale to Neuronetics. Accelerated protocols compress a course from weeks to days, which changes clinic capacity math if payers follow.",
       value_chain: [
-        { segment: "Device makers", description: "74-77% gross margins; revenue tied to clinic capex and utilization; Ampa's ~$36K/year subscription undercuts a $90-100K capital sale", companies: "Neuronetics, BrainsWay, MagVenture, Magstim, Ampa" },
-        { segment: "Protocol and targeting software", description: "Paid only where payers reimburse the protocol; Magnus is the only one with its own codes", companies: "Magnus Medical, Zeta Surgical, ANT Neuro, Osmind" },
-        { segment: "TRD alternatives", description: "Compete for the same patients; J&J guides Spravato to $3-3.5bn by 2028", companies: "Johnson & Johnson (Spravato), ketamine clinics, Flow Neuroscience" },
-        { segment: "Operators", description: "Utilization decides margin: a two-chair TMS-only site does ~17% four-wall EBITDA at 60% utilization and loses money at 40%", companies: "Radial, Hopemark, Heading, NeuroStim, Greenbrook (Neuronetics)" },
-        { segment: "Payers", description: "Require 1-2+ failed medications; cap at 30 + 6 sessions, one paid session per day", companies: "UnitedHealth, Elevance, Cigna, CVS (Aetna), Highmark, Premera, VA" }
+        { segment: "Device makers", description: "72 to 77% gross margins; revenue depends on clinic capex and utilization; Ampa's $36K/year subscription undercuts a $90 to 100K capital sale and shifts utilization risk onto the OEM", companies: "Neuronetics, BrainsWay, MagVenture, Magstim, Ampa" },
+        { segment: "Protocol and targeting software", description: "Paid only where payers reimburse the protocol; Magnus (SAINT, on MagVenture hardware) is the only one with its own CPT codes, with a system sale plus a per-case targeting fee (~$950 per case)", companies: "Magnus Medical, Zeta Surgical, ANT Neuro, Osmind" },
+        { segment: "TRD alternatives", description: "Compete for the same patients; Spravato did $1.7bn in 2025 and Jefferies has it at $3 to 3.5bn by 2028, buy-and-bill at ~$45 to 50K/year; ketamine is cash pay; Flow's headset is a prescription at-home device for non-refractory MDD (U.S. launch Sep '26)", companies: "Johnson & Johnson (Spravato), ketamine clinics, Flow Neuroscience" },
+        { segment: "Operators", description: "Utilization is the differentiator: a two-chair TMS-only site does ~16% four-wall EBITDA at 60% utilization, loses money at 40%, and clears ~4% after overhead; interventional psych platforms fill chairs with other treatments", companies: "Radial, Hopemark, Heading, NeuroStim, Greenbrook (Neuronetics), Beacon" },
+        { segment: "Payers", description: "Require 2 to 3 documented med failures; cap at 30 + 6 sessions with 1 to 2 paid sessions per day (up to 5 to 10 at Premera); only a handful cover accelerated protocols", companies: "UnitedHealth, Elevance, Cigna, CVS (Aetna), Premera, BCBS South Carolina, Independence Blue Cross, VA" }
       ],
       key_notes: [
-        "Penetration is stuck at 4-5%: of ~2.8M U.S. adults with TRD, ~110-130K get TMS each year.",
-        "Standard course is 36 visits over 7-9 weeks with ~1/3 of patients reaching remission; visit burden is the main drag on adoption.",
-        "Coverage of accelerated protocols went from zero to 57-80M claimed lives in ~9 months (2026), but national plans (Aetna, Cigna, UHC, Elevance) still pay only the standard 30 + 6 course.",
-        "The only place accelerated TMS is paid per course today is Medicare paying SAINT in hospital outpatient departments through Magnus Medical's codes.",
-        "Under the \"one paid session per day\" rule, payers have little reason to switch to per-session payment, so providers have little reason to run accelerated protocols.",
-        "Capital is moving to operators: BrainsWay invested in Radial, Neuronetics owns Greenbrook, and growth investors are backing MSOs.",
-        "BrainsWay trades as the OEM winner (~6.5x revenue, ~34x adj. EBITDA; Q2 2026 revenue +35% at a 20% adj. EBITDA margin), but every pure-play TMS company competes with Spravato and late-stage psychedelics for the same patients.",
-        "Building our own platform is uphill: referral density takes 2-3 years. If we built, roll up sub-scale practices rather than de novo.",
-        "Next work (15-20 hours): reimbursement expert calls and payer policy review; Radial (Series B likely within 12-18 months); Ampa's model and payment evidence."
+        "Penetration is stuck at ~3 to 4%: of ~2.8M U.S. adults with TRD, only ~100K get TMS a year at most.",
+        "Standard course is 36 visits (one a day for 7 to 9 weeks) with only ~1/3 of patients reaching remission; visit count and remission rate are the bottlenecks.",
+        "Coverage of accelerated protocols went from a few plans in 2024 / 2025 to 57 to 80M claimed lives by mid-'26, but national plans (Aetna, Cigna, UHC, Elevance) still reimburse only standard 30 + 6 TMS, with Aetna calling accelerated and SAINT-type protocols experimental.",
+        "The only place accelerated TMS is paid at a higher rate per course is Medicare paying SAINT in hospital outpatient departments through Magnus's codes (~$19.7K per course, which CMS proposed cutting to ~$10K for 2027).",
+        "A compressed course costs payers much less under the current per-day caps, so there is little driver to move to per-session payment, and little incentive for providers to run accelerated protocols vs. billing at the daily cap.",
+        "Capital is converging on operators: BrainsWay funding Radial directly, Neuronetics owning Greenbrook, and GC / Mubadala Capital / ARCH backing MSOs.",
+        "BrainsWay is priced as the clear OEM winner at ~6.5x 2026E revenue and ~34x 2026E adj. EBITDA (Q2'26 revenue +35% on 75% / 20% gross / EBITDA margins; the only OEM with a cleared and covered accelerated protocol), but every pure-play TMS name competes with Spravato and late-stage psychedelics for the same patients.",
+        "Building our own platform is uphill: referral density takes 2 to 3 years, so a 2028 build only takes hold in 2030+. If we built, roll up practices that already have referral density rather than de novo.",
+        "Where to spend 15 to 20 hours: reimbursement (expert calls with reimbursement consultants, payer medical directors, market access at BrainsWay or Magnus; UHC / Elevance / BCBS policy language), Radial (Series B likely within 12 to 18 mos.), and Ampa (management call, live and billed systems by month, terms of the May '26 round, sham-controlled trial plans, any remittance showing a payer paid a single-day course)."
       ],
       watch_public: [
         { company: "Neuronetics", ticker: "STIM", market_cap: 200e6 },
@@ -539,13 +539,11 @@ window.SEED = {
         { segment: "Implementation services", description: "Earn services margin during adoption; at risk of deflation", companies: "Accenture, Infosys, Cognizant, Wipro, Tata Consultancy Services" }
       ],
       key_notes: [
-        "Model providers have valuations to justify (Anthropic raised at $965bn post-money in May 2026 on a ~$47bn revenue run-rate), which pushes them into vertical apps.",
-        "A legal plugin for Claude took 16% off Thomson Reuters and 14% off RELX in a day (Feb 2026); coding saw the same pattern when Cursor built its own model.",
-        "Vertical apps can hold ground: OpenEvidence raised at $15bn (Sep 2026) after Claude for Healthcare and ChatGPT Health launched.",
-        "Legal AI pricing: Clio raised at $5bn on ~$400M ARR (~12x, Nov 2025); Legora went from $10bn+ talks to an $8.5bn pre-money (Sep 2026).",
-        "Public SaaS trades at ~3-8x forward revenue; names still growing 30%+ get ~10-15x.",
-        "Indian IT majors are guiding to AI-driven price deflation in managed services, the work agents replace first.",
-        "UiPath guided to ~8% growth and fell 14% on the print."
+        "Model providers have their own valuations to justify (Anthropic raised at $965bn in May '26), and the most direct way is to own application revenue in verticals they already supply the model for.",
+        "Anthropic's legal plugin took ~17% off Thomson Reuters in a day in Feb '26.",
+        "Cursor had to build its own model to reduce reliance on Anthropic / OpenAI, and Claude Code still passed it.",
+        "Clio raised at ~12x ARR on similar ARR to Harvey's last year; public SaaS exits for a maturing large cap are closer to 12x.",
+        "Indian IT majors are guiding to AI price deflation in managed services, the work agents replace first."
       ],
       watch_public: [
         { company: "Microsoft", ticker: "MSFT", market_cap: 3.8e12 },
