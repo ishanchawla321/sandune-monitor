@@ -128,7 +128,7 @@ Object.entries(CASES).forEach(([name, c]) => {
                                    diligence_documents: [{ id: "1", text: "D", done: "2026-01-01" }], diligence_other: [{ id: "2", text: "E", done: null }],
                                    terms_notes: "T", entry_costs: "F", signals: [], tickers: ["X"] }],
                    themes: [{ id: "t", assumptions: [{ text: "G" }], triggers: ["H"], why_now: "W", value_chain: [{ segment: "S", who_captures_value: "V" }],
-                             watch_public: ["BWAY"], watch_private: ["P"], contacts: ["R"], signals: [], decision_log: [] }] };
+                             watch_public: ["BWAY", { company: "Neuronetics", ticker: "stim", market_cap: 160000000 }], watch_private: ["P"], contacts: ["R"], signals: [], decision_log: [] }] };
   const l1 = Migrate.state(JSON.parse(JSON.stringify(legacy)));
   const l2 = Migrate.state(JSON.parse(JSON.stringify(l1)));
   const i = l1.investments[0], t = l1.themes[0];
@@ -138,6 +138,8 @@ Object.entries(CASES).forEach(([name, c]) => {
   check("Legacy migration keeps the text that moves", kept ? 1 : 0, 1, 0);
   check("Legacy migration leaves no old fields", ["assumptions", "triggers", "doc_flags", "diligence_documents", "diligence_other", "terms_notes", "entry_costs", "signals", "tickers", "change_my_mind"].some(k => k in i) || ["why_now", "contacts", "signals", "decision_log", "change_my_mind"].some(k => k in t) ? 1 : 0, 0, 0);
   check("Legacy migration twice equals once", JSON.stringify(l2) === JSON.stringify(l1) ? 1 : 0, 1, 0);
+  check("Legacy migration drops stored market caps", t.watch_public[1].ticker === "STIM" && !("market_cap" in t.watch_public[1]) ? 1 : 0, 1, 0);
+  check("Seed stores no market caps", once.themes.some(th => (th.watch_public || []).some(c => "market_cap" in c)) ? 1 : 0, 0, 0);
 }
 
 // ---- Pass and Move back to prospective round-trip cleanly ----

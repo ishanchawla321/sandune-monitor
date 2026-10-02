@@ -9,7 +9,7 @@
 //   signals[], tickers[]                 -> dropped (section removed)
 //   theme.why_now                        -> theme.industry_context
 //   theme.value_chain[].who_captures_value -> .description, plus .companies
-//   theme.watch_public[] (tickers)       -> [{ company, ticker, market_cap }]
+//   theme.watch_public[] (tickers)       -> [{ company, ticker }] (stored market caps are dropped; Live mode reads /api/profile)
 //   theme.watch_private[] (names)        -> [{ company, ownership }]
 //   theme.contacts[]                     -> folded into key_notes as one "Contacts (roles): ..." bullet
 //   theme.signals, decision_log          -> dropped (sections removed)
@@ -64,8 +64,8 @@
       companies: str(v.companies)
     })).filter(v => v.segment || v.description);
     t.watch_public = (Array.isArray(t.watch_public) ? t.watch_public : []).map(x => (typeof x === "string"
-      ? { company: x.trim().toUpperCase(), ticker: x.trim().toUpperCase(), market_cap: null }
-      : { company: str(x.company) || str(x.ticker).toUpperCase(), ticker: str(x.ticker).toUpperCase(), market_cap: isFinite(x.market_cap) && x.market_cap !== null ? Number(x.market_cap) : null }))
+      ? { company: x.trim().toUpperCase(), ticker: x.trim().toUpperCase() }
+      : { company: str(x.company) || str(x.ticker).toUpperCase(), ticker: str(x.ticker).toUpperCase() }))
       .filter(x => x.ticker || x.company);
     t.watch_private = (Array.isArray(t.watch_private) ? t.watch_private : []).map(x => (typeof x === "string"
       ? { company: x.trim(), ownership: "—" }
